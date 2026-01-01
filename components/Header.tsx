@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
-  ScrollView,
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Menu, X, Shield } from 'lucide-react-native';
@@ -91,7 +90,7 @@ const HeaderComponent: React.FC = () => {
       </View>
 
       {menuOpen && Platform.OS !== 'web' && (
-        <ScrollView style={styles.mobileMenu}>
+        <View style={styles.mobileMenu}>
           {navItems.map((item) => (
             <TouchableOpacity
               key={item.path}
@@ -118,7 +117,7 @@ const HeaderComponent: React.FC = () => {
             <Shield color={theme.colors.white} size={18} />
             <Text style={styles.mobileMenuTextAdmin}>Admin</Text>
           </TouchableOpacity>
-        </ScrollView>
+        </View>
       )}
     </View>
   );
@@ -132,6 +131,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     ...theme.shadows.sm,
+    zIndex: 1000,
   },
   header: {
     flexDirection: 'row',
@@ -188,12 +188,12 @@ const styles = StyleSheet.create({
   },
   mobileMenu: {
     backgroundColor: theme.colors.white,
-    maxHeight: 400,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
+    paddingBottom: theme.spacing.md,
   },
   mobileMenuItem: {
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.surface,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.accent,
   },
   mobileMenuText: {
-    fontSize: 16,
+    fontSize: 18,
     color: theme.colors.text,
     fontWeight: '500' as const,
   },
@@ -215,10 +215,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.sm,
     backgroundColor: theme.colors.primary,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.md,
     marginHorizontal: theme.spacing.md,
-    marginVertical: theme.spacing.sm,
+    marginVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
   },
   mobileMenuTextAdmin: {
