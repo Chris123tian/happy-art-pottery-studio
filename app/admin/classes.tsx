@@ -17,9 +17,10 @@ import { Button } from '@/components/Button';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Class } from '@/types';
-import { queryClient } from '@/contexts/DataContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminClasses() {
+  const queryClient = useQueryClient();
   const [classes, setClasses] = useState<Class[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

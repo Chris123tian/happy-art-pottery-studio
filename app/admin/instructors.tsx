@@ -19,9 +19,10 @@ import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Instructor } from '@/types';
 import { seedInstructors } from '@/services/seedData';
-import { queryClient } from '@/contexts/DataContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminInstructors() {
+  const queryClient = useQueryClient();
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState<Instructor | null>(null);

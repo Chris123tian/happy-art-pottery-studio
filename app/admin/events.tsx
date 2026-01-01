@@ -16,9 +16,10 @@ import { Button } from '@/components/Button';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Event } from '@/types';
-import { queryClient } from '@/contexts/DataContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminEvents() {
+  const queryClient = useQueryClient();
   const [events, setEvents] = useState<Event[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

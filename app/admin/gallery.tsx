@@ -17,12 +17,13 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { GalleryImage } from '@/types';
-import { queryClient } from '@/contexts/DataContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 const { width } = Dimensions.get('window');
 const imageSize = width > 768 ? 200 : (width - theme.spacing.lg * 3) / 2;
 
 export default function AdminGallery() {
+  const queryClient = useQueryClient();
   const [images, setImages] = useState<GalleryImage[]>([]);
 
   useEffect(() => {

@@ -18,9 +18,10 @@ import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { SiteSettings } from '@/types';
 import { seedSettings } from '@/services/seedData';
-import { queryClient } from '@/contexts/DataContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminSettings() {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<SiteSettings>(seedSettings);

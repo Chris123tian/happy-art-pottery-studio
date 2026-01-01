@@ -11,9 +11,10 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Booking } from '@/types';
-import { queryClient } from '@/contexts/DataContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminBookings() {
+  const queryClient = useQueryClient();
   const [bookings, setBookings] = useState<Booking[]>([]);
 
   useEffect(() => {

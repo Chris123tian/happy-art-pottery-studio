@@ -12,9 +12,10 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Message } from '@/types';
-import { queryClient } from '@/contexts/DataContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminMessages() {
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
 
   useEffect(() => {

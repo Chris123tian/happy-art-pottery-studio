@@ -1,20 +1,7 @@
 import React, { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { dataService } from '@/services/dataService';
 import createContextHook from '@nkzw/create-context-hook';
-
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30000,
-      gcTime: 300000,
-      refetchOnWindowFocus: true,
-      refetchOnMount: true,
-      refetchOnReconnect: true,
-      retry: false,
-    },
-  },
-});
 
 export const [DataProvider, useData] = createContextHook(() => {
   const settingsQuery = useQuery({
@@ -78,9 +65,5 @@ export const [DataProvider, useData] = createContextHook(() => {
 });
 
 export const DataContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <DataProvider>{children}</DataProvider>
-    </QueryClientProvider>
-  );
+  return <DataProvider>{children}</DataProvider>;
 };
