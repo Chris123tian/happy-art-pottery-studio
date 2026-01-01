@@ -280,25 +280,25 @@ const styles = StyleSheet.create({
 
   hero: {
     backgroundColor: theme.colors.accent,
-    padding: theme.spacing.xl,
+    padding: theme.spacing.md,
     alignItems: 'center',
   },
   heroTitle: {
-    fontSize: width > 768 ? 36 : 28,
+    fontSize: width > 768 ? 36 : 26,
     fontWeight: '700' as const,
     color: theme.colors.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing.sm,
   },
   heroSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: theme.colors.textLight,
     textAlign: 'center',
     maxWidth: 600,
   },
   content: {
-    padding: theme.spacing.lg,
-    gap: theme.spacing.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.md,
   },
   eventCard: {
     backgroundColor: theme.colors.white,
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     height: width > 768 ? 300 : 200,
   },
   eventContent: {
-    padding: theme.spacing.lg,
+    padding: theme.spacing.md,
   },
   categoryBadge: {
     alignSelf: 'flex-start',
@@ -328,20 +328,20 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   eventTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700' as const,
     color: theme.colors.secondary,
     marginBottom: theme.spacing.sm,
   },
   eventDescription: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 22,
     color: theme.colors.text,
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
   },
   eventDetails: {
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
   },
   detailRow: {
     flexDirection: 'row',

@@ -95,18 +95,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: theme.spacing.lg,
+    padding: theme.spacing.md,
     backgroundColor: theme.colors.accent,
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700' as const,
     color: theme.colors.secondary,
     marginBottom: theme.spacing.sm,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: theme.colors.textLight,
     textAlign: 'center',
   },

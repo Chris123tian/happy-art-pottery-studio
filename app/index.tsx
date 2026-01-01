@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   },
 
   hero: {
-    height: width > 768 ? 500 : 350,
+    height: width > 768 ? 500 : 280,
     position: 'relative',
   },
   heroImage: {
@@ -384,23 +384,24 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   heroTitle: {
-    fontSize: width > 768 ? 48 : 32,
+    fontSize: width > 768 ? 48 : 28,
     fontWeight: '700' as const,
     color: theme.colors.white,
     textAlign: 'center',
     marginBottom: theme.spacing.sm,
   },
   heroSubtitle: {
-    fontSize: width > 768 ? 20 : 16,
+    fontSize: width > 768 ? 20 : 14,
     color: theme.colors.white,
     textAlign: 'center',
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
   },
   heroButton: {
     minWidth: 200,
   },
   section: {
-    padding: theme.spacing.lg,
+    padding: width > 768 ? theme.spacing.lg : theme.spacing.md,
   },
   servicesSection: {
     backgroundColor: theme.colors.surface,
@@ -409,10 +410,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.accent,
   },
   sectionTitle: {
-    fontSize: 28,
+    fontSize: width > 768 ? 28 : 22,
     fontWeight: '700' as const,
     color: theme.colors.secondary,
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
     textAlign: 'center',
   },
   aboutContent: {
@@ -421,8 +422,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   aboutImage: {
-    width: width > 768 ? 300 : width - theme.spacing.lg * 2,
-    height: 300,
+    width: width > 768 ? 300 : width - theme.spacing.md * 2,
+    height: width > 768 ? 300 : 220,
     borderRadius: theme.borderRadius.lg,
   },
   aboutText: {
@@ -430,8 +431,8 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md,
   },
   paragraph: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 22,
     color: theme.colors.text,
   },
   servicesGrid: {
@@ -442,13 +443,13 @@ const styles = StyleSheet.create({
   },
   serviceCard: {
     backgroundColor: theme.colors.white,
-    padding: theme.spacing.lg,
+    padding: width > 768 ? theme.spacing.lg : theme.spacing.md,
     borderRadius: theme.borderRadius.lg,
-    width: width > 768 ? 300 : width - theme.spacing.lg * 2,
+    width: width > 768 ? 300 : width - theme.spacing.md * 2,
     ...theme.shadows.md,
   },
   serviceTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700' as const,
     color: theme.colors.primary,
     marginBottom: theme.spacing.sm,
@@ -571,7 +572,7 @@ const styles = StyleSheet.create({
   processStep: {
     flex: 1,
     alignItems: 'center',
-    padding: theme.spacing.lg,
+    padding: width > 768 ? theme.spacing.lg : theme.spacing.md,
     backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.lg,
     ...theme.shadows.md,
@@ -598,14 +599,15 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   stepTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700' as const,
     color: theme.colors.secondary,
     marginBottom: theme.spacing.sm,
     textAlign: 'center',
   },
   stepDescription: {
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 18,
     color: theme.colors.textLight,
     textAlign: 'center',
   },
