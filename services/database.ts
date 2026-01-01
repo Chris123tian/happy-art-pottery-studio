@@ -4,6 +4,10 @@ const DB_ENDPOINT = process.env.EXPO_PUBLIC_RORK_DB_ENDPOINT;
 const DB_NAMESPACE = process.env.EXPO_PUBLIC_RORK_DB_NAMESPACE;
 const DB_TOKEN = process.env.EXPO_PUBLIC_RORK_DB_TOKEN;
 
+console.log('[ENV] DB_ENDPOINT:', DB_ENDPOINT ? `${DB_ENDPOINT.substring(0, 20)}...` : 'undefined');
+console.log('[ENV] DB_NAMESPACE:', DB_NAMESPACE || 'undefined');
+console.log('[ENV] DB_TOKEN:', DB_TOKEN ? 'Set' : 'undefined');
+
 class Database {
   private db: Surreal | null = null;
   private connecting: Promise<void> | null = null;
@@ -15,8 +19,8 @@ class Database {
     this.connecting = (async () => {
       try {
         console.log('[DB] Checking environment variables...');
-        console.log('[DB] Endpoint:', DB_ENDPOINT ? 'Set' : 'MISSING');
-        console.log('[DB] Namespace:', DB_NAMESPACE ? 'Set' : 'MISSING');
+        console.log('[DB] Endpoint:', DB_ENDPOINT || 'MISSING');
+        console.log('[DB] Namespace:', DB_NAMESPACE || 'MISSING');
         console.log('[DB] Token:', DB_TOKEN ? 'Set' : 'MISSING');
 
         if (!DB_ENDPOINT || !DB_NAMESPACE || !DB_TOKEN) {
