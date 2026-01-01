@@ -25,7 +25,7 @@ const { width } = Dimensions.get('window');
 
 export default function Home() {
   const router = useRouter();
-  const { settings, instructors, gallery, testimonials, isLoading } = useData();
+  const { settings, instructors, gallery, testimonials, isLoading, refetchAll } = useData();
 
   useEffect(() => {
     const initializeData = async () => {
@@ -38,13 +38,14 @@ export default function Home() {
           await dataService.setEvents(seedEvents);
           await dataService.setSettings(seedSettings);
           await dataService.setTestimonials(seedTestimonials);
+          refetchAll();
         }
       } catch (error) {
         console.error('Error initializing data:', error);
       }
     };
     initializeData();
-  }, []);
+  }, [refetchAll]);
 
   const featuredGallery = useMemo(
     () => gallery.filter((i) => i.featured),
