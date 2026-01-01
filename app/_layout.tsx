@@ -1,9 +1,11 @@
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { DataContextProvider } from '@/contexts/DataContext';
+import { trpc, trpcClient } from '@/lib/trpc';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,17 +30,23 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const [queryClient] = useState(() => new QueryClient());
+
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
 
   return (
-    <DataContextProvider>
-      <AuthProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <RootLayoutNav />
-        </GestureHandlerRootView>
-      </AuthProvider>
-    </DataContextProvider>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <DataContextProvider>
+          <AuthProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <RootLayoutNav />
+            </GestureHandlerRootView>
+          </AuthProvider>
+        </DataContextProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
