@@ -6,7 +6,6 @@ import {
   ScrollView,
   Image,
   Dimensions,
-  ActivityIndicator,
   Linking,
   TextInput,
   TouchableOpacity,
@@ -26,7 +25,7 @@ import { Event } from '@/types';
 const { width } = Dimensions.get('window');
 
 export default function Events() {
-  const { events: rawEvents, isLoading: loading } = useData();
+  const { events: rawEvents } = useData();
   const [bookingModalVisible, setBookingModalVisible] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [bookingForm, setBookingForm] = useState({
@@ -107,18 +106,6 @@ Please confirm my booking. Thank you!`;
 
     closeBookingModal();
   };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <Header />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading events...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -290,16 +277,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: theme.spacing.md,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: theme.colors.textLight,
-  },
+
   hero: {
     backgroundColor: theme.colors.accent,
     padding: theme.spacing.xl,

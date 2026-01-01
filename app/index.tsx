@@ -7,7 +7,6 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
-  ActivityIndicator,
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,7 +24,7 @@ const { width } = Dimensions.get('window');
 
 export default function Home() {
   const router = useRouter();
-  const { settings, instructors, gallery, testimonials, isLoading, refetchAll } = useData();
+  const { settings, instructors, gallery, testimonials, refetchAll } = useData();
 
   useEffect(() => {
     const initializeData = async () => {
@@ -67,18 +66,6 @@ export default function Home() {
   const handleGalleryPress = useCallback(() => {
     router.push('/gallery' as any);
   }, [router]);
-
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <Header />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -401,16 +388,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: theme.spacing.md,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: theme.colors.textLight,
-  },
+
   hero: {
     height: width > 768 ? 500 : 350,
     position: 'relative',

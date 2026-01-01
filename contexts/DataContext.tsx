@@ -6,10 +6,11 @@ import createContextHook from '@nkzw/create-context-hook';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
+      staleTime: Infinity,
+      gcTime: Infinity,
       refetchOnWindowFocus: false,
       refetchOnMount: false,
+      refetchOnReconnect: false,
     },
   },
 });
@@ -64,15 +65,6 @@ export const [DataProvider, useData] = createContextHook(() => {
     events: eventsQuery.data ?? [],
     settings: settingsQuery.data ?? null,
     testimonials: testimonialsQuery.data ?? [],
-    isLoading:
-      classesQuery.isLoading ||
-      bookingsQuery.isLoading ||
-      messagesQuery.isLoading ||
-      instructorsQuery.isLoading ||
-      galleryQuery.isLoading ||
-      eventsQuery.isLoading ||
-      settingsQuery.isLoading ||
-      testimonialsQuery.isLoading,
     refetchAll: () => {
       classesQuery.refetch();
       bookingsQuery.refetch();
