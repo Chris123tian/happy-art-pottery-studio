@@ -17,6 +17,7 @@ import { Button } from '@/components/Button';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Class } from '@/types';
+import { queryClient } from '@/contexts/DataContext';
 
 export default function AdminClasses() {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -62,6 +63,7 @@ export default function AdminClasses() {
     }
 
     await dataService.setClasses(updatedClasses);
+    await queryClient.invalidateQueries({ queryKey: ['classes'] });
     setClasses(updatedClasses);
     resetForm();
   };
@@ -80,6 +82,7 @@ export default function AdminClasses() {
   const handleDelete = async (id: string) => {
     const updatedClasses = classes.filter((c) => c.id !== id);
     await dataService.setClasses(updatedClasses);
+    await queryClient.invalidateQueries({ queryKey: ['classes'] });
     setClasses(updatedClasses);
   };
 

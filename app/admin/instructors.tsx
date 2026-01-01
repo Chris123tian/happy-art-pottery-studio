@@ -19,6 +19,7 @@ import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Instructor } from '@/types';
 import { seedInstructors } from '@/services/seedData';
+import { queryClient } from '@/contexts/DataContext';
 
 export default function AdminInstructors() {
   const [instructors, setInstructors] = useState<Instructor[]>([]);
@@ -138,6 +139,7 @@ export default function AdminInstructors() {
     }
 
     await dataService.setInstructors(updatedInstructors);
+    await queryClient.invalidateQueries({ queryKey: ['instructors'] });
     setInstructors(updatedInstructors);
     closeModal();
   };
@@ -154,6 +156,7 @@ export default function AdminInstructors() {
           onPress: async () => {
             const updated = instructors.filter((i) => i.id !== instructor.id);
             await dataService.setInstructors(updated);
+            await queryClient.invalidateQueries({ queryKey: ['instructors'] });
             setInstructors(updated);
           },
         },

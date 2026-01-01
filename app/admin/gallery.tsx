@@ -17,6 +17,7 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { GalleryImage } from '@/types';
+import { queryClient } from '@/contexts/DataContext';
 
 const { width } = Dimensions.get('window');
 const imageSize = width > 768 ? 200 : (width - theme.spacing.lg * 3) / 2;
@@ -51,6 +52,7 @@ export default function AdminGallery() {
 
       const updatedImages = [...images, newImage];
       await dataService.setGallery(updatedImages);
+      await queryClient.invalidateQueries({ queryKey: ['gallery'] });
       setImages(updatedImages);
 
       if (Platform.OS === 'web') {
@@ -64,6 +66,7 @@ export default function AdminGallery() {
   const handleDelete = async (id: string) => {
     const updatedImages = images.filter((img) => img.id !== id);
     await dataService.setGallery(updatedImages);
+    await queryClient.invalidateQueries({ queryKey: ['gallery'] });
     setImages(updatedImages);
   };
 

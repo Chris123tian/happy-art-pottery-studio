@@ -11,6 +11,7 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Booking } from '@/types';
+import { queryClient } from '@/contexts/DataContext';
 
 export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -32,6 +33,7 @@ export default function AdminBookings() {
       b.id === id ? { ...b, status } : b
     );
     await dataService.setBookings(updatedBookings);
+    await queryClient.invalidateQueries({ queryKey: ['bookings'] });
     setBookings(updatedBookings);
   };
 

@@ -3,14 +3,14 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import { dataService } from '@/services/dataService';
 import createContextHook from '@nkzw/create-context-hook';
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: Infinity,
-      gcTime: Infinity,
-      refetchOnWindowFocus: false,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
+      staleTime: 30000,
+      gcTime: 300000,
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+      refetchOnReconnect: true,
       retry: false,
     },
   },

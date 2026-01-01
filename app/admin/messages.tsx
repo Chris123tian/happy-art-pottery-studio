@@ -12,6 +12,7 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Message } from '@/types';
+import { queryClient } from '@/contexts/DataContext';
 
 export default function AdminMessages() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -30,12 +31,14 @@ export default function AdminMessages() {
       m.id === id ? { ...m, read: !m.read } : m
     );
     await dataService.setMessages(updatedMessages);
+    await queryClient.invalidateQueries({ queryKey: ['messages'] });
     setMessages(updatedMessages);
   };
 
   const handleDelete = async (id: string) => {
     const updatedMessages = messages.filter((m) => m.id !== id);
     await dataService.setMessages(updatedMessages);
+    await queryClient.invalidateQueries({ queryKey: ['messages'] });
     setMessages(updatedMessages);
   };
 

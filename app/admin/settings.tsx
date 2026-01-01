@@ -18,6 +18,7 @@ import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { SiteSettings } from '@/types';
 import { seedSettings } from '@/services/seedData';
+import { queryClient } from '@/contexts/DataContext';
 
 export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
@@ -47,6 +48,7 @@ export default function AdminSettings() {
     setSaving(true);
     try {
       await dataService.setSettings(settings);
+      await queryClient.invalidateQueries({ queryKey: ['settings'] });
       Alert.alert('Success', 'Settings saved successfully!');
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -76,6 +78,7 @@ export default function AdminSettings() {
           ...settings,
           [type === 'hero' ? 'heroImage' : 'aboutImage']: uri,
         });
+        await queryClient.invalidateQueries({ queryKey: ['settings'] });
         Alert.alert('Success', 'Image uploaded successfully!');
       }
     } catch (error) {

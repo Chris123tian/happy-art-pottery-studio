@@ -16,6 +16,7 @@ import { Button } from '@/components/Button';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Event } from '@/types';
+import { queryClient } from '@/contexts/DataContext';
 
 export default function AdminEvents() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -76,6 +77,7 @@ export default function AdminEvents() {
     }
 
     await dataService.setEvents(updatedEvents);
+    await queryClient.invalidateQueries({ queryKey: ['events'] });
     setEvents(updatedEvents);
     resetForm();
   };
@@ -100,6 +102,7 @@ export default function AdminEvents() {
   const handleDelete = async (id: string) => {
     const updatedEvents = events.filter((e) => e.id !== id);
     await dataService.setEvents(updatedEvents);
+    await queryClient.invalidateQueries({ queryKey: ['events'] });
     setEvents(updatedEvents);
   };
 
