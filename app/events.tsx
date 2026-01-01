@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  Dimensions,
   Linking,
   TextInput,
   TouchableOpacity,
@@ -21,8 +20,6 @@ import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
 import { useData } from '@/contexts/DataContext';
 import { Event } from '@/types';
-
-const { width } = Dimensions.get('window');
 
 export default function Events() {
   const { events: rawEvents } = useData();
@@ -284,7 +281,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heroTitle: {
-    fontSize: width > 768 ? 36 : 26,
+    fontSize: 26,
     fontWeight: '700' as const,
     color: theme.colors.secondary,
     textAlign: 'center',
@@ -308,7 +305,7 @@ const styles = StyleSheet.create({
   },
   eventImage: {
     width: '100%',
-    height: width > 768 ? 300 : 200,
+    height: 200,
   },
   eventContent: {
     padding: theme.spacing.md,

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   ActivityIndicator,
   Linking,
 } from 'react-native';
@@ -14,8 +13,6 @@ import { Calendar, ExternalLink } from 'lucide-react-native';
 import { Header } from '@/components/Header';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
-
-const { width } = Dimensions.get('window');
 
 interface BlogPost {
   id: string;
@@ -200,7 +197,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heroTitle: {
-    fontSize: width > 768 ? 36 : 28,
+    fontSize: 28,
     fontWeight: '700' as const,
     color: theme.colors.secondary,
     textAlign: 'center',
@@ -296,7 +293,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.secondary,
     padding: theme.spacing.lg,
     borderRadius: theme.borderRadius.lg,
-    minWidth: width > 768 ? 300 : '100%',
+    width: '100%',
   },
   viewAllText: {
     color: theme.colors.white,

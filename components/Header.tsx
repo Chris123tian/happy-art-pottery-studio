@@ -4,7 +4,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Platform,
+  Dimensions,
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Menu, X, Shield } from 'lucide-react-native';
@@ -16,6 +16,16 @@ const HeaderComponent: React.FC = () => {
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
+
+  React.useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setScreenWidth(window.width);
+    });
+    return () => subscription?.remove();
+  }, []);
+
+  const isDesktop = screenWidth >= 768;
 
 
 
@@ -49,7 +59,7 @@ const HeaderComponent: React.FC = () => {
           </View>
         </TouchableOpacity>
 
-        {Platform.OS === 'web' ? (
+        {isDesktop ? (
           <View style={styles.navDesktop}>
             {navItems.map((item) => (
               <TouchableOpacity
@@ -89,7 +99,7 @@ const HeaderComponent: React.FC = () => {
         )}
       </View>
 
-      {menuOpen && Platform.OS !== 'web' && (
+      {menuOpen && !isDesktop && (
         <View style={styles.mobileMenu}>
           {navItems.map((item) => (
             <TouchableOpacity

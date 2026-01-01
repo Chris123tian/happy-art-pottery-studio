@@ -7,7 +7,6 @@ import {
   Image,
   TouchableOpacity,
   Modal,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
@@ -16,9 +15,6 @@ import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
 import { useData } from '@/contexts/DataContext';
 import { GalleryImage } from '@/types';
-
-const { width } = Dimensions.get('window');
-const imageSize = width > 768 ? 250 : (width - theme.spacing.md * 3) / 2;
 
 export default function Gallery() {
   const { gallery: images } = useData();
@@ -115,10 +111,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     padding: theme.spacing.sm,
     gap: theme.spacing.sm,
+    justifyContent: 'space-between',
   },
   imageItem: {
-    width: imageSize,
-    height: imageSize,
+    width: '48%',
+    aspectRatio: 1,
     borderRadius: theme.borderRadius.md,
     overflow: 'hidden',
   },

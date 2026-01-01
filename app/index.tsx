@@ -6,7 +6,6 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  Dimensions,
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,8 +17,6 @@ import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
 import { seedSettings } from '@/services/seedData';
 import { useData } from '@/contexts/DataContext';
-
-const { width } = Dimensions.get('window');
 
 export default function Home() {
   const router = useRouter();
@@ -369,7 +366,7 @@ const styles = StyleSheet.create({
   },
 
   hero: {
-    height: width > 768 ? 500 : 280,
+    height: 280,
     position: 'relative',
   },
   heroImage: {
@@ -384,14 +381,14 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   heroTitle: {
-    fontSize: width > 768 ? 48 : 28,
+    fontSize: 28,
     fontWeight: '700' as const,
     color: theme.colors.white,
     textAlign: 'center',
     marginBottom: theme.spacing.sm,
   },
   heroSubtitle: {
-    fontSize: width > 768 ? 20 : 14,
+    fontSize: 14,
     color: theme.colors.white,
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
@@ -401,7 +398,7 @@ const styles = StyleSheet.create({
     minWidth: 200,
   },
   section: {
-    padding: width > 768 ? theme.spacing.lg : theme.spacing.md,
+    padding: theme.spacing.md,
   },
   servicesSection: {
     backgroundColor: theme.colors.surface,
@@ -410,20 +407,20 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.accent,
   },
   sectionTitle: {
-    fontSize: width > 768 ? 28 : 22,
+    fontSize: 22,
     fontWeight: '700' as const,
     color: theme.colors.secondary,
     marginBottom: theme.spacing.md,
     textAlign: 'center',
   },
   aboutContent: {
-    flexDirection: width > 768 ? 'row' : 'column',
+    flexDirection: 'column',
     gap: theme.spacing.lg,
     alignItems: 'center',
   },
   aboutImage: {
-    width: width > 768 ? 300 : width - theme.spacing.md * 2,
-    height: width > 768 ? 300 : 220,
+    width: '100%',
+    height: 220,
     borderRadius: theme.borderRadius.lg,
   },
   aboutText: {
@@ -436,16 +433,13 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   servicesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: theme.spacing.md,
-    justifyContent: 'center',
   },
   serviceCard: {
     backgroundColor: theme.colors.white,
-    padding: width > 768 ? theme.spacing.lg : theme.spacing.md,
+    padding: theme.spacing.md,
     borderRadius: theme.borderRadius.lg,
-    width: width > 768 ? 300 : width - theme.spacing.md * 2,
+    width: '100%',
     ...theme.shadows.md,
   },
   serviceTitle: {
@@ -550,10 +544,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: theme.spacing.sm,
     marginBottom: theme.spacing.lg,
+    justifyContent: 'space-between',
   },
   galleryGridItem: {
-    width: width > 768 ? (width - theme.spacing.lg * 2 - theme.spacing.sm * 3) / 4 : (width - theme.spacing.lg * 2 - theme.spacing.sm) / 2,
-    height: width > 768 ? 200 : 150,
+    width: '48%',
+    height: 150,
     borderRadius: theme.borderRadius.md,
     overflow: 'hidden',
   },
@@ -565,14 +560,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
   },
   processSteps: {
-    flexDirection: width > 768 ? 'row' : 'column',
+    flexDirection: 'column',
     gap: theme.spacing.lg,
     justifyContent: 'center',
   },
   processStep: {
     flex: 1,
     alignItems: 'center',
-    padding: width > 768 ? theme.spacing.lg : theme.spacing.md,
+    padding: theme.spacing.md,
     backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.lg,
     ...theme.shadows.md,
@@ -612,7 +607,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   testimonialsGrid: {
-    flexDirection: width > 768 ? 'row' : 'column',
+    flexDirection: 'column',
     gap: theme.spacing.md,
   },
   testimonialCard: {
