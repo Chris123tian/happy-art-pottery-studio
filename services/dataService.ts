@@ -9,6 +9,7 @@ import {
   SiteSettings,
   Testimonial,
 } from '@/types';
+import { seedClasses, seedInstructors, seedGallery, seedEvents, seedSettings, seedTestimonials } from './seedData';
 
 const KEYS = {
   CLASSES: 'happy_art_classes',
@@ -23,8 +24,18 @@ const KEYS = {
 
 export const dataService = {
   async getClasses(): Promise<Class[]> {
-    const data = await AsyncStorage.getItem(KEYS.CLASSES);
-    return data ? JSON.parse(data) : [];
+    try {
+      const data = await AsyncStorage.getItem(KEYS.CLASSES);
+      if (data) {
+        const parsed = JSON.parse(data);
+        return parsed.length > 0 ? parsed : seedClasses;
+      }
+      await this.setClasses(seedClasses);
+      return seedClasses;
+    } catch (error) {
+      console.error('Error getting classes:', error);
+      return seedClasses;
+    }
   },
 
   async setClasses(classes: Class[]): Promise<void> {
@@ -50,8 +61,18 @@ export const dataService = {
   },
 
   async getInstructors(): Promise<Instructor[]> {
-    const data = await AsyncStorage.getItem(KEYS.INSTRUCTORS);
-    return data ? JSON.parse(data) : [];
+    try {
+      const data = await AsyncStorage.getItem(KEYS.INSTRUCTORS);
+      if (data) {
+        const parsed = JSON.parse(data);
+        return parsed.length > 0 ? parsed : seedInstructors;
+      }
+      await this.setInstructors(seedInstructors);
+      return seedInstructors;
+    } catch (error) {
+      console.error('Error getting instructors:', error);
+      return seedInstructors;
+    }
   },
 
   async setInstructors(instructors: Instructor[]): Promise<void> {
@@ -59,8 +80,18 @@ export const dataService = {
   },
 
   async getGallery(): Promise<GalleryImage[]> {
-    const data = await AsyncStorage.getItem(KEYS.GALLERY);
-    return data ? JSON.parse(data) : [];
+    try {
+      const data = await AsyncStorage.getItem(KEYS.GALLERY);
+      if (data) {
+        const parsed = JSON.parse(data);
+        return parsed.length > 0 ? parsed : seedGallery;
+      }
+      await this.setGallery(seedGallery);
+      return seedGallery;
+    } catch (error) {
+      console.error('Error getting gallery:', error);
+      return seedGallery;
+    }
   },
 
   async setGallery(gallery: GalleryImage[]): Promise<void> {
@@ -68,8 +99,18 @@ export const dataService = {
   },
 
   async getEvents(): Promise<Event[]> {
-    const data = await AsyncStorage.getItem(KEYS.EVENTS);
-    return data ? JSON.parse(data) : [];
+    try {
+      const data = await AsyncStorage.getItem(KEYS.EVENTS);
+      if (data) {
+        const parsed = JSON.parse(data);
+        return parsed.length > 0 ? parsed : seedEvents;
+      }
+      await this.setEvents(seedEvents);
+      return seedEvents;
+    } catch (error) {
+      console.error('Error getting events:', error);
+      return seedEvents;
+    }
   },
 
   async setEvents(events: Event[]): Promise<void> {
@@ -77,8 +118,17 @@ export const dataService = {
   },
 
   async getSettings(): Promise<SiteSettings | null> {
-    const data = await AsyncStorage.getItem(KEYS.SETTINGS);
-    return data ? JSON.parse(data) : null;
+    try {
+      const data = await AsyncStorage.getItem(KEYS.SETTINGS);
+      if (data) {
+        return JSON.parse(data);
+      }
+      await this.setSettings(seedSettings);
+      return seedSettings;
+    } catch (error) {
+      console.error('Error getting settings:', error);
+      return seedSettings;
+    }
   },
 
   async setSettings(settings: SiteSettings): Promise<void> {
@@ -86,8 +136,18 @@ export const dataService = {
   },
 
   async getTestimonials(): Promise<Testimonial[]> {
-    const data = await AsyncStorage.getItem(KEYS.TESTIMONIALS);
-    return data ? JSON.parse(data) : [];
+    try {
+      const data = await AsyncStorage.getItem(KEYS.TESTIMONIALS);
+      if (data) {
+        const parsed = JSON.parse(data);
+        return parsed.length > 0 ? parsed : seedTestimonials;
+      }
+      await this.setTestimonials(seedTestimonials);
+      return seedTestimonials;
+    } catch (error) {
+      console.error('Error getting testimonials:', error);
+      return seedTestimonials;
+    }
   },
 
   async setTestimonials(testimonials: Testimonial[]): Promise<void> {

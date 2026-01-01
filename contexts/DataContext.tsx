@@ -6,11 +6,12 @@ import createContextHook from '@nkzw/create-context-hook';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
+      staleTime: Infinity,
+      gcTime: Infinity,
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
+      retry: false,
     },
   },
 });
@@ -56,6 +57,13 @@ export const [DataProvider, useData] = createContextHook(() => {
     queryFn: () => dataService.getTestimonials(),
   });
 
+  const isAnyLoading = 
+    settingsQuery.isLoading ||
+    classesQuery.isLoading ||
+    galleryQuery.isLoading ||
+    instructorsQuery.isLoading ||
+    testimonialsQuery.isLoading;
+
   return {
     settings: settingsQuery.data ?? null,
     classes: classesQuery.data ?? [],
@@ -65,7 +73,7 @@ export const [DataProvider, useData] = createContextHook(() => {
     gallery: galleryQuery.data ?? [],
     events: eventsQuery.data ?? [],
     testimonials: testimonialsQuery.data ?? [],
-    isLoading: settingsQuery.isLoading,
+    isLoading: isAnyLoading,
   };
 });
 
