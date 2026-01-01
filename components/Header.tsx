@@ -1,0 +1,230 @@
+import React, { useState, useCallback, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import { useRouter, usePathname } from 'expo-router';
+import { Menu, X, Shield } from 'lucide-react-native';
+import { theme } from '@/constants/theme';
+import { useAuth } from '@/contexts/AuthContext';
+
+const HeaderComponent: React.FC = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+
+
+  const navigate = useCallback((path: string) => {
+    setMenuOpen(false);
+    router.push(path as any);
+  }, [router]);
+
+  const isActive = useCallback((path: string) => {
+    if (path === '/') return pathname === '/';
+    return pathname.startsWith(path);
+  }, [pathname]);
+
+  const navItems = useMemo(() => [
+    { label: 'Home', path: '/' },
+    { label: 'Classes', path: '/classes' },
+    { label: 'Events', path: '/events' },
+    { label: 'Gallery', path: '/gallery' },
+    { label: 'Blog', path: '/blog' },
+    { label: 'Booking', path: '/booking' },
+    { label: 'Contact', path: '/contact' },
+  ], []);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigate('/')}>
+          <View>
+            <Text style={styles.logo}>Happy Art</Text>
+            <Text style={styles.tagline}>Pottery Studio</Text>
+          </View>
+        </TouchableOpacity>
+
+        {Platform.OS === 'web' ? (
+          <View style={styles.navDesktop}>
+            {navItems.map((item) => (
+              <TouchableOpacity
+                key={item.path}
+                onPress={() => navigate(item.path)}
+                style={[
+                  styles.navItem,
+                  isActive(item.path) && styles.navItemActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.navText,
+                    isActive(item.path) && styles.navTextActive,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              onPress={() => navigate(isAuthenticated ? '/admin/dashboard' : '/admin/login')}
+              style={styles.adminButton}
+            >
+              <Shield color={theme.colors.white} size={18} />
+              <Text style={styles.adminButtonText}>Admin</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
+            {menuOpen ? (
+              <X color={theme.colors.primary} size={28} />
+            ) : (
+              <Menu color={theme.colors.primary} size={28} />
+            )}
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {menuOpen && Platform.OS !== 'web' && (
+        <ScrollView style={styles.mobileMenu}>
+          {navItems.map((item) => (
+            <TouchableOpacity
+              key={item.path}
+              onPress={() => navigate(item.path)}
+              style={[
+                styles.mobileMenuItem,
+                isActive(item.path) && styles.mobileMenuItemActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.mobileMenuText,
+                  isActive(item.path) && styles.mobileMenuTextActive,
+                ]}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity
+            onPress={() => navigate(isAuthenticated ? '/admin/dashboard' : '/admin/login')}
+            style={styles.mobileMenuItemAdmin}
+          >
+            <Shield color={theme.colors.white} size={18} />
+            <Text style={styles.mobileMenuTextAdmin}>Admin</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+    </View>
+  );
+};
+
+export const Header = React.memo(HeaderComponent);
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: theme.colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    ...theme.shadows.sm,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+  },
+  logo: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    color: theme.colors.primary,
+  },
+  tagline: {
+    fontSize: 12,
+    color: theme.colors.secondary,
+    marginTop: -2,
+  },
+  navDesktop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+  },
+  navItem: {
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+  },
+  navItemActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: theme.colors.primary,
+  },
+  navText: {
+    fontSize: 16,
+    color: theme.colors.text,
+    fontWeight: '500' as const,
+  },
+  navTextActive: {
+    color: theme.colors.primary,
+    fontWeight: '600' as const,
+  },
+  adminButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+  },
+  adminButtonText: {
+    color: theme.colors.white,
+    fontWeight: '600' as const,
+    fontSize: 16,
+  },
+  mobileMenu: {
+    backgroundColor: theme.colors.white,
+    paddingVertical: theme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    maxHeight: 400,
+  },
+  mobileMenuItem: {
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.surface,
+  },
+  mobileMenuItemActive: {
+    backgroundColor: theme.colors.accent,
+  },
+  mobileMenuText: {
+    fontSize: 16,
+    color: theme.colors.text,
+    fontWeight: '500' as const,
+  },
+  mobileMenuTextActive: {
+    color: theme.colors.primary,
+    fontWeight: '600' as const,
+  },
+  mobileMenuItemAdmin: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    marginHorizontal: theme.spacing.md,
+    marginTop: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+  },
+  mobileMenuTextAdmin: {
+    color: theme.colors.white,
+    fontWeight: '600' as const,
+    fontSize: 16,
+  },
+});
