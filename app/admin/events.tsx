@@ -55,8 +55,7 @@ export default function AdminEvents() {
       return;
     }
 
-    const eventData: Event = {
-      id: editingId || Date.now().toString(),
+    const eventData = {
       title: formData.title,
       description: formData.description,
       date: formData.date,
@@ -70,17 +69,18 @@ export default function AdminEvents() {
       category: formData.category,
     };
 
-    let updatedEvents: Event[];
-    if (editingId) {
-      updatedEvents = events.map((e) => (e.id === editingId ? eventData : e));
-    } else {
-      updatedEvents = [...events, eventData];
+    try {
+      if (editingId) {
+        await dataService.updateEvent(editingId, eventData);
+      } else {
+        await dataService.createEvent(eventData);
+      }
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      await loadEvents();
+      resetForm();
+    } catch (error) {
+      console.error('Error saving event:', error);
     }
-
-    await dataService.setEvents(updatedEvents);
-    await queryClient.invalidateQueries({ queryKey: ['events'] });
-    setEvents(updatedEvents);
-    resetForm();
   };
 
   const handleEdit = (event: Event) => {
@@ -101,10 +101,13 @@ export default function AdminEvents() {
   };
 
   const handleDelete = async (id: string) => {
-    const updatedEvents = events.filter((e) => e.id !== id);
-    await dataService.setEvents(updatedEvents);
-    await queryClient.invalidateQueries({ queryKey: ['events'] });
-    setEvents(updatedEvents);
+    try {
+      await dataService.deleteEvent(id);
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      await loadEvents();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+    }
   };
 
   const resetForm = () => {

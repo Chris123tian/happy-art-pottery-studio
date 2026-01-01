@@ -7,41 +7,57 @@ export const [DataProvider, useData] = createContextHook(() => {
   const settingsQuery = useQuery({
     queryKey: ['settings'],
     queryFn: () => dataService.getSettings(),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const classesQuery = useQuery({
     queryKey: ['classes'],
     queryFn: () => dataService.getClasses(),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const bookingsQuery = useQuery({
     queryKey: ['bookings'],
     queryFn: () => dataService.getBookings(),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const messagesQuery = useQuery({
     queryKey: ['messages'],
     queryFn: () => dataService.getMessages(),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const instructorsQuery = useQuery({
     queryKey: ['instructors'],
     queryFn: () => dataService.getInstructors(),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const galleryQuery = useQuery({
     queryKey: ['gallery'],
     queryFn: () => dataService.getGallery(),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const eventsQuery = useQuery({
     queryKey: ['events'],
     queryFn: () => dataService.getEvents(),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const testimonialsQuery = useQuery({
     queryKey: ['testimonials'],
     queryFn: () => dataService.getTestimonials(),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const isAnyLoading = 

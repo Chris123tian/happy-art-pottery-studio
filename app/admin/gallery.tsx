@@ -36,39 +36,44 @@ export default function AdminGallery() {
   };
 
   const handleAddImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      });
 
-    if (!result.canceled) {
-      const newImage: GalleryImage = {
-        id: Date.now().toString(),
-        source: result.assets[0].uri,
-        alt: 'Gallery image',
-        category: 'pottery',
-        featured: false,
-      };
+      if (!result.canceled) {
+        const newImage = {
+          source: result.assets[0].uri,
+          alt: 'Gallery image',
+          category: 'pottery' as const,
+          featured: false,
+        };
 
-      const updatedImages = [...images, newImage];
-      await dataService.setGallery(updatedImages);
-      await queryClient.invalidateQueries({ queryKey: ['gallery'] });
-      setImages(updatedImages);
+        await dataService.createGalleryImage(newImage);
+        await queryClient.invalidateQueries({ queryKey: ['gallery'] });
+        await loadGallery();
 
-      if (Platform.OS === 'web') {
-        alert('Image added successfully!');
-      } else {
-        Alert.alert('Success', 'Image added successfully!');
+        if (Platform.OS === 'web') {
+          alert('Image added successfully!');
+        } else {
+          Alert.alert('Success', 'Image added successfully!');
+        }
       }
+    } catch (error) {
+      console.error('Error adding image:', error);
     }
   };
 
   const handleDelete = async (id: string) => {
-    const updatedImages = images.filter((img) => img.id !== id);
-    await dataService.setGallery(updatedImages);
-    await queryClient.invalidateQueries({ queryKey: ['gallery'] });
-    setImages(updatedImages);
+    try {
+      await dataService.deleteGalleryImage(id);
+      await queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      await loadGallery();
+    } catch (error) {
+      console.error('Error deleting image:', error);
+    }
   };
 
   return (

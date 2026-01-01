@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Class,
   Booking,
@@ -9,148 +8,238 @@ import {
   SiteSettings,
   Testimonial,
 } from '@/types';
+import { database } from './database';
 import { seedClasses, seedInstructors, seedGallery, seedEvents, seedSettings, seedTestimonials } from './seedData';
-
-const KEYS = {
-  CLASSES: 'happy_art_classes',
-  BOOKINGS: 'happy_art_bookings',
-  MESSAGES: 'happy_art_messages',
-  INSTRUCTORS: 'happy_art_instructors',
-  GALLERY: 'happy_art_gallery',
-  EVENTS: 'happy_art_events',
-  SETTINGS: 'happy_art_settings',
-  TESTIMONIALS: 'happy_art_testimonials',
-};
 
 export const dataService = {
   async getClasses(): Promise<Class[]> {
     try {
-      const data = await AsyncStorage.getItem(KEYS.CLASSES);
-      if (data) {
-        const parsed = JSON.parse(data);
-        return parsed.length > 0 ? parsed : seedClasses;
+      const data = await database.select<Class>('classes');
+      if (data.length > 0) {
+        return data;
       }
-      await this.setClasses(seedClasses);
+      await this.seedClasses();
       return seedClasses;
     } catch (error) {
       console.error('Error getting classes:', error);
-      return seedClasses;
+      return [];
     }
   },
 
-  async setClasses(classes: Class[]): Promise<void> {
-    await AsyncStorage.setItem(KEYS.CLASSES, JSON.stringify(classes));
+  async seedClasses(): Promise<void> {
+    for (const cls of seedClasses) {
+      await database.upsert('classes', cls.id, cls);
+    }
+  },
+
+  async createClass(classData: Omit<Class, 'id'>): Promise<Class> {
+    const id = Date.now().toString();
+    return await database.create('classes', { ...classData, id });
+  },
+
+  async updateClass(id: string, classData: Partial<Class>): Promise<Class> {
+    return await database.update(`classes:${id}`, classData);
+  },
+
+  async deleteClass(id: string): Promise<void> {
+    await database.delete(`classes:${id}`);
   },
 
   async getBookings(): Promise<Booking[]> {
-    const data = await AsyncStorage.getItem(KEYS.BOOKINGS);
-    return data ? JSON.parse(data) : [];
+    try {
+      return await database.select<Booking>('bookings');
+    } catch (error) {
+      console.error('Error getting bookings:', error);
+      return [];
+    }
   },
 
-  async setBookings(bookings: Booking[]): Promise<void> {
-    await AsyncStorage.setItem(KEYS.BOOKINGS, JSON.stringify(bookings));
+  async createBooking(booking: Omit<Booking, 'id'>): Promise<Booking> {
+    const id = Date.now().toString();
+    return await database.create('bookings', { ...booking, id });
+  },
+
+  async updateBooking(id: string, booking: Partial<Booking>): Promise<Booking> {
+    return await database.update(`bookings:${id}`, booking);
+  },
+
+  async deleteBooking(id: string): Promise<void> {
+    await database.delete(`bookings:${id}`);
   },
 
   async getMessages(): Promise<Message[]> {
-    const data = await AsyncStorage.getItem(KEYS.MESSAGES);
-    return data ? JSON.parse(data) : [];
+    try {
+      return await database.select<Message>('messages');
+    } catch (error) {
+      console.error('Error getting messages:', error);
+      return [];
+    }
   },
 
-  async setMessages(messages: Message[]): Promise<void> {
-    await AsyncStorage.setItem(KEYS.MESSAGES, JSON.stringify(messages));
+  async createMessage(message: Omit<Message, 'id'>): Promise<Message> {
+    const id = Date.now().toString();
+    return await database.create('messages', { ...message, id });
+  },
+
+  async updateMessage(id: string, message: Partial<Message>): Promise<Message> {
+    return await database.update(`messages:${id}`, message);
+  },
+
+  async deleteMessage(id: string): Promise<void> {
+    await database.delete(`messages:${id}`);
   },
 
   async getInstructors(): Promise<Instructor[]> {
     try {
-      const data = await AsyncStorage.getItem(KEYS.INSTRUCTORS);
-      if (data) {
-        const parsed = JSON.parse(data);
-        return parsed.length > 0 ? parsed : seedInstructors;
+      const data = await database.select<Instructor>('instructors');
+      if (data.length > 0) {
+        return data;
       }
-      await this.setInstructors(seedInstructors);
+      await this.seedInstructors();
       return seedInstructors;
     } catch (error) {
       console.error('Error getting instructors:', error);
-      return seedInstructors;
+      return [];
     }
   },
 
-  async setInstructors(instructors: Instructor[]): Promise<void> {
-    await AsyncStorage.setItem(KEYS.INSTRUCTORS, JSON.stringify(instructors));
+  async seedInstructors(): Promise<void> {
+    for (const instructor of seedInstructors) {
+      await database.upsert('instructors', instructor.id, instructor);
+    }
+  },
+
+  async createInstructor(instructor: Omit<Instructor, 'id'>): Promise<Instructor> {
+    const id = Date.now().toString();
+    return await database.create('instructors', { ...instructor, id });
+  },
+
+  async updateInstructor(id: string, instructor: Partial<Instructor>): Promise<Instructor> {
+    return await database.update(`instructors:${id}`, instructor);
+  },
+
+  async deleteInstructor(id: string): Promise<void> {
+    await database.delete(`instructors:${id}`);
   },
 
   async getGallery(): Promise<GalleryImage[]> {
     try {
-      const data = await AsyncStorage.getItem(KEYS.GALLERY);
-      if (data) {
-        const parsed = JSON.parse(data);
-        return parsed.length > 0 ? parsed : seedGallery;
+      const data = await database.select<GalleryImage>('gallery');
+      if (data.length > 0) {
+        return data;
       }
-      await this.setGallery(seedGallery);
+      await this.seedGallery();
       return seedGallery;
     } catch (error) {
       console.error('Error getting gallery:', error);
-      return seedGallery;
+      return [];
     }
   },
 
-  async setGallery(gallery: GalleryImage[]): Promise<void> {
-    await AsyncStorage.setItem(KEYS.GALLERY, JSON.stringify(gallery));
+  async seedGallery(): Promise<void> {
+    for (const image of seedGallery) {
+      await database.upsert('gallery', image.id, image);
+    }
+  },
+
+  async createGalleryImage(image: Omit<GalleryImage, 'id'>): Promise<GalleryImage> {
+    const id = Date.now().toString();
+    return await database.create('gallery', { ...image, id });
+  },
+
+  async updateGalleryImage(id: string, image: Partial<GalleryImage>): Promise<GalleryImage> {
+    return await database.update(`gallery:${id}`, image);
+  },
+
+  async deleteGalleryImage(id: string): Promise<void> {
+    await database.delete(`gallery:${id}`);
   },
 
   async getEvents(): Promise<Event[]> {
     try {
-      const data = await AsyncStorage.getItem(KEYS.EVENTS);
-      if (data) {
-        const parsed = JSON.parse(data);
-        return parsed.length > 0 ? parsed : seedEvents;
+      const data = await database.select<Event>('events');
+      if (data.length > 0) {
+        return data;
       }
-      await this.setEvents(seedEvents);
+      await this.seedEvents();
       return seedEvents;
     } catch (error) {
       console.error('Error getting events:', error);
-      return seedEvents;
+      return [];
     }
   },
 
-  async setEvents(events: Event[]): Promise<void> {
-    await AsyncStorage.setItem(KEYS.EVENTS, JSON.stringify(events));
+  async seedEvents(): Promise<void> {
+    for (const event of seedEvents) {
+      await database.upsert('events', event.id, event);
+    }
+  },
+
+  async createEvent(event: Omit<Event, 'id'>): Promise<Event> {
+    const id = Date.now().toString();
+    return await database.create('events', { ...event, id });
+  },
+
+  async updateEvent(id: string, event: Partial<Event>): Promise<Event> {
+    return await database.update(`events:${id}`, event);
+  },
+
+  async deleteEvent(id: string): Promise<void> {
+    await database.delete(`events:${id}`);
   },
 
   async getSettings(): Promise<SiteSettings | null> {
     try {
-      const data = await AsyncStorage.getItem(KEYS.SETTINGS);
-      if (data) {
-        return JSON.parse(data);
+      const data = await database.select<SiteSettings>('settings');
+      if (data.length > 0) {
+        return data[0];
       }
-      await this.setSettings(seedSettings);
+      await this.seedSettings();
       return seedSettings;
     } catch (error) {
       console.error('Error getting settings:', error);
-      return seedSettings;
+      return null;
     }
   },
 
-  async setSettings(settings: SiteSettings): Promise<void> {
-    await AsyncStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+  async seedSettings(): Promise<void> {
+    await database.upsert('settings', 'main', seedSettings);
+  },
+
+  async updateSettings(settings: SiteSettings): Promise<SiteSettings> {
+    return await database.update('settings:main', settings);
   },
 
   async getTestimonials(): Promise<Testimonial[]> {
     try {
-      const data = await AsyncStorage.getItem(KEYS.TESTIMONIALS);
-      if (data) {
-        const parsed = JSON.parse(data);
-        return parsed.length > 0 ? parsed : seedTestimonials;
+      const data = await database.select<Testimonial>('testimonials');
+      if (data.length > 0) {
+        return data;
       }
-      await this.setTestimonials(seedTestimonials);
+      await this.seedTestimonials();
       return seedTestimonials;
     } catch (error) {
       console.error('Error getting testimonials:', error);
-      return seedTestimonials;
+      return [];
     }
   },
 
-  async setTestimonials(testimonials: Testimonial[]): Promise<void> {
-    await AsyncStorage.setItem(KEYS.TESTIMONIALS, JSON.stringify(testimonials));
+  async seedTestimonials(): Promise<void> {
+    for (const testimonial of seedTestimonials) {
+      await database.upsert('testimonials', testimonial.id, testimonial);
+    }
+  },
+
+  async createTestimonial(testimonial: Omit<Testimonial, 'id'>): Promise<Testimonial> {
+    const id = Date.now().toString();
+    return await database.create('testimonials', { ...testimonial, id });
+  },
+
+  async updateTestimonial(id: string, testimonial: Partial<Testimonial>): Promise<Testimonial> {
+    return await database.update(`testimonials:${id}`, testimonial);
+  },
+
+  async deleteTestimonial(id: string): Promise<void> {
+    await database.delete(`testimonials:${id}`);
   },
 };

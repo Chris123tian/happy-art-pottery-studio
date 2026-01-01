@@ -30,12 +30,13 @@ export default function AdminBookings() {
     id: string,
     status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
   ) => {
-    const updatedBookings = bookings.map((b) =>
-      b.id === id ? { ...b, status } : b
-    );
-    await dataService.setBookings(updatedBookings);
-    await queryClient.invalidateQueries({ queryKey: ['bookings'] });
-    setBookings(updatedBookings);
+    try {
+      await dataService.updateBooking(id, { status });
+      await queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      await loadBookings();
+    } catch (error) {
+      console.error('Error updating booking:', error);
+    }
   };
 
   const getStatusColor = (status: string) => {

@@ -35,8 +35,6 @@ export default function AdminSettings() {
       const savedSettings = await dataService.getSettings();
       if (savedSettings) {
         setSettings(savedSettings);
-      } else {
-        await dataService.setSettings(seedSettings);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -48,7 +46,7 @@ export default function AdminSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await dataService.setSettings(settings);
+      await dataService.updateSettings(settings);
       await queryClient.invalidateQueries({ queryKey: ['settings'] });
       Alert.alert('Success', 'Settings saved successfully!');
     } catch (error) {
@@ -70,15 +68,12 @@ export default function AdminSettings() {
 
       if (!result.canceled && result.assets[0]) {
         const uri = result.assets[0].uri;
-        if (type === 'hero') {
-          setSettings({ ...settings, heroImage: uri });
-        } else {
-          setSettings({ ...settings, aboutImage: uri });
-        }
-        await dataService.setSettings({
+        const updatedSettings = {
           ...settings,
           [type === 'hero' ? 'heroImage' : 'aboutImage']: uri,
-        });
+        };
+        setSettings(updatedSettings);
+        await dataService.updateSettings(updatedSettings);
         await queryClient.invalidateQueries({ queryKey: ['settings'] });
         Alert.alert('Success', 'Image uploaded successfully!');
       }

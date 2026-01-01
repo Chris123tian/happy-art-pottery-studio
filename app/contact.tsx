@@ -15,7 +15,6 @@ import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
-import { Message } from '@/types';
 
 export default function Contact() {
   const [name, setName] = useState('');
@@ -34,31 +33,36 @@ export default function Contact() {
       return;
     }
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      name,
-      email,
-      phone,
-      subject,
-      message,
-      read: false,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      await dataService.createMessage({
+        name,
+        email,
+        phone,
+        subject,
+        message,
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
 
-    const messages = await dataService.getMessages();
-    await dataService.setMessages([...messages, newMessage]);
+      if (Platform.OS === 'web') {
+        alert('Message sent successfully! We will get back to you soon.');
+      } else {
+        Alert.alert('Success', 'Message sent successfully! We will get back to you soon.');
+      }
 
-    if (Platform.OS === 'web') {
-      alert('Message sent successfully! We will get back to you soon.');
-    } else {
-      Alert.alert('Success', 'Message sent successfully! We will get back to you soon.');
+      setName('');
+      setEmail('');
+      setPhone('');
+      setSubject('');
+      setMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      if (Platform.OS === 'web') {
+        alert('Failed to send message. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to send message. Please try again.');
+      }
     }
-
-    setName('');
-    setEmail('');
-    setPhone('');
-    setSubject('');
-    setMessage('');
   };
 
   return (

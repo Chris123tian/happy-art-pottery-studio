@@ -28,19 +28,26 @@ export default function AdminMessages() {
   };
 
   const toggleRead = async (id: string) => {
-    const updatedMessages = messages.map((m) =>
-      m.id === id ? { ...m, read: !m.read } : m
-    );
-    await dataService.setMessages(updatedMessages);
-    await queryClient.invalidateQueries({ queryKey: ['messages'] });
-    setMessages(updatedMessages);
+    try {
+      const message = messages.find((m) => m.id === id);
+      if (message) {
+        await dataService.updateMessage(id, { read: !message.read });
+        await queryClient.invalidateQueries({ queryKey: ['messages'] });
+        await loadMessages();
+      }
+    } catch (error) {
+      console.error('Error toggling read status:', error);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    const updatedMessages = messages.filter((m) => m.id !== id);
-    await dataService.setMessages(updatedMessages);
-    await queryClient.invalidateQueries({ queryKey: ['messages'] });
-    setMessages(updatedMessages);
+    try {
+      await dataService.deleteMessage(id);
+      await queryClient.invalidateQueries({ queryKey: ['messages'] });
+      await loadMessages();
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    }
   };
 
   return (

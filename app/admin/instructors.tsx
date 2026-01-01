@@ -9,17 +9,15 @@ import {
   Image,
   Alert,
   Modal,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Edit, Trash2, X, Star, Upload } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Instructor } from '@/types';
-import { seedInstructors } from '@/services/seedData';
 import { useQueryClient } from '@tanstack/react-query';
+import { imageService } from '@/services/imageService';
 
 export default function AdminInstructors() {
   const queryClient = useQueryClient();
@@ -41,38 +39,24 @@ export default function AdminInstructors() {
   }, []);
 
   const loadInstructors = async () => {
-    let data = await dataService.getInstructors();
-    if (data.length === 0) {
-      await dataService.setInstructors(seedInstructors);
-      data = seedInstructors;
-    }
+    const data = await dataService.getInstructors();
     setInstructors(data);
   };
 
   const pickImage = async () => {
-    if (Platform.OS === 'web') {
-      Alert.alert(
-        'Not Supported',
-        'Image upload from device is only available on mobile devices'
-      );
-      return;
-    }
+    try {
+      const base64Image = await imageService.pickImage({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
 
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) {
-      Alert.alert('Permission Required', 'Please grant camera roll permissions');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      setFormData({ ...formData, image: result.assets[0].uri });
+      if (base64Image) {
+        setFormData({ ...formData, image: base64Image });
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to upload image. Please try again.');
     }
   };
 
@@ -119,8 +103,7 @@ export default function AdminInstructors() {
       .map((s) => s.trim())
       .filter((s) => s);
 
-    const instructorData: Instructor = {
-      id: editingInstructor?.id || Date.now().toString(),
+    const instructorData = {
       name: formData.name,
       title: formData.title,
       bio: formData.bio,
@@ -130,19 +113,19 @@ export default function AdminInstructors() {
       featured: formData.featured,
     };
 
-    let updatedInstructors: Instructor[];
-    if (editingInstructor) {
-      updatedInstructors = instructors.map((i) =>
-        i.id === editingInstructor.id ? instructorData : i
-      );
-    } else {
-      updatedInstructors = [...instructors, instructorData];
+    try {
+      if (editingInstructor) {
+        await dataService.updateInstructor(editingInstructor.id, instructorData);
+      } else {
+        await dataService.createInstructor(instructorData);
+      }
+      await queryClient.invalidateQueries({ queryKey: ['instructors'] });
+      await loadInstructors();
+      closeModal();
+    } catch (error) {
+      console.error('Error saving instructor:', error);
+      Alert.alert('Error', 'Failed to save instructor. Please try again.');
     }
-
-    await dataService.setInstructors(updatedInstructors);
-    await queryClient.invalidateQueries({ queryKey: ['instructors'] });
-    setInstructors(updatedInstructors);
-    closeModal();
   };
 
   const handleDelete = (instructor: Instructor) => {
@@ -155,10 +138,14 @@ export default function AdminInstructors() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            const updated = instructors.filter((i) => i.id !== instructor.id);
-            await dataService.setInstructors(updated);
-            await queryClient.invalidateQueries({ queryKey: ['instructors'] });
-            setInstructors(updated);
+            try {
+              await dataService.deleteInstructor(instructor.id);
+              await queryClient.invalidateQueries({ queryKey: ['instructors'] });
+              await loadInstructors();
+            } catch (error) {
+              console.error('Error deleting instructor:', error);
+              Alert.alert('Error', 'Failed to delete instructor.');
+            }
           },
         },
       ]

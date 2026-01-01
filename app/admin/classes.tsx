@@ -50,23 +50,18 @@ export default function AdminClasses() {
       return;
     }
 
-    const classData: Class = {
-      id: editingId || Date.now().toString(),
-      ...formData,
-      featured: false,
-    };
-
-    let updatedClasses: Class[];
-    if (editingId) {
-      updatedClasses = classes.map((c) => (c.id === editingId ? classData : c));
-    } else {
-      updatedClasses = [...classes, classData];
+    try {
+      if (editingId) {
+        await dataService.updateClass(editingId, formData);
+      } else {
+        await dataService.createClass({ ...formData, featured: false });
+      }
+      await queryClient.invalidateQueries({ queryKey: ['classes'] });
+      await loadClasses();
+      resetForm();
+    } catch (error) {
+      console.error('Error saving class:', error);
     }
-
-    await dataService.setClasses(updatedClasses);
-    await queryClient.invalidateQueries({ queryKey: ['classes'] });
-    setClasses(updatedClasses);
-    resetForm();
   };
 
   const handleEdit = (classItem: Class) => {
@@ -81,10 +76,13 @@ export default function AdminClasses() {
   };
 
   const handleDelete = async (id: string) => {
-    const updatedClasses = classes.filter((c) => c.id !== id);
-    await dataService.setClasses(updatedClasses);
-    await queryClient.invalidateQueries({ queryKey: ['classes'] });
-    setClasses(updatedClasses);
+    try {
+      await dataService.deleteClass(id);
+      await queryClient.invalidateQueries({ queryKey: ['classes'] });
+      await loadClasses();
+    } catch (error) {
+      console.error('Error deleting class:', error);
+    }
   };
 
   const resetForm = () => {
