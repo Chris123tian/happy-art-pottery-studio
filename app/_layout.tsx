@@ -14,7 +14,9 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="classes" />
+      <Stack.Screen name="events" />
       <Stack.Screen name="gallery" />
+      <Stack.Screen name="blog" />
       <Stack.Screen name="booking" />
       <Stack.Screen name="contact" />
       <Stack.Screen name="admin/login" />
@@ -24,6 +26,7 @@ function RootLayoutNav() {
       <Stack.Screen name="admin/gallery" />
       <Stack.Screen name="admin/events" />
       <Stack.Screen name="admin/messages" />
+      <Stack.Screen name="admin/instructors" />
       <Stack.Screen name="admin/settings" />
     </Stack>
   );
