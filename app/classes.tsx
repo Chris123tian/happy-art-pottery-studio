@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
 import { useData } from '@/contexts/DataContext';
+import { Class } from '@/types';
 
 export default function Classes() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function Classes() {
   const [filter, setFilter] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
 
   const filteredClasses = useMemo(
-    () => filter === 'all' ? classes : classes.filter((c) => c.level === filter),
+    () => filter === 'all' ? classes : classes.filter((c: Class) => c.level === filter),
     [classes, filter]
   );
 
@@ -95,7 +96,7 @@ export default function Classes() {
         </View>
 
         <View style={styles.classList}>
-          {filteredClasses.map((classItem) => (
+          {filteredClasses.map((classItem: Class) => (
             <View key={classItem.id} style={styles.classCard}>
               <View style={styles.levelBadge}>
                 <Text style={styles.levelText}>

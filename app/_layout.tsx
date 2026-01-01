@@ -1,9 +1,11 @@
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { DataContextProvider } from '@/contexts/DataContext';
+import { dataService } from '@/services/dataService';
+import { seedClasses, seedInstructors, seedGallery, seedEvents, seedSettings, seedTestimonials } from '@/services/seedData';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,9 +30,35 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const [isReady, setIsReady] = useState(false);
+
   useEffect(() => {
-    SplashScreen.hideAsync();
+    const initializeApp = async () => {
+      try {
+        const existingSettings = await dataService.getSettings();
+        if (!existingSettings) {
+          await Promise.all([
+            dataService.setClasses(seedClasses),
+            dataService.setInstructors(seedInstructors),
+            dataService.setGallery(seedGallery),
+            dataService.setEvents(seedEvents),
+            dataService.setSettings(seedSettings),
+            dataService.setTestimonials(seedTestimonials),
+          ]);
+        }
+      } catch (error) {
+        console.error('Error initializing app:', error);
+      } finally {
+        setIsReady(true);
+        SplashScreen.hideAsync();
+      }
+    };
+    initializeApp();
   }, []);
+
+  if (!isReady) {
+    return null;
+  }
 
   return (
     <DataContextProvider>

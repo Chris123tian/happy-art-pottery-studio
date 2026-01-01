@@ -6,8 +6,8 @@ import createContextHook from '@nkzw/create-context-hook';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: Infinity,
-      gcTime: Infinity,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
@@ -16,6 +16,11 @@ const queryClient = new QueryClient({
 });
 
 export const [DataProvider, useData] = createContextHook(() => {
+  const settingsQuery = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => dataService.getSettings(),
+  });
+
   const classesQuery = useQuery({
     queryKey: ['classes'],
     queryFn: () => dataService.getClasses(),
@@ -46,35 +51,21 @@ export const [DataProvider, useData] = createContextHook(() => {
     queryFn: () => dataService.getEvents(),
   });
 
-  const settingsQuery = useQuery({
-    queryKey: ['settings'],
-    queryFn: () => dataService.getSettings(),
-  });
-
   const testimonialsQuery = useQuery({
     queryKey: ['testimonials'],
     queryFn: () => dataService.getTestimonials(),
   });
 
   return {
+    settings: settingsQuery.data ?? null,
     classes: classesQuery.data ?? [],
     bookings: bookingsQuery.data ?? [],
     messages: messagesQuery.data ?? [],
     instructors: instructorsQuery.data ?? [],
     gallery: galleryQuery.data ?? [],
     events: eventsQuery.data ?? [],
-    settings: settingsQuery.data ?? null,
     testimonials: testimonialsQuery.data ?? [],
-    refetchAll: () => {
-      classesQuery.refetch();
-      bookingsQuery.refetch();
-      messagesQuery.refetch();
-      instructorsQuery.refetch();
-      galleryQuery.refetch();
-      eventsQuery.refetch();
-      settingsQuery.refetch();
-      testimonialsQuery.refetch();
-    },
+    isLoading: settingsQuery.isLoading,
   };
 });
 

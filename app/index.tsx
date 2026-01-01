@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,35 +16,14 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
-import { dataService } from '@/services/dataService';
-import { seedClasses, seedInstructors, seedGallery, seedEvents, seedSettings, seedTestimonials } from '@/services/seedData';
+import { seedSettings } from '@/services/seedData';
 import { useData } from '@/contexts/DataContext';
 
 const { width } = Dimensions.get('window');
 
 export default function Home() {
   const router = useRouter();
-  const { settings, instructors, gallery, testimonials, refetchAll } = useData();
-
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        const existingClasses = await dataService.getClasses();
-        if (existingClasses.length === 0) {
-          await dataService.setClasses(seedClasses);
-          await dataService.setInstructors(seedInstructors);
-          await dataService.setGallery(seedGallery);
-          await dataService.setEvents(seedEvents);
-          await dataService.setSettings(seedSettings);
-          await dataService.setTestimonials(seedTestimonials);
-          refetchAll();
-        }
-      } catch (error) {
-        console.error('Error initializing data:', error);
-      }
-    };
-    initializeData();
-  }, [refetchAll]);
+  const { settings, instructors, gallery, testimonials } = useData();
 
   const featuredGallery = useMemo(
     () => gallery.filter((i) => i.featured),
