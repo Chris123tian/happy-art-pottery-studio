@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,43 +11,49 @@ import { Trash2, Mail, MailOpen } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
-import { Message } from '@/types';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useData } from '@/contexts/DataContext';
 
 export default function AdminMessages() {
   const queryClient = useQueryClient();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages: rawMessages } = useData();
 
-  useEffect(() => {
-    loadMessages();
-  }, []);
+  const messages = useMemo(() => {
+    return [...rawMessages].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [rawMessages]);
 
-  const loadMessages = async () => {
-    const data = await dataService.getMessages();
-    setMessages(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-  };
+  const updateMessageMutation = useMutation({
+    mutationFn: ({ id, read }: { id: string; read: boolean }) => 
+      dataService.updateMessage(id, { read }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    },
+    onError: (error) => {
+      console.error('Error updating message:', error);
+    },
+  });
 
-  const toggleRead = async (id: string) => {
-    try {
-      const message = messages.find((m) => m.id === id);
-      if (message) {
-        await dataService.updateMessage(id, { read: !message.read });
-        await queryClient.invalidateQueries({ queryKey: ['messages'] });
-        await loadMessages();
-      }
-    } catch (error) {
-      console.error('Error toggling read status:', error);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      await dataService.deleteMessage(id);
-      await queryClient.invalidateQueries({ queryKey: ['messages'] });
-      await loadMessages();
-    } catch (error) {
+  const deleteMessageMutation = useMutation({
+    mutationFn: (id: string) => dataService.deleteMessage(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    },
+    onError: (error) => {
       console.error('Error deleting message:', error);
+    },
+  });
+
+  const toggleRead = (id: string) => {
+    const message = messages.find((m) => m.id === id);
+    if (message) {
+      updateMessageMutation.mutate({ id, read: !message.read });
     }
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMessageMutation.mutate(id);
   };
 
   return (

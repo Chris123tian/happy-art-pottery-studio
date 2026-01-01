@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -16,12 +16,13 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Instructor } from '@/types';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { imageService } from '@/services/imageService';
+import { useData } from '@/contexts/DataContext';
 
 export default function AdminInstructors() {
   const queryClient = useQueryClient();
-  const [instructors, setInstructors] = useState<Instructor[]>([]);
+  const { instructors } = useData();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState<Instructor | null>(null);
   const [formData, setFormData] = useState({
@@ -34,14 +35,41 @@ export default function AdminInstructors() {
     featured: false,
   });
 
-  useEffect(() => {
-    loadInstructors();
-  }, []);
+  const createMutation = useMutation({
+    mutationFn: (data: Omit<Instructor, 'id'>) => dataService.createInstructor(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['instructors'] });
+      closeModal();
+    },
+    onError: (error) => {
+      console.error('Error creating instructor:', error);
+      Alert.alert('Error', 'Failed to create instructor');
+    },
+  });
 
-  const loadInstructors = async () => {
-    const data = await dataService.getInstructors();
-    setInstructors(data);
-  };
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Instructor> }) => 
+      dataService.updateInstructor(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['instructors'] });
+      closeModal();
+    },
+    onError: (error) => {
+      console.error('Error updating instructor:', error);
+      Alert.alert('Error', 'Failed to update instructor');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => dataService.deleteInstructor(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['instructors'] });
+    },
+    onError: (error) => {
+      console.error('Error deleting instructor:', error);
+      Alert.alert('Error', 'Failed to delete instructor');
+    },
+  });
 
   const pickImage = async () => {
     try {
@@ -92,7 +120,7 @@ export default function AdminInstructors() {
     setEditingInstructor(null);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!formData.name || !formData.title) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
@@ -113,18 +141,10 @@ export default function AdminInstructors() {
       featured: formData.featured,
     };
 
-    try {
-      if (editingInstructor) {
-        await dataService.updateInstructor(editingInstructor.id, instructorData);
-      } else {
-        await dataService.createInstructor(instructorData);
-      }
-      await queryClient.invalidateQueries({ queryKey: ['instructors'] });
-      await loadInstructors();
-      closeModal();
-    } catch (error) {
-      console.error('Error saving instructor:', error);
-      Alert.alert('Error', 'Failed to save instructor. Please try again.');
+    if (editingInstructor) {
+      updateMutation.mutate({ id: editingInstructor.id, data: instructorData });
+    } else {
+      createMutation.mutate(instructorData);
     }
   };
 
@@ -137,16 +157,7 @@ export default function AdminInstructors() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await dataService.deleteInstructor(instructor.id);
-              await queryClient.invalidateQueries({ queryKey: ['instructors'] });
-              await loadInstructors();
-            } catch (error) {
-              console.error('Error deleting instructor:', error);
-              Alert.alert('Error', 'Failed to delete instructor.');
-            }
-          },
+          onPress: () => deleteMutation.mutate(instructor.id),
         },
       ]
     );

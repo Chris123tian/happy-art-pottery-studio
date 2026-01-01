@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -17,23 +17,42 @@ import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { GalleryImage } from '@/types';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useData } from '@/contexts/DataContext';
 
 const { width } = Dimensions.get('window');
 const imageSize = width > 768 ? 200 : (width - theme.spacing.lg * 3) / 2;
 
 export default function AdminGallery() {
   const queryClient = useQueryClient();
-  const [images, setImages] = useState<GalleryImage[]>([]);
+  const { gallery: images } = useData();
 
-  useEffect(() => {
-    loadGallery();
-  }, []);
+  const createImageMutation = useMutation({
+    mutationFn: (image: Omit<GalleryImage, 'id'>) => dataService.createGalleryImage(image),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      if (Platform.OS === 'web') {
+        alert('Image added successfully!');
+      } else {
+        Alert.alert('Success', 'Image added successfully!');
+      }
+    },
+    onError: (error) => {
+      console.error('Error adding image:', error);
+      Alert.alert('Error', 'Failed to add image');
+    },
+  });
 
-  const loadGallery = async () => {
-    const data = await dataService.getGallery();
-    setImages(data);
-  };
+  const deleteImageMutation = useMutation({
+    mutationFn: (id: string) => dataService.deleteGalleryImage(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    },
+    onError: (error) => {
+      console.error('Error deleting image:', error);
+      Alert.alert('Error', 'Failed to delete image');
+    },
+  });
 
   const handleAddImage = async () => {
     try {
@@ -51,28 +70,27 @@ export default function AdminGallery() {
           featured: false,
         };
 
-        await dataService.createGalleryImage(newImage);
-        await queryClient.invalidateQueries({ queryKey: ['gallery'] });
-        await loadGallery();
-
-        if (Platform.OS === 'web') {
-          alert('Image added successfully!');
-        } else {
-          Alert.alert('Success', 'Image added successfully!');
-        }
+        createImageMutation.mutate(newImage);
       }
     } catch (error) {
       console.error('Error adding image:', error);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await dataService.deleteGalleryImage(id);
-      await queryClient.invalidateQueries({ queryKey: ['gallery'] });
-      await loadGallery();
-    } catch (error) {
-      console.error('Error deleting image:', error);
+  const handleDelete = (id: string) => {
+    if (Platform.OS === 'web') {
+      if (confirm('Are you sure you want to delete this image?')) {
+        deleteImageMutation.mutate(id);
+      }
+    } else {
+      Alert.alert(
+        'Delete Image',
+        'Are you sure you want to delete this image?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: () => deleteImageMutation.mutate(id) },
+        ]
+      );
     }
   };
 

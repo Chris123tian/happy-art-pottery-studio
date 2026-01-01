@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,43 +18,34 @@ import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { SiteSettings } from '@/types';
 import { seedSettings } from '@/services/seedData';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useData } from '@/contexts/DataContext';
 
 export default function AdminSettings() {
   const queryClient = useQueryClient();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { settings: contextSettings, isLoading } = useData();
   const [settings, setSettings] = useState<SiteSettings>(seedSettings);
 
   useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      const savedSettings = await dataService.getSettings();
-      if (savedSettings) {
-        setSettings(savedSettings);
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    } finally {
-      setLoading(false);
+    if (contextSettings) {
+      setSettings(contextSettings);
     }
-  };
+  }, [contextSettings]);
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await dataService.updateSettings(settings);
-      await queryClient.invalidateQueries({ queryKey: ['settings'] });
+  const updateSettingsMutation = useMutation({
+    mutationFn: (data: SiteSettings) => dataService.updateSettings(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
       Alert.alert('Success', 'Settings saved successfully!');
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Error saving settings:', error);
       Alert.alert('Error', 'Failed to save settings. Please try again.');
-    } finally {
-      setSaving(false);
-    }
+    },
+  });
+
+  const handleSave = () => {
+    updateSettingsMutation.mutate(settings);
   };
 
   const pickImage = async (type: 'hero' | 'about') => {
@@ -73,9 +64,7 @@ export default function AdminSettings() {
           [type === 'hero' ? 'heroImage' : 'aboutImage']: uri,
         };
         setSettings(updatedSettings);
-        await dataService.updateSettings(updatedSettings);
-        await queryClient.invalidateQueries({ queryKey: ['settings'] });
-        Alert.alert('Success', 'Image uploaded successfully!');
+        updateSettingsMutation.mutate(updatedSettings);
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -104,7 +93,7 @@ export default function AdminSettings() {
     });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <AdminHeader />
@@ -342,11 +331,11 @@ export default function AdminSettings() {
         </View>
 
         <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          style={[styles.saveButton, updateSettingsMutation.isPending && styles.saveButtonDisabled]}
           onPress={handleSave}
-          disabled={saving}
+          disabled={updateSettingsMutation.isPending}
         >
-          {saving ? (
+          {updateSettingsMutation.isPending ? (
             <ActivityIndicator color={theme.colors.white} />
           ) : (
             <>

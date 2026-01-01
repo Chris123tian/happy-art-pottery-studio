@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,33 +10,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
-import { Booking } from '@/types';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useData } from '@/contexts/DataContext';
 
 export default function AdminBookings() {
   const queryClient = useQueryClient();
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const { bookings: rawBookings } = useData();
 
-  useEffect(() => {
-    loadBookings();
-  }, []);
+  const bookings = useMemo(() => {
+    return [...rawBookings].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [rawBookings]);
 
-  const loadBookings = async () => {
-    const data = await dataService.getBookings();
-    setBookings(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-  };
-
-  const updateStatus = async (
-    id: string,
-    status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
-  ) => {
-    try {
-      await dataService.updateBooking(id, { status });
-      await queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      await loadBookings();
-    } catch (error) {
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'pending' | 'confirmed' | 'completed' | 'cancelled' }) => 
+      dataService.updateBooking(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    },
+    onError: (error) => {
       console.error('Error updating booking:', error);
-    }
+    },
+  });
+
+  const updateStatus = (id: string, status: 'pending' | 'confirmed' | 'completed' | 'cancelled') => {
+    updateStatusMutation.mutate({ id, status });
   };
 
   const getStatusColor = (status: string) => {

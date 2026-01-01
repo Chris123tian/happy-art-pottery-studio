@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -16,11 +16,12 @@ import { Button } from '@/components/Button';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Event } from '@/types';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useData } from '@/contexts/DataContext';
 
 export default function AdminEvents() {
   const queryClient = useQueryClient();
-  const [events, setEvents] = useState<Event[]>([]);
+  const { events } = useData();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -36,16 +37,43 @@ export default function AdminEvents() {
     image: '',
   });
 
-  useEffect(() => {
-    loadEvents();
-  }, []);
+  const createMutation = useMutation({
+    mutationFn: (data: Omit<Event, 'id'>) => dataService.createEvent(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      resetForm();
+    },
+    onError: (error) => {
+      console.error('Error creating event:', error);
+      Alert.alert('Error', 'Failed to create event');
+    },
+  });
 
-  const loadEvents = async () => {
-    const data = await dataService.getEvents();
-    setEvents(data);
-  };
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Event> }) => 
+      dataService.updateEvent(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      resetForm();
+    },
+    onError: (error) => {
+      console.error('Error updating event:', error);
+      Alert.alert('Error', 'Failed to update event');
+    },
+  });
 
-  const handleSubmit = async () => {
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => dataService.deleteEvent(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: (error) => {
+      console.error('Error deleting event:', error);
+      Alert.alert('Error', 'Failed to delete event');
+    },
+  });
+
+  const handleSubmit = () => {
     if (!formData.title || !formData.date) {
       if (Platform.OS === 'web') {
         alert('Please fill in required fields');
@@ -69,17 +97,10 @@ export default function AdminEvents() {
       category: formData.category,
     };
 
-    try {
-      if (editingId) {
-        await dataService.updateEvent(editingId, eventData);
-      } else {
-        await dataService.createEvent(eventData);
-      }
-      await queryClient.invalidateQueries({ queryKey: ['events'] });
-      await loadEvents();
-      resetForm();
-    } catch (error) {
-      console.error('Error saving event:', error);
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: eventData });
+    } else {
+      createMutation.mutate(eventData);
     }
   };
 
@@ -100,13 +121,20 @@ export default function AdminEvents() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await dataService.deleteEvent(id);
-      await queryClient.invalidateQueries({ queryKey: ['events'] });
-      await loadEvents();
-    } catch (error) {
-      console.error('Error deleting event:', error);
+  const handleDelete = (id: string) => {
+    if (Platform.OS === 'web') {
+      if (confirm('Are you sure you want to delete this event?')) {
+        deleteMutation.mutate(id);
+      }
+    } else {
+      Alert.alert(
+        'Delete Event',
+        'Are you sure you want to delete this event?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate(id) },
+        ]
+      );
     }
   };
 

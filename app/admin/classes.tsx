@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -17,11 +17,12 @@ import { Button } from '@/components/Button';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Class } from '@/types';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useData } from '@/contexts/DataContext';
 
 export default function AdminClasses() {
   const queryClient = useQueryClient();
-  const [classes, setClasses] = useState<Class[]>([]);
+  const { classes } = useData();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -31,14 +32,41 @@ export default function AdminClasses() {
     category: '',
   });
 
-  useEffect(() => {
-    loadClasses();
-  }, []);
+  const createMutation = useMutation({
+    mutationFn: (data: Omit<Class, 'id'>) => dataService.createClass(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      resetForm();
+    },
+    onError: (error) => {
+      console.error('Error creating class:', error);
+      Alert.alert('Error', 'Failed to create class');
+    },
+  });
 
-  const loadClasses = async () => {
-    const data = await dataService.getClasses();
-    setClasses(data);
-  };
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Class> }) => 
+      dataService.updateClass(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+      resetForm();
+    },
+    onError: (error) => {
+      console.error('Error updating class:', error);
+      Alert.alert('Error', 'Failed to update class');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => dataService.deleteClass(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+    },
+    onError: (error) => {
+      console.error('Error deleting class:', error);
+      Alert.alert('Error', 'Failed to delete class');
+    },
+  });
 
   const handleSubmit = async () => {
     if (!formData.title) {
@@ -50,17 +78,10 @@ export default function AdminClasses() {
       return;
     }
 
-    try {
-      if (editingId) {
-        await dataService.updateClass(editingId, formData);
-      } else {
-        await dataService.createClass({ ...formData, featured: false });
-      }
-      await queryClient.invalidateQueries({ queryKey: ['classes'] });
-      await loadClasses();
-      resetForm();
-    } catch (error) {
-      console.error('Error saving class:', error);
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: formData });
+    } else {
+      createMutation.mutate({ ...formData, featured: false });
     }
   };
 
@@ -75,13 +96,20 @@ export default function AdminClasses() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await dataService.deleteClass(id);
-      await queryClient.invalidateQueries({ queryKey: ['classes'] });
-      await loadClasses();
-    } catch (error) {
-      console.error('Error deleting class:', error);
+  const handleDelete = (id: string) => {
+    if (Platform.OS === 'web') {
+      if (confirm('Are you sure you want to delete this class?')) {
+        deleteMutation.mutate(id);
+      }
+    } else {
+      Alert.alert(
+        'Delete Class',
+        'Are you sure you want to delete this class?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate(id) },
+        ]
+      );
     }
   };
 
