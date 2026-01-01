@@ -191,7 +191,6 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
-    maxHeight: 400,
   },
   mobileMenuItem: {
     paddingVertical: theme.spacing.md,
