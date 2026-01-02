@@ -1,46 +1,48 @@
 import { Surreal } from 'surrealdb';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DB_ENDPOINT = process.env.EXPO_PUBLIC_RORK_DB_ENDPOINT;
 const DB_NAMESPACE = process.env.EXPO_PUBLIC_RORK_DB_NAMESPACE;
 const DB_TOKEN = process.env.EXPO_PUBLIC_RORK_DB_TOKEN;
 
-console.log('[ENV] DB_ENDPOINT:', DB_ENDPOINT ? `${DB_ENDPOINT.substring(0, 20)}...` : 'undefined');
-console.log('[ENV] DB_NAMESPACE:', DB_NAMESPACE || 'undefined');
-console.log('[ENV] DB_TOKEN:', DB_TOKEN ? 'Set' : 'undefined');
+const isDatabaseConfigured = () => {
+  return Boolean(DB_ENDPOINT && DB_NAMESPACE && DB_TOKEN && 
+    DB_ENDPOINT.trim() !== '' && DB_NAMESPACE.trim() !== '' && DB_TOKEN.trim() !== '');
+};
 
 class Database {
   private db: Surreal | null = null;
   private connecting: Promise<void> | null = null;
+  private useLocalStorage = !isDatabaseConfigured();
+
+  constructor() {
+    if (this.useLocalStorage) {
+      console.log('[DB] Database not configured, using local storage fallback');
+    }
+  }
 
   async connect() {
+    if (this.useLocalStorage) return;
     if (this.db) return;
     if (this.connecting) return this.connecting;
 
     this.connecting = (async () => {
       try {
-        console.log('[DB] Checking environment variables...');
-        console.log('[DB] Endpoint:', DB_ENDPOINT || 'MISSING');
-        console.log('[DB] Namespace:', DB_NAMESPACE || 'MISSING');
-        console.log('[DB] Token:', DB_TOKEN ? 'Set' : 'MISSING');
-
-        if (!DB_ENDPOINT || !DB_NAMESPACE || !DB_TOKEN) {
-          throw new Error('Database environment variables are not configured. Please check EXPO_PUBLIC_RORK_DB_ENDPOINT, EXPO_PUBLIC_RORK_DB_NAMESPACE, and EXPO_PUBLIC_RORK_DB_TOKEN');
-        }
-
         console.log('[DB] Connecting to database...');
         this.db = new Surreal();
         
-        await this.db.connect(DB_ENDPOINT, {
-          namespace: DB_NAMESPACE,
+        await this.db.connect(DB_ENDPOINT!, {
+          namespace: DB_NAMESPACE!,
           database: 'happy_art',
         });
 
-        await this.db.authenticate(DB_TOKEN);
+        await this.db.authenticate(DB_TOKEN!);
         console.log('[DB] Connected successfully ✓');
       } catch (error) {
         console.error('[DB] Connection failed:', error);
         this.db = null;
-        throw error;
+        this.useLocalStorage = true;
+        console.log('[DB] Falling back to local storage');
       }
     })();
 
@@ -49,6 +51,9 @@ class Database {
   }
 
   async query<T = any>(sql: string, vars?: Record<string, any>): Promise<T[]> {
+    if (this.useLocalStorage) {
+      return [];
+    }
     try {
       await this.connect();
       console.log('[DB Query]', sql, vars);
@@ -62,6 +67,10 @@ class Database {
   }
 
   async select<T = any>(table: string): Promise<T[]> {
+    if (this.useLocalStorage) {
+      const stored = await AsyncStorage.getItem(`db_${table}`);
+      return stored ? JSON.parse(stored) : [];
+    }
     try {
       await this.connect();
       console.log('[DB Select]', table);
@@ -78,6 +87,13 @@ class Database {
   }
 
   async create<T = any>(table: string, data: any): Promise<T> {
+    if (this.useLocalStorage) {
+      const items = await this.select<T>(table);
+      const newItem = { ...data, id: data.id || `${table}:${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
+      items.push(newItem as T);
+      await AsyncStorage.setItem(`db_${table}`, JSON.stringify(items));
+      return newItem as T;
+    }
     try {
       await this.connect();
       console.log('[DB Create]', table, data);
@@ -91,6 +107,17 @@ class Database {
   }
 
   async update<T = any>(thing: string, data: any): Promise<T> {
+    if (this.useLocalStorage) {
+      const [table] = thing.split(':');
+      const items = await this.select<any>(table);
+      const index = items.findIndex((item: any) => item.id === thing);
+      if (index !== -1) {
+        items[index] = { ...items[index], ...data };
+        await AsyncStorage.setItem(`db_${table}`, JSON.stringify(items));
+        return items[index] as T;
+      }
+      throw new Error(`Item ${thing} not found`);
+    }
     try {
       await this.connect();
       console.log('[DB Update]', thing, data);
@@ -104,6 +131,13 @@ class Database {
   }
 
   async delete(thing: string): Promise<void> {
+    if (this.useLocalStorage) {
+      const [table] = thing.split(':');
+      const items = await this.select<any>(table);
+      const filtered = items.filter((item: any) => item.id !== thing);
+      await AsyncStorage.setItem(`db_${table}`, JSON.stringify(filtered));
+      return;
+    }
     try {
       await this.connect();
       console.log('[DB Delete]', thing);
@@ -115,6 +149,18 @@ class Database {
   }
 
   async upsert<T = any>(table: string, id: string, data: any): Promise<T> {
+    if (this.useLocalStorage) {
+      const thing = `${table}:${id}`;
+      const items = await this.select<any>(table);
+      const index = items.findIndex((item: any) => item.id === thing);
+      if (index !== -1) {
+        items[index] = { ...items[index], ...data };
+        await AsyncStorage.setItem(`db_${table}`, JSON.stringify(items));
+        return items[index] as T;
+      } else {
+        return this.create<T>(table, { ...data, id: thing });
+      }
+    }
     try {
       await this.connect();
       const thing = `${table}:${id}`;
