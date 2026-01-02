@@ -6,8 +6,10 @@ const DB_NAMESPACE = process.env.EXPO_PUBLIC_RORK_DB_NAMESPACE;
 const DB_TOKEN = process.env.EXPO_PUBLIC_RORK_DB_TOKEN;
 
 const isDatabaseConfigured = () => {
-  return Boolean(DB_ENDPOINT && DB_NAMESPACE && DB_TOKEN && 
-    DB_ENDPOINT.trim() !== '' && DB_NAMESPACE.trim() !== '' && DB_TOKEN.trim() !== '');
+  const hasEndpoint = DB_ENDPOINT && DB_ENDPOINT.trim() !== '';
+  const hasNamespace = DB_NAMESPACE && DB_NAMESPACE.trim() !== '';
+  const hasToken = DB_TOKEN && DB_TOKEN.trim() !== '';
+  return Boolean(hasEndpoint && hasNamespace && hasToken);
 };
 
 class Database {
@@ -25,6 +27,12 @@ class Database {
     if (this.useLocalStorage) return;
     if (this.db) return;
     if (this.connecting) return this.connecting;
+
+    if (!isDatabaseConfigured()) {
+      console.log('[DB] Database credentials not configured, using local storage');
+      this.useLocalStorage = true;
+      return;
+    }
 
     this.connecting = (async () => {
       try {
