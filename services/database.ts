@@ -2,12 +2,24 @@ import { Surreal } from 'surrealdb';
 import Constants from 'expo-constants';
 
 const getEnvVar = (key: string): string | undefined => {
-  return process.env[key] || Constants.expoConfig?.extra?.[key];
+  if (typeof process !== 'undefined' && process.env?.[key]) {
+    return process.env[key];
+  }
+  if (Constants.expoConfig?.extra?.[key]) {
+    return Constants.expoConfig.extra[key];
+  }
+  if (Constants.manifest?.extra?.[key]) {
+    return Constants.manifest.extra[key];
+  }
+  if (Constants.manifest2?.extra?.expoClient?.extra?.[key]) {
+    return Constants.manifest2.extra.expoClient.extra[key];
+  }
+  return undefined;
 };
 
-const DB_ENDPOINT = getEnvVar('EXPO_PUBLIC_RORK_DB_ENDPOINT');
-const DB_NAMESPACE = getEnvVar('EXPO_PUBLIC_RORK_DB_NAMESPACE');
-const DB_TOKEN = getEnvVar('EXPO_PUBLIC_RORK_DB_TOKEN');
+const DB_ENDPOINT = getEnvVar('EXPO_PUBLIC_RORK_DB_ENDPOINT') || 'https://api.rivet.dev';
+const DB_NAMESPACE = getEnvVar('EXPO_PUBLIC_RORK_DB_NAMESPACE') || 'Rork-74b4-zonel76zu1jyigyq-31ab';
+const DB_TOKEN = getEnvVar('EXPO_PUBLIC_RORK_DB_TOKEN') || 'n50xeUSkFHCQuplCev642LRgybLWN3EQdYUiF6N4mzZ2yjH3FBtlZvULSATwAlbt';
 
 console.log('[DB Init] Endpoint:', DB_ENDPOINT || 'MISSING');
 console.log('[DB Init] Namespace:', DB_NAMESPACE || 'MISSING');
