@@ -5,6 +5,10 @@ const DB_ENDPOINT = process.env.EXPO_PUBLIC_RORK_DB_ENDPOINT;
 const DB_NAMESPACE = process.env.EXPO_PUBLIC_RORK_DB_NAMESPACE;
 const DB_TOKEN = process.env.EXPO_PUBLIC_RORK_DB_TOKEN;
 
+console.log('[ENV DEBUG] DB_ENDPOINT:', DB_ENDPOINT ? 'SET' : 'MISSING');
+console.log('[ENV DEBUG] DB_NAMESPACE:', DB_NAMESPACE ? 'SET' : 'MISSING');
+console.log('[ENV DEBUG] DB_TOKEN:', DB_TOKEN ? 'SET (length: ' + (DB_TOKEN?.length || 0) + ')' : 'MISSING');
+
 const isDatabaseConfigured = () => {
   const hasEndpoint = DB_ENDPOINT && DB_ENDPOINT.trim() !== '';
   const hasNamespace = DB_NAMESPACE && DB_NAMESPACE.trim() !== '';
