@@ -64,13 +64,17 @@ class Database {
     }
     try {
       await this.connect();
+      if (this.useLocalStorage || !this.db) {
+        return [];
+      }
       console.log('[DB Query]', sql, vars);
-      const result = await this.db!.query(sql, vars);
+      const result = await this.db.query(sql, vars);
       console.log('[DB Result]', result);
       return (result[0] || []) as T[];
     } catch (error) {
       console.error('[DB Query Error]', error);
-      throw error;
+      this.useLocalStorage = true;
+      return [];
     }
   }
 
@@ -81,8 +85,12 @@ class Database {
     }
     try {
       await this.connect();
+      if (this.useLocalStorage || !this.db) {
+        const stored = await AsyncStorage.getItem(`db_${table}`);
+        return stored ? JSON.parse(stored) : [];
+      }
       console.log('[DB Select]', table);
-      const result = await this.db!.select(table);
+      const result = await this.db.select(table);
       console.log('[DB Result]', result);
       if (Array.isArray(result)) {
         return result as T[];
@@ -90,7 +98,9 @@ class Database {
       return result ? [result as T] : [];
     } catch (error) {
       console.error('[DB Select Error]', table, error);
-      throw error;
+      this.useLocalStorage = true;
+      const stored = await AsyncStorage.getItem(`db_${table}`);
+      return stored ? JSON.parse(stored) : [];
     }
   }
 
@@ -104,13 +114,25 @@ class Database {
     }
     try {
       await this.connect();
+      if (this.useLocalStorage || !this.db) {
+        const items = await this.select<T>(table);
+        const newItem = { ...data, id: data.id || `${table}:${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
+        items.push(newItem as T);
+        await AsyncStorage.setItem(`db_${table}`, JSON.stringify(items));
+        return newItem as T;
+      }
       console.log('[DB Create]', table, data);
-      const result = await this.db!.create(table, data);
+      const result = await this.db.create(table, data);
       console.log('[DB Result]', result);
       return (Array.isArray(result) ? result[0] : result) as T;
     } catch (error) {
       console.error('[DB Create Error]', table, error);
-      throw error;
+      this.useLocalStorage = true;
+      const items = await this.select<T>(table);
+      const newItem = { ...data, id: data.id || `${table}:${Date.now()}_${Math.random().toString(36).substr(2, 9)}` };
+      items.push(newItem as T);
+      await AsyncStorage.setItem(`db_${table}`, JSON.stringify(items));
+      return newItem as T;
     }
   }
 
@@ -128,13 +150,33 @@ class Database {
     }
     try {
       await this.connect();
+      if (this.useLocalStorage || !this.db) {
+        const [table] = thing.split(':');
+        const items = await this.select<any>(table);
+        const index = items.findIndex((item: any) => item.id === thing);
+        if (index !== -1) {
+          items[index] = { ...items[index], ...data };
+          await AsyncStorage.setItem(`db_${table}`, JSON.stringify(items));
+          return items[index] as T;
+        }
+        throw new Error(`Item ${thing} not found`);
+      }
       console.log('[DB Update]', thing, data);
-      const result = await this.db!.update(thing, data);
+      const result = await this.db.update(thing, data);
       console.log('[DB Result]', result);
       return (Array.isArray(result) ? result[0] : result) as T;
     } catch (error) {
       console.error('[DB Update Error]', thing, error);
-      throw error;
+      this.useLocalStorage = true;
+      const [table] = thing.split(':');
+      const items = await this.select<any>(table);
+      const index = items.findIndex((item: any) => item.id === thing);
+      if (index !== -1) {
+        items[index] = { ...items[index], ...data };
+        await AsyncStorage.setItem(`db_${table}`, JSON.stringify(items));
+        return items[index] as T;
+      }
+      throw new Error(`Item ${thing} not found`);
     }
   }
 
@@ -148,11 +190,22 @@ class Database {
     }
     try {
       await this.connect();
+      if (this.useLocalStorage || !this.db) {
+        const [table] = thing.split(':');
+        const items = await this.select<any>(table);
+        const filtered = items.filter((item: any) => item.id !== thing);
+        await AsyncStorage.setItem(`db_${table}`, JSON.stringify(filtered));
+        return;
+      }
       console.log('[DB Delete]', thing);
-      await this.db!.delete(thing);
+      await this.db.delete(thing);
     } catch (error) {
       console.error('[DB Delete Error]', thing, error);
-      throw error;
+      this.useLocalStorage = true;
+      const [table] = thing.split(':');
+      const items = await this.select<any>(table);
+      const filtered = items.filter((item: any) => item.id !== thing);
+      await AsyncStorage.setItem(`db_${table}`, JSON.stringify(filtered));
     }
   }
 
@@ -171,14 +224,36 @@ class Database {
     }
     try {
       await this.connect();
+      if (this.useLocalStorage || !this.db) {
+        const thing = `${table}:${id}`;
+        const items = await this.select<any>(table);
+        const index = items.findIndex((item: any) => item.id === thing);
+        if (index !== -1) {
+          items[index] = { ...items[index], ...data };
+          await AsyncStorage.setItem(`db_${table}`, JSON.stringify(items));
+          return items[index] as T;
+        } else {
+          return this.create<T>(table, { ...data, id: thing });
+        }
+      }
       const thing = `${table}:${id}`;
       console.log('[DB Upsert]', thing, data);
-      const result = await this.db!.merge(thing, data);
+      const result = await this.db.merge(thing, data);
       console.log('[DB Result]', result);
       return (Array.isArray(result) ? result[0] : result) as T;
     } catch (error) {
       console.error('[DB Upsert Error]', table, id, error);
-      throw error;
+      this.useLocalStorage = true;
+      const thing = `${table}:${id}`;
+      const items = await this.select<any>(table);
+      const index = items.findIndex((item: any) => item.id === thing);
+      if (index !== -1) {
+        items[index] = { ...items[index], ...data };
+        await AsyncStorage.setItem(`db_${table}`, JSON.stringify(items));
+        return items[index] as T;
+      } else {
+        return this.create<T>(table, { ...data, id: thing });
+      }
     }
   }
 }
