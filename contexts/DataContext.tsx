@@ -8,56 +8,88 @@ export const [DataProvider, useData] = createContextHook(() => {
     queryKey: ['settings'],
     queryFn: () => dataService.getSettings(),
     staleTime: 0,
-    refetchOnMount: true,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000,
+    retry: 2,
   });
 
   const classesQuery = useQuery({
     queryKey: ['classes'],
     queryFn: () => dataService.getClasses(),
     staleTime: 0,
-    refetchOnMount: true,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000,
+    retry: 2,
   });
 
   const bookingsQuery = useQuery({
     queryKey: ['bookings'],
     queryFn: () => dataService.getBookings(),
     staleTime: 0,
-    refetchOnMount: true,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000,
+    retry: 2,
   });
 
   const messagesQuery = useQuery({
     queryKey: ['messages'],
     queryFn: () => dataService.getMessages(),
     staleTime: 0,
-    refetchOnMount: true,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000,
+    retry: 2,
   });
 
   const instructorsQuery = useQuery({
     queryKey: ['instructors'],
     queryFn: () => dataService.getInstructors(),
     staleTime: 0,
-    refetchOnMount: true,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000,
+    retry: 2,
   });
 
   const galleryQuery = useQuery({
     queryKey: ['gallery'],
     queryFn: () => dataService.getGallery(),
     staleTime: 0,
-    refetchOnMount: true,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000,
+    retry: 2,
   });
 
   const eventsQuery = useQuery({
     queryKey: ['events'],
     queryFn: () => dataService.getEvents(),
     staleTime: 0,
-    refetchOnMount: true,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000,
+    retry: 2,
   });
 
   const testimonialsQuery = useQuery({
     queryKey: ['testimonials'],
     queryFn: () => dataService.getTestimonials(),
     staleTime: 0,
-    refetchOnMount: true,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000,
+    retry: 2,
   });
 
   const isAnyLoading = 

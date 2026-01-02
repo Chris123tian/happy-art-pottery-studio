@@ -15,14 +15,15 @@ export const dataService = {
   async getClasses(): Promise<Class[]> {
     try {
       const data = await database.select<Class>('classes');
-      if (data.length > 0) {
-        return data;
+      if (data.length === 0) {
+        console.log('[DataService] No classes found, seeding initial data');
+        await this.seedClasses();
+        return await database.select<Class>('classes');
       }
-      await this.seedClasses();
-      return seedClasses;
+      return data;
     } catch (error) {
-      console.error('Error getting classes:', error);
-      return [];
+      console.error('[DataService] Error getting classes:', error);
+      throw error;
     }
   },
 
@@ -92,14 +93,15 @@ export const dataService = {
   async getInstructors(): Promise<Instructor[]> {
     try {
       const data = await database.select<Instructor>('instructors');
-      if (data.length > 0) {
-        return data;
+      if (data.length === 0) {
+        console.log('[DataService] No instructors found, seeding initial data');
+        await this.seedInstructors();
+        return await database.select<Instructor>('instructors');
       }
-      await this.seedInstructors();
-      return seedInstructors;
+      return data;
     } catch (error) {
-      console.error('Error getting instructors:', error);
-      return [];
+      console.error('[DataService] Error getting instructors:', error);
+      throw error;
     }
   },
 
@@ -125,14 +127,15 @@ export const dataService = {
   async getGallery(): Promise<GalleryImage[]> {
     try {
       const data = await database.select<GalleryImage>('gallery');
-      if (data.length > 0) {
-        return data;
+      if (data.length === 0) {
+        console.log('[DataService] No gallery images found, seeding initial data');
+        await this.seedGallery();
+        return await database.select<GalleryImage>('gallery');
       }
-      await this.seedGallery();
-      return seedGallery;
+      return data;
     } catch (error) {
-      console.error('Error getting gallery:', error);
-      return [];
+      console.error('[DataService] Error getting gallery:', error);
+      throw error;
     }
   },
 
@@ -158,14 +161,15 @@ export const dataService = {
   async getEvents(): Promise<Event[]> {
     try {
       const data = await database.select<Event>('events');
-      if (data.length > 0) {
-        return data;
+      if (data.length === 0) {
+        console.log('[DataService] No events found, seeding initial data');
+        await this.seedEvents();
+        return await database.select<Event>('events');
       }
-      await this.seedEvents();
-      return seedEvents;
+      return data;
     } catch (error) {
-      console.error('Error getting events:', error);
-      return [];
+      console.error('[DataService] Error getting events:', error);
+      throw error;
     }
   },
 
@@ -191,14 +195,16 @@ export const dataService = {
   async getSettings(): Promise<SiteSettings | null> {
     try {
       const data = await database.select<SiteSettings>('settings');
-      if (data.length > 0) {
-        return data[0];
+      if (data.length === 0) {
+        console.log('[DataService] No settings found, seeding initial data');
+        await this.seedSettings();
+        const newData = await database.select<SiteSettings>('settings');
+        return newData[0] || null;
       }
-      await this.seedSettings();
-      return seedSettings;
+      return data[0];
     } catch (error) {
-      console.error('Error getting settings:', error);
-      return null;
+      console.error('[DataService] Error getting settings:', error);
+      throw error;
     }
   },
 
@@ -213,14 +219,15 @@ export const dataService = {
   async getTestimonials(): Promise<Testimonial[]> {
     try {
       const data = await database.select<Testimonial>('testimonials');
-      if (data.length > 0) {
-        return data;
+      if (data.length === 0) {
+        console.log('[DataService] No testimonials found, seeding initial data');
+        await this.seedTestimonials();
+        return await database.select<Testimonial>('testimonials');
       }
-      await this.seedTestimonials();
-      return seedTestimonials;
+      return data;
     } catch (error) {
-      console.error('Error getting testimonials:', error);
-      return [];
+      console.error('[DataService] Error getting testimonials:', error);
+      throw error;
     }
   },
 
