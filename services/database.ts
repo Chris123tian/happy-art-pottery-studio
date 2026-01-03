@@ -1,13 +1,66 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  Firestore,
+  query,
+  orderBy,
+} from 'firebase/firestore';
 
 class Database {
+  private db: Firestore | null = null;
+  private app: FirebaseApp | null = null;
+  private isInitialized = false;
+
   constructor() {
-    console.log('[DB] AsyncStorage database service initialized');
-    console.log('[DB] Using local device storage - data will be stored on this device only');
+    this.initFirebase();
   }
 
-  private getKey(table: string): string {
-    return `@db:${table}`;
+  private initFirebase() {
+    try {
+      const firebaseConfig = {
+        apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+        authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+      };
+
+      if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+        console.error('[DB] Firebase configuration missing. Please set up environment variables.');
+        console.error('[DB] Required: EXPO_PUBLIC_FIREBASE_API_KEY, EXPO_PUBLIC_FIREBASE_PROJECT_ID, etc.');
+        return;
+      }
+
+      if (getApps().length === 0) {
+        this.app = initializeApp(firebaseConfig);
+        console.log('[DB] Firebase initialized');
+      } else {
+        this.app = getApps()[0];
+        console.log('[DB] Firebase already initialized');
+      }
+
+      this.db = getFirestore(this.app);
+      this.isInitialized = true;
+      console.log('[DB] Firestore database connected');
+      console.log('[DB] Data will sync across all devices');
+    } catch (error: any) {
+      console.error('[DB] Firebase initialization error:', error.message);
+      this.isInitialized = false;
+    }
+  }
+
+  private ensureInitialized() {
+    if (!this.isInitialized || !this.db) {
+      throw new Error('Database not initialized. Please check Firebase configuration.');
+    }
   }
 
   async query<T = any>(sql: string, vars?: Record<string, any>): Promise<T[]> {
@@ -17,90 +70,97 @@ class Database {
 
   async select<T = any>(table: string): Promise<T[]> {
     try {
+      this.ensureInitialized();
       console.log('[DB Select]', table);
-      const key = this.getKey(table);
-      const data = await AsyncStorage.getItem(key);
-      return data ? JSON.parse(data) : [];
+      
+      const colRef = collection(this.db!, table);
+      const q = query(colRef, orderBy('id'));
+      const snapshot = await getDocs(q);
+      
+      const data: T[] = [];
+      snapshot.forEach((doc) => {
+        data.push({ id: doc.id, ...doc.data() } as T);
+      });
+      
+      console.log(`[DB] ✓ Retrieved ${data.length} records from ${table}`);
+      return data;
     } catch (error: any) {
-      console.error('[DB Select Error]', table, error);
+      console.error('[DB Select Error]', table, error.message);
       return [];
     }
   }
 
   async create<T = any>(table: string, data: any): Promise<T> {
     try {
+      this.ensureInitialized();
       console.log('[DB Create]', table);
-      const key = this.getKey(table);
-      const existing = await this.select<T>(table);
-      const newItem = { ...data, id: data.id || Date.now().toString() };
-      const updated = [...existing, newItem];
-      await AsyncStorage.setItem(key, JSON.stringify(updated));
+      
+      const id = data.id || Date.now().toString();
+      const docRef = doc(this.db!, table, id);
+      const newItem = { ...data, id };
+      
+      await setDoc(docRef, newItem);
       console.log('[DB] ✓ Created successfully');
       return newItem as T;
     } catch (error: any) {
-      console.error('[DB Create Error]', table, error);
+      console.error('[DB Create Error]', table, error.message);
       throw error;
     }
   }
 
   async update<T = any>(thing: string, data: any): Promise<T> {
     try {
+      this.ensureInitialized();
       console.log('[DB Update]', thing);
-      const [table, id] = thing.split(':');
-      const key = this.getKey(table);
-      const existing = await this.select<any>(table);
-      const index = existing.findIndex((item: any) => item.id === id);
       
-      if (index !== -1) {
-        existing[index] = { ...existing[index], ...data };
-        await AsyncStorage.setItem(key, JSON.stringify(existing));
-        console.log('[DB] ✓ Updated successfully');
-        return existing[index] as T;
+      const [table, id] = thing.split(':');
+      const docRef = doc(this.db!, table, id);
+      
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        throw new Error(`Item ${thing} not found`);
       }
       
-      throw new Error(`Item ${thing} not found`);
+      await updateDoc(docRef, data);
+      
+      const updatedDoc = await getDoc(docRef);
+      console.log('[DB] ✓ Updated successfully');
+      return { id: updatedDoc.id, ...updatedDoc.data() } as T;
     } catch (error: any) {
-      console.error('[DB Update Error]', thing, error);
+      console.error('[DB Update Error]', thing, error.message);
       throw error;
     }
   }
 
   async delete(thing: string): Promise<void> {
     try {
+      this.ensureInitialized();
       console.log('[DB Delete]', thing);
+      
       const [table, id] = thing.split(':');
-      const key = this.getKey(table);
-      const existing = await this.select<any>(table);
-      const filtered = existing.filter((item: any) => item.id !== id);
-      await AsyncStorage.setItem(key, JSON.stringify(filtered));
+      const docRef = doc(this.db!, table, id);
+      
+      await deleteDoc(docRef);
       console.log('[DB] ✓ Deleted successfully');
     } catch (error: any) {
-      console.error('[DB Delete Error]', thing, error);
+      console.error('[DB Delete Error]', thing, error.message);
       throw error;
     }
   }
 
   async upsert<T = any>(table: string, id: string, data: any): Promise<T> {
     try {
+      this.ensureInitialized();
       console.log('[DB Upsert]', `${table}:${id}`);
-      const key = this.getKey(table);
-      const existing = await this.select<any>(table);
-      const index = existing.findIndex((item: any) => item.id === id);
       
-      let result: any;
-      if (index !== -1) {
-        existing[index] = { ...existing[index], ...data, id };
-        result = existing[index];
-      } else {
-        result = { ...data, id };
-        existing.push(result);
-      }
+      const docRef = doc(this.db!, table, id);
+      const result = { ...data, id };
       
-      await AsyncStorage.setItem(key, JSON.stringify(existing));
-      console.log('[DB] ✓ Created successfully');
+      await setDoc(docRef, result, { merge: true });
+      console.log('[DB] ✓ Upserted successfully');
       return result as T;
     } catch (error: any) {
-      console.error('[DB Upsert Error]', `${table}:${id}`, error);
+      console.error('[DB Upsert Error]', `${table}:${id}`, error.message);
       throw error;
     }
   }
