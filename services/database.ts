@@ -9,8 +9,6 @@ import {
   deleteDoc,
   getDoc,
   Firestore,
-  query,
-  orderBy,
 } from 'firebase/firestore';
 
 class Database {
@@ -74,12 +72,11 @@ class Database {
       console.log('[DB Select]', table);
       
       const colRef = collection(this.db!, table);
-      const q = query(colRef, orderBy('id'));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(colRef);
       
       const data: T[] = [];
-      snapshot.forEach((doc) => {
-        data.push({ id: doc.id, ...doc.data() } as T);
+      snapshot.forEach((docSnap) => {
+        data.push({ id: docSnap.id, ...docSnap.data() } as T);
       });
       
       console.log(`[DB] ✓ Retrieved ${data.length} records from ${table}`);
