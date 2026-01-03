@@ -1,82 +1,41 @@
-import { Surreal } from 'surrealdb';
-
-const endpoint = process.env.EXPO_PUBLIC_RORK_DB_ENDPOINT || '';
-const namespace = process.env.EXPO_PUBLIC_RORK_DB_NAMESPACE || '';
-const token = process.env.EXPO_PUBLIC_RORK_DB_TOKEN || '';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 class Database {
-  private db: Surreal;
-  private connected: boolean = false;
-  private connecting: boolean = false;
-
   constructor() {
-    this.db = new Surreal();
-    console.log('[DB Init] Endpoint:', endpoint || 'MISSING');
-    console.log('[DB Init] Namespace:', namespace || 'MISSING');
-    console.log('[DB Init] Token:', token ? `SET (${token.substring(0, 10)}...)` : 'MISSING');
-    console.log('[DB] SurrealDB database service initialized');
+    console.log('[DB] AsyncStorage database service initialized');
   }
 
-  private async connect(): Promise<void> {
-    if (this.connected) return;
-    if (this.connecting) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      return this.connect();
-    }
-
-    if (!endpoint || !namespace || !token) {
-      throw new Error('[DB] Database credentials not configured. Please set EXPO_PUBLIC_RORK_DB_ENDPOINT, EXPO_PUBLIC_RORK_DB_NAMESPACE, and EXPO_PUBLIC_RORK_DB_TOKEN');
-    }
-
-    this.connecting = true;
-    try {
-      console.log('[DB] Connecting to:', endpoint);
-      await this.db.connect(endpoint, {
-        namespace: namespace.split('-')[0],
-        database: namespace,
-      });
-      await this.db.authenticate(token);
-      this.connected = true;
-      console.log('[DB] ✓ Connected successfully');
-    } catch (error: any) {
-      console.error('[DB] ✗ Connection failed:', error);
-      throw error;
-    } finally {
-      this.connecting = false;
-    }
+  private getKey(table: string): string {
+    return `@db:${table}`;
   }
 
   async query<T = any>(sql: string, vars?: Record<string, any>): Promise<T[]> {
-    await this.connect();
-    try {
-      console.log('[DB Query]', sql);
-      const result = await this.db.query<[T[]]>(sql, vars);
-      return result[0] || [];
-    } catch (error: any) {
-      console.error('[DB Query Error]', sql, error);
-      throw error;
-    }
+    console.log('[DB Query]', sql);
+    return [];
   }
 
   async select<T = any>(table: string): Promise<T[]> {
-    await this.connect();
     try {
       console.log('[DB Select]', table);
-      const result = await this.db.select(table);
-      return (Array.isArray(result) ? result : []) as T[];
+      const key = this.getKey(table);
+      const data = await AsyncStorage.getItem(key);
+      return data ? JSON.parse(data) : [];
     } catch (error: any) {
       console.error('[DB Select Error]', table, error);
-      throw error;
+      return [];
     }
   }
 
   async create<T = any>(table: string, data: any): Promise<T> {
-    await this.connect();
     try {
       console.log('[DB Create]', table);
-      const result = await this.db.create(table, data);
+      const key = this.getKey(table);
+      const existing = await this.select<T>(table);
+      const newItem = { ...data, id: data.id || Date.now().toString() };
+      const updated = [...existing, newItem];
+      await AsyncStorage.setItem(key, JSON.stringify(updated));
       console.log('[DB] ✓ Created successfully');
-      return result as T;
+      return newItem as T;
     } catch (error: any) {
       console.error('[DB Create Error]', table, error);
       throw error;
@@ -84,12 +43,21 @@ class Database {
   }
 
   async update<T = any>(thing: string, data: any): Promise<T> {
-    await this.connect();
     try {
       console.log('[DB Update]', thing);
-      const result = await this.db.merge(thing, data);
-      console.log('[DB] ✓ Updated successfully');
-      return result as T;
+      const [table, id] = thing.split(':');
+      const key = this.getKey(table);
+      const existing = await this.select<any>(table);
+      const index = existing.findIndex((item: any) => item.id === id);
+      
+      if (index !== -1) {
+        existing[index] = { ...existing[index], ...data };
+        await AsyncStorage.setItem(key, JSON.stringify(existing));
+        console.log('[DB] ✓ Updated successfully');
+        return existing[index] as T;
+      }
+      
+      throw new Error(`Item ${thing} not found`);
     } catch (error: any) {
       console.error('[DB Update Error]', thing, error);
       throw error;
@@ -97,10 +65,13 @@ class Database {
   }
 
   async delete(thing: string): Promise<void> {
-    await this.connect();
     try {
       console.log('[DB Delete]', thing);
-      await this.db.delete(thing);
+      const [table, id] = thing.split(':');
+      const key = this.getKey(table);
+      const existing = await this.select<any>(table);
+      const filtered = existing.filter((item: any) => item.id !== id);
+      await AsyncStorage.setItem(key, JSON.stringify(filtered));
       console.log('[DB] ✓ Deleted successfully');
     } catch (error: any) {
       console.error('[DB Delete Error]', thing, error);
@@ -109,12 +80,23 @@ class Database {
   }
 
   async upsert<T = any>(table: string, id: string, data: any): Promise<T> {
-    await this.connect();
     try {
       console.log('[DB Upsert]', `${table}:${id}`);
-      const thing = `${table}:${id}`;
-      const result = await this.db.merge(thing, data);
-      console.log('[DB] ✓ Upserted successfully');
+      const key = this.getKey(table);
+      const existing = await this.select<any>(table);
+      const index = existing.findIndex((item: any) => item.id === id);
+      
+      let result: any;
+      if (index !== -1) {
+        existing[index] = { ...existing[index], ...data, id };
+        result = existing[index];
+      } else {
+        result = { ...data, id };
+        existing.push(result);
+      }
+      
+      await AsyncStorage.setItem(key, JSON.stringify(existing));
+      console.log('[DB] ✓ Created successfully');
       return result as T;
     } catch (error: any) {
       console.error('[DB Upsert Error]', `${table}:${id}`, error);
