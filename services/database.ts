@@ -1,91 +1,124 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Surreal } from 'surrealdb';
+
+const endpoint = process.env.EXPO_PUBLIC_RORK_DB_ENDPOINT || '';
+const namespace = process.env.EXPO_PUBLIC_RORK_DB_NAMESPACE || '';
+const token = process.env.EXPO_PUBLIC_RORK_DB_TOKEN || '';
 
 class Database {
+  private db: Surreal;
+  private connected: boolean = false;
+  private connecting: boolean = false;
+
   constructor() {
-    console.log('[DB] AsyncStorage database service initialized');
+    this.db = new Surreal();
+    console.log('[DB Init] Endpoint:', endpoint || 'MISSING');
+    console.log('[DB Init] Namespace:', namespace || 'MISSING');
+    console.log('[DB Init] Token:', token ? `SET (${token.substring(0, 10)}...)` : 'MISSING');
+    console.log('[DB] SurrealDB database service initialized');
   }
 
-  private async getTable<T>(table: string): Promise<T[]> {
-    try {
-      const data = await AsyncStorage.getItem(`table_${table}`);
-      return data ? JSON.parse(data) : [];
-    } catch (error) {
-      console.error(`[DB] Error reading table ${table}:`, error);
-      return [];
+  private async connect(): Promise<void> {
+    if (this.connected) return;
+    if (this.connecting) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return this.connect();
     }
-  }
 
-  private async setTable<T>(table: string, data: T[]): Promise<void> {
+    if (!endpoint || !namespace || !token) {
+      throw new Error('[DB] Database credentials not configured. Please set EXPO_PUBLIC_RORK_DB_ENDPOINT, EXPO_PUBLIC_RORK_DB_NAMESPACE, and EXPO_PUBLIC_RORK_DB_TOKEN');
+    }
+
+    this.connecting = true;
     try {
-      await AsyncStorage.setItem(`table_${table}`, JSON.stringify(data));
-    } catch (error) {
-      console.error(`[DB] Error writing table ${table}:`, error);
+      console.log('[DB] Connecting to:', endpoint);
+      await this.db.connect(endpoint, {
+        namespace: namespace.split('-')[0],
+        database: namespace,
+      });
+      await this.db.authenticate(token);
+      this.connected = true;
+      console.log('[DB] ✓ Connected successfully');
+    } catch (error: any) {
+      console.error('[DB] ✗ Connection failed:', error);
       throw error;
+    } finally {
+      this.connecting = false;
     }
   }
 
   async query<T = any>(sql: string, vars?: Record<string, any>): Promise<T[]> {
-    console.warn('[DB] Query method not supported with AsyncStorage');
-    return [];
+    await this.connect();
+    try {
+      console.log('[DB Query]', sql);
+      const result = await this.db.query<[T[]]>(sql, vars);
+      return result[0] || [];
+    } catch (error: any) {
+      console.error('[DB Query Error]', sql, error);
+      throw error;
+    }
   }
 
   async select<T = any>(table: string): Promise<T[]> {
-    console.log('[DB Select]', table);
-    return await this.getTable<T>(table);
+    await this.connect();
+    try {
+      console.log('[DB Select]', table);
+      const result = await this.db.select(table);
+      return (Array.isArray(result) ? result : []) as T[];
+    } catch (error: any) {
+      console.error('[DB Select Error]', table, error);
+      throw error;
+    }
   }
 
   async create<T = any>(table: string, data: any): Promise<T> {
-    console.log('[DB Create]', table);
-    const items = await this.getTable<any>(table);
-    const id = data.id || `${table}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const newItem = { ...data, id, createdAt: data.createdAt || new Date().toISOString() };
-    items.push(newItem);
-    await this.setTable(table, items);
-    console.log('[DB] ✓ Created successfully');
-    return newItem as T;
+    await this.connect();
+    try {
+      console.log('[DB Create]', table);
+      const result = await this.db.create(table, data);
+      console.log('[DB] ✓ Created successfully');
+      return result as T;
+    } catch (error: any) {
+      console.error('[DB Create Error]', table, error);
+      throw error;
+    }
   }
 
   async update<T = any>(thing: string, data: any): Promise<T> {
-    console.log('[DB Update]', thing);
-    const [table, id] = thing.split(':');
-    const items = await this.getTable<any>(table);
-    const index = items.findIndex((item: any) => item.id === id);
-    
-    if (index === -1) {
-      throw new Error(`[DB] Item ${thing} not found`);
+    await this.connect();
+    try {
+      console.log('[DB Update]', thing);
+      const result = await this.db.merge(thing, data);
+      console.log('[DB] ✓ Updated successfully');
+      return result as T;
+    } catch (error: any) {
+      console.error('[DB Update Error]', thing, error);
+      throw error;
     }
-    
-    items[index] = { ...items[index], ...data, updatedAt: new Date().toISOString() };
-    await this.setTable(table, items);
-    console.log('[DB] ✓ Updated successfully');
-    return items[index] as T;
   }
 
   async delete(thing: string): Promise<void> {
-    console.log('[DB Delete]', thing);
-    const [table, id] = thing.split(':');
-    const items = await this.getTable<any>(table);
-    const filtered = items.filter((item: any) => item.id !== id);
-    await this.setTable(table, filtered);
-    console.log('[DB] ✓ Deleted successfully');
+    await this.connect();
+    try {
+      console.log('[DB Delete]', thing);
+      await this.db.delete(thing);
+      console.log('[DB] ✓ Deleted successfully');
+    } catch (error: any) {
+      console.error('[DB Delete Error]', thing, error);
+      throw error;
+    }
   }
 
   async upsert<T = any>(table: string, id: string, data: any): Promise<T> {
-    console.log('[DB Upsert]', `${table}:${id}`);
-    const items = await this.getTable<any>(table);
-    const index = items.findIndex((item: any) => item.id === id);
-    
-    if (index === -1) {
-      const newItem = { ...data, id, createdAt: new Date().toISOString() };
-      items.push(newItem);
-      await this.setTable(table, items);
-      console.log('[DB] ✓ Created successfully');
-      return newItem as T;
-    } else {
-      items[index] = { ...items[index], ...data, updatedAt: new Date().toISOString() };
-      await this.setTable(table, items);
-      console.log('[DB] ✓ Updated successfully');
-      return items[index] as T;
+    await this.connect();
+    try {
+      console.log('[DB Upsert]', `${table}:${id}`);
+      const thing = `${table}:${id}`;
+      const result = await this.db.merge(thing, data);
+      console.log('[DB] ✓ Upserted successfully');
+      return result as T;
+    } catch (error: any) {
+      console.error('[DB Upsert Error]', `${table}:${id}`, error);
+      throw error;
     }
   }
 }
