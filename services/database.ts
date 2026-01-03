@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 class Database {
   constructor() {
     console.log('[DB] AsyncStorage database service initialized');
+    console.log('[DB] Using local device storage - data will be stored on this device only');
   }
 
   private getKey(table: string): string {
