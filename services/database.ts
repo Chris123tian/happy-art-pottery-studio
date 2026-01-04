@@ -10,8 +10,6 @@ import {
   getDoc,
   Firestore,
   onSnapshot,
-  query,
-  orderBy,
 } from 'firebase/firestore';
 
 class Database {
@@ -109,10 +107,9 @@ class Database {
       console.log('[DB Subscribe]', table);
       
       const colRef = collection(this.db!, table);
-      const q = query(colRef, orderBy('createdAt', 'desc'));
       
       const unsubscribe = onSnapshot(
-        q,
+        colRef,
         (snapshot) => {
           const data: T[] = [];
           snapshot.forEach((docSnap) => {
@@ -139,7 +136,13 @@ class Database {
       this.ensureInitialized();
       const id = data.id || Date.now().toString();
       const docRef = doc(this.db!, table, id);
-      const newItem = { ...data, id, createdAt: data.createdAt || new Date().toISOString() };
+      const timestamp = new Date().toISOString();
+      const newItem = { 
+        ...data, 
+        id, 
+        createdAt: data.createdAt || timestamp,
+        updatedAt: timestamp
+      };
       
       await setDoc(docRef, newItem);
       console.log(`[DB] ✓ Created ${table}:${id}`);
@@ -156,7 +159,12 @@ class Database {
       const [table, id] = thing.split(':');
       const docRef = doc(this.db!, table, id);
       
-      await updateDoc(docRef, data);
+      const updateData = {
+        ...data,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await updateDoc(docRef, updateData);
       
       const updatedDoc = await getDoc(docRef);
       console.log(`[DB] ✓ Updated ${thing}`);
@@ -185,7 +193,15 @@ class Database {
     try {
       this.ensureInitialized();
       const docRef = doc(this.db!, table, id);
-      const result = { ...data, id };
+      const timestamp = new Date().toISOString();
+      
+      const existingDoc = await getDoc(docRef);
+      const result = { 
+        ...data, 
+        id,
+        createdAt: existingDoc.exists() ? existingDoc.data()?.createdAt : timestamp,
+        updatedAt: timestamp
+      };
       
       await setDoc(docRef, result, { merge: true });
       console.log(`[DB] ✓ Upserted ${table}:${id}`);

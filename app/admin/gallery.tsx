@@ -22,7 +22,7 @@ import { useData } from '@/contexts/DataContext';
 import { imageService } from '@/services/imageService';
 
 const { width } = Dimensions.get('window');
-const imageSize = width > 768 ? 200 : (width - theme.spacing.lg * 3) / 2;
+const imageSize = width > 768 ? 300 : Math.min((width - theme.spacing.lg * 3) / 2, 250);
 
 export default function AdminGallery() {
   const queryClient = useQueryClient();

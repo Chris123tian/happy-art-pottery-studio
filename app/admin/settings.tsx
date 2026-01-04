@@ -33,13 +33,20 @@ export default function AdminSettings() {
   }, [contextSettings]);
 
   const updateSettingsMutation = useMutation({
-    mutationFn: (data: SiteSettings) => dataService.updateSettings(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    mutationFn: async (data: SiteSettings) => {
+      console.log('[Settings] Saving settings...');
+      const result = await dataService.updateSettings(data);
+      console.log('[Settings] Settings saved successfully');
+      return result;
+    },
+    onSuccess: async () => {
+      console.log('[Settings] Invalidating queries...');
+      await queryClient.invalidateQueries({ queryKey: ['settings'] });
+      await queryClient.refetchQueries({ queryKey: ['settings'] });
       Alert.alert('Success', 'Settings saved successfully!');
     },
     onError: (error) => {
-      console.error('Error saving settings:', error);
+      console.error('[Settings] Error saving settings:', error);
       Alert.alert('Error', 'Failed to save settings. Please try again.');
     },
   });
@@ -98,12 +105,13 @@ export default function AdminSettings() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading && !contextSettings) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <AdminHeader />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Loading settings...</Text>
         </View>
       </SafeAreaView>
     );
@@ -368,6 +376,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: theme.spacing.md,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: theme.colors.textLight,
   },
   header: {
     padding: theme.spacing.lg,

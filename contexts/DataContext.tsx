@@ -19,73 +19,81 @@ export const [DataProvider, useData] = createContextHook(() => {
   const settingsQuery = useQuery({
     queryKey: ['settings'],
     queryFn: () => dataService.getSettings(),
-    staleTime: 30000,
+    staleTime: 1000,
     gcTime: 300000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 3,
   });
 
   const classesQuery = useQuery({
     queryKey: ['classes'],
     queryFn: () => dataService.getClasses(),
-    staleTime: 30000,
+    staleTime: 1000,
     gcTime: 300000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 3,
   });
 
   const bookingsQuery = useQuery({
     queryKey: ['bookings'],
     queryFn: () => dataService.getBookings(),
-    staleTime: 30000,
+    staleTime: 1000,
     gcTime: 300000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 3,
   });
 
   const messagesQuery = useQuery({
     queryKey: ['messages'],
     queryFn: () => dataService.getMessages(),
-    staleTime: 30000,
+    staleTime: 1000,
     gcTime: 300000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 3,
   });
 
   const instructorsQuery = useQuery({
     queryKey: ['instructors'],
     queryFn: () => dataService.getInstructors(),
-    staleTime: 30000,
+    staleTime: 1000,
     gcTime: 300000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 3,
   });
 
   const galleryQuery = useQuery({
     queryKey: ['gallery'],
     queryFn: () => dataService.getGallery(),
-    staleTime: 30000,
+    staleTime: 1000,
     gcTime: 300000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 3,
   });
 
   const eventsQuery = useQuery({
     queryKey: ['events'],
     queryFn: () => dataService.getEvents(),
-    staleTime: 30000,
+    staleTime: 1000,
     gcTime: 300000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 3,
   });
 
   const testimonialsQuery = useQuery({
     queryKey: ['testimonials'],
     queryFn: () => dataService.getTestimonials(),
-    staleTime: 30000,
+    staleTime: 1000,
     gcTime: 300000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 3,
   });
 
   useEffect(() => {
@@ -177,16 +185,26 @@ export const [DataProvider, useData] = createContextHook(() => {
     instructorsQuery.isLoading ||
     testimonialsQuery.isLoading;
 
+  const settings = realtimeSettings || settingsQuery.data || null;
+  const classes = realtimeClasses.length > 0 ? realtimeClasses : (classesQuery.data || []);
+  const bookings = realtimeBookings.length > 0 ? realtimeBookings : (bookingsQuery.data || []);
+  const messages = realtimeMessages.length > 0 ? realtimeMessages : (messagesQuery.data || []);
+  const instructors = realtimeInstructors.length > 0 ? realtimeInstructors : (instructorsQuery.data || []);
+  const gallery = realtimeGallery.length > 0 ? realtimeGallery : (galleryQuery.data || []);
+  const events = realtimeEvents.length > 0 ? realtimeEvents : (eventsQuery.data || []);
+  const testimonials = realtimeTestimonials.length > 0 ? realtimeTestimonials : (testimonialsQuery.data || []);
+
   return {
-    settings: realtimeSettings || settingsQuery.data || null,
-    classes: realtimeClasses.length > 0 ? realtimeClasses : classesQuery.data || [],
-    bookings: realtimeBookings.length > 0 ? realtimeBookings : bookingsQuery.data || [],
-    messages: realtimeMessages.length > 0 ? realtimeMessages : messagesQuery.data || [],
-    instructors: realtimeInstructors.length > 0 ? realtimeInstructors : instructorsQuery.data || [],
-    gallery: realtimeGallery.length > 0 ? realtimeGallery : galleryQuery.data || [],
-    events: realtimeEvents.length > 0 ? realtimeEvents : eventsQuery.data || [],
-    testimonials: realtimeTestimonials.length > 0 ? realtimeTestimonials : testimonialsQuery.data || [],
+    settings,
+    classes,
+    bookings,
+    messages,
+    instructors,
+    gallery,
+    events,
+    testimonials,
     isLoading: isAnyLoading,
+    isError: settingsQuery.isError || classesQuery.isError,
   };
 });
 
