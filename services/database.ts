@@ -34,7 +34,9 @@ class Database {
       console.log('[DB] Checking Firebase config:', {
         hasApiKey: !!firebaseConfig.apiKey,
         hasProjectId: !!firebaseConfig.projectId,
-        projectId: firebaseConfig.projectId?.substring(0, 10) + '...',
+        apiKey: firebaseConfig.apiKey ? firebaseConfig.apiKey.substring(0, 20) + '...' : 'undefined',
+        projectId: firebaseConfig.projectId || 'undefined',
+        allEnvVars: Object.keys(process.env).filter(k => k.startsWith('EXPO_PUBLIC_FIREBASE')),
       });
 
       if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
