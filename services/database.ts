@@ -31,9 +31,16 @@ class Database {
         appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
       };
 
+      console.log('[DB] Checking Firebase config:', {
+        hasApiKey: !!firebaseConfig.apiKey,
+        hasProjectId: !!firebaseConfig.projectId,
+        projectId: firebaseConfig.projectId?.substring(0, 10) + '...',
+      });
+
       if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
         console.error('[DB] Firebase configuration missing. Please set up environment variables.');
         console.error('[DB] Required: EXPO_PUBLIC_FIREBASE_API_KEY, EXPO_PUBLIC_FIREBASE_PROJECT_ID, etc.');
+        this.isInitialized = false;
         return;
       }
 
