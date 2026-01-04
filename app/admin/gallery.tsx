@@ -30,8 +30,11 @@ export default function AdminGallery() {
 
   const createImageMutation = useMutation({
     mutationFn: (image: Omit<GalleryImage, 'id'>) => dataService.createGalleryImage(image),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    onSuccess: async () => {
+      console.log('Image created successfully, refetching gallery...');
+      await queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      await queryClient.refetchQueries({ queryKey: ['gallery'] });
+      console.log('Gallery refetched');
       if (Platform.OS === 'web') {
         alert('Image added successfully!');
       } else {
@@ -40,7 +43,11 @@ export default function AdminGallery() {
     },
     onError: (error) => {
       console.error('Error adding image:', error);
-      Alert.alert('Error', 'Failed to add image');
+      if (Platform.OS === 'web') {
+        alert('Failed to add image');
+      } else {
+        Alert.alert('Error', 'Failed to add image');
+      }
     },
   });
 
@@ -57,14 +64,17 @@ export default function AdminGallery() {
 
   const handleAddImage = async () => {
     try {
+      console.log('Starting image picker...');
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 0.8,
       });
 
-      if (!result.canceled) {
+      if (!result.canceled && result.assets[0]) {
+        console.log('Image selected, converting to base64...');
         const base64Image = await imageService.convertImageToBase64(result.assets[0].uri);
+        console.log('Base64 conversion complete, length:', base64Image.length);
         
         const newImage = {
           source: base64Image,
@@ -73,7 +83,10 @@ export default function AdminGallery() {
           featured: false,
         };
 
+        console.log('Saving image to database...');
         createImageMutation.mutate(newImage);
+      } else {
+        console.log('Image selection cancelled');
       }
     } catch (error) {
       console.error('Error adding image:', error);
@@ -121,6 +134,12 @@ export default function AdminGallery() {
                 source={{ uri: image.source }}
                 style={styles.image}
                 resizeMode="cover"
+                onError={(error) => {
+                  console.error('Image load error for', image.id, error.nativeEvent);
+                }}
+                onLoad={() => {
+                  console.log('Image loaded successfully:', image.id);
+                }}
               />
               <TouchableOpacity
                 style={styles.deleteButton}
@@ -132,9 +151,15 @@ export default function AdminGallery() {
           ))}
         </View>
 
-        {images.length === 0 && (
+        {images.length === 0 && !createImageMutation.isPending && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No images yet. Add your first image!</Text>
+          </View>
+        )}
+
+        {createImageMutation.isPending && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Uploading image...</Text>
           </View>
         )}
       </ScrollView>
