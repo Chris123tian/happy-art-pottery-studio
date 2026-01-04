@@ -5,12 +5,9 @@ import {
   getDocs,
   doc,
   setDoc,
-  updateDoc,
   deleteDoc,
-  getDoc,
   Firestore,
   onSnapshot,
-  enableIndexedDbPersistence,
   enableNetwork,
   disableNetwork,
   CACHE_SIZE_UNLIMITED,
@@ -80,19 +77,6 @@ class Database {
     if (!this.db) return;
 
     try {
-      await enableIndexedDbPersistence(this.db);
-      console.log('[DB] Offline persistence enabled');
-    } catch (err: any) {
-      if (err.code === 'failed-precondition') {
-        console.warn('[DB] Persistence failed: Multiple tabs open');
-      } else if (err.code === 'unimplemented') {
-        console.warn('[DB] Persistence not available in this browser');
-      } else {
-        console.warn('[DB] Persistence setup failed:', err.message);
-      }
-    }
-
-    try {
       await enableNetwork(this.db);
       console.log('[DB] Network enabled - online mode active');
     } catch (err: any) {
@@ -134,6 +118,8 @@ class Database {
   async select<T = any>(table: string): Promise<T[]> {
     try {
       this.ensureInitialized();
+      await this.forceOnline();
+      
       console.log('[DB Select]', table);
       
       const colRef = collection(this.db!, table);
@@ -189,6 +175,8 @@ class Database {
   async create<T = any>(table: string, data: any): Promise<T> {
     try {
       this.ensureInitialized();
+      await this.forceOnline();
+      
       const id = data.id || Date.now().toString();
       const docRef = doc(this.db!, table, id);
       const timestamp = new Date().toISOString();
@@ -211,19 +199,20 @@ class Database {
   async update<T = any>(thing: string, data: any): Promise<T> {
     try {
       this.ensureInitialized();
+      await this.forceOnline();
+      
       const [table, id] = thing.split(':');
       const docRef = doc(this.db!, table, id);
       
       const updateData = {
         ...data,
+        id,
         updatedAt: new Date().toISOString()
       };
       
-      await updateDoc(docRef, updateData);
-      
-      const updatedDoc = await getDoc(docRef);
+      await setDoc(docRef, updateData, { merge: true });
       console.log(`[DB] ✓ Updated ${thing}`);
-      return { id: updatedDoc.id, ...updatedDoc.data() } as T;
+      return updateData as T;
     } catch (error: any) {
       console.error('[DB Update Error]', thing, error.message);
       throw error;
@@ -233,6 +222,8 @@ class Database {
   async delete(thing: string): Promise<void> {
     try {
       this.ensureInitialized();
+      await this.forceOnline();
+      
       const [table, id] = thing.split(':');
       const docRef = doc(this.db!, table, id);
       
@@ -247,14 +238,15 @@ class Database {
   async upsert<T = any>(table: string, id: string, data: any): Promise<T> {
     try {
       this.ensureInitialized();
+      await this.forceOnline();
+      
       const docRef = doc(this.db!, table, id);
       const timestamp = new Date().toISOString();
       
-      const existingDoc = await getDoc(docRef);
       const result = { 
         ...data, 
         id,
-        createdAt: existingDoc.exists() ? existingDoc.data()?.createdAt : timestamp,
+        createdAt: data.createdAt || timestamp,
         updatedAt: timestamp
       };
       

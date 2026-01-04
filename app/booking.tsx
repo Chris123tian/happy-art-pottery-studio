@@ -18,6 +18,7 @@ import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
+import { emailService } from '@/services/emailService';
 
 export default function Booking() {
   const [name, setName] = useState('');
@@ -86,6 +87,14 @@ export default function Booking() {
         await Linking.openURL(emailUrl);
       } else {
         await dataService.createBooking(bookingData);
+        await emailService.notifyAdminNewBooking({
+          name,
+          phone,
+          numberOfPersons: parseInt(numberOfPersons),
+          date,
+          day,
+          classType,
+        });
         
         if (Platform.OS === 'web') {
           alert('Booking submitted successfully! We will contact you soon.');

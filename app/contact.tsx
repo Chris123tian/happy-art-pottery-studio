@@ -7,7 +7,6 @@ import {
   TextInput,
   Platform,
   Alert,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter } from 'lucide-react-native';
@@ -16,6 +15,7 @@ import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
+import { emailService } from '@/services/emailService';
 
 export default function Contact() {
   const [name, setName] = useState('');
@@ -23,6 +23,7 @@ export default function Contact() {
   const [phone, setPhone] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!name || !email || !phone || !subject || !message) {
@@ -33,6 +34,8 @@ export default function Contact() {
       }
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
       await dataService.createMessage({
@@ -45,14 +48,13 @@ export default function Contact() {
         createdAt: new Date().toISOString(),
       });
 
-      const emailBody = `New Contact Message from Happy Art Website\n\nFrom: ${name}\nEmail: ${email}\nPhone: ${phone}\nSubject: ${subject}\n\nMessage:\n${message}\n\n---\nThis message was sent from the Happy Art contact form.`;
-      const emailUrl = `mailto:happyartgh@gmail.com?subject=New Contact: ${subject}&body=${encodeURIComponent(emailBody)}`;
-      
-      try {
-        await Linking.openURL(emailUrl);
-      } catch (emailError) {
-        console.log('Could not open email client:', emailError);
-      }
+      await emailService.notifyAdminNewMessage({
+        name,
+        email,
+        phone,
+        subject,
+        message,
+      });
 
       if (Platform.OS === 'web') {
         alert('Message sent successfully! We will get back to you soon.');
@@ -72,6 +74,8 @@ export default function Contact() {
       } else {
         Alert.alert('Error', 'Failed to send message. Please try again.');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -178,7 +182,11 @@ export default function Contact() {
               />
             </View>
 
-            <Button title="Send Message" onPress={handleSubmit} />
+            <Button 
+              title={isSubmitting ? 'Sending...' : 'Send Message'} 
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            />
           </View>
         </View>
       </ScrollView>

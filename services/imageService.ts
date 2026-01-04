@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 
 export const imageService = {
-  async convertImageToBase64(uri: string): Promise<string> {
+  async compressImage(uri: string, maxSizeMB: number = 5): Promise<string> {
     try {
       const response = await fetch(uri);
       const blob = await response.blob();
@@ -10,11 +10,11 @@ export const imageService = {
         const reader = new FileReader();
         reader.onloadend = () => {
           if (typeof reader.result === 'string') {
-            const sizeKB = (reader.result.length / 1024).toFixed(2);
-            console.log(`[ImageService] Image size: ${sizeKB}KB`);
+            const sizeMB = (reader.result.length / (1024 * 1024)).toFixed(2);
+            console.log(`[ImageService] Image size: ${sizeMB}MB`);
             
-            if (reader.result.length > 300000) {
-              reject(new Error('Image too large. Please use a smaller image (max 300KB base64).'));
+            if (reader.result.length > maxSizeMB * 1024 * 1024) {
+              reject(new Error(`Image too large. Please use a smaller image (max ${maxSizeMB}MB).`));
               return;
             }
             
@@ -27,9 +27,13 @@ export const imageService = {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.error('[ImageService] Error converting image:', error);
+      console.error('[ImageService] Error processing image:', error);
       throw error;
     }
+  },
+
+  async convertImageToBase64(uri: string): Promise<string> {
+    return this.compressImage(uri, 5);
   },
 
   async pickImage(options?: {
@@ -47,7 +51,7 @@ export const imageService = {
         mediaTypes: ['images'],
         allowsEditing: options?.allowsEditing ?? true,
         aspect: options?.aspect ?? [1, 1],
-        quality: options?.quality ?? 0.3,
+        quality: options?.quality ?? 0.7,
       });
 
       if (!result.canceled && result.assets[0]) {
