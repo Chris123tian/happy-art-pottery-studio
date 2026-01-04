@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,39 @@ import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useData } from '@/contexts/DataContext';
+import { database } from '@/services/database';
+import { Booking } from '@/types';
 
 export default function AdminBookings() {
   const queryClient = useQueryClient();
   const { bookings: rawBookings } = useData();
+  const [newBookingsCount, setNewBookingsCount] = useState(0);
+
+  useEffect(() => {
+    console.log('[Bookings] Setting up real-time listener...');
+    const unsubscribe = database.subscribeToCollection<Booking>(
+      'bookings',
+      (newBookings) => {
+        console.log('[Bookings] Real-time update received:', newBookings.length);
+        queryClient.setQueryData(['bookings'], newBookings);
+        
+        const pending = newBookings.filter(b => b.status === 'pending').length;
+        setNewBookingsCount(pending);
+        
+        if (pending > newBookingsCount) {
+          console.log('[Bookings] New booking received!');
+        }
+      },
+      (error) => {
+        console.error('[Bookings] Real-time listener error:', error);
+      }
+    );
+
+    return () => {
+      console.log('[Bookings] Cleaning up real-time listener');
+      unsubscribe();
+    };
+  }, [queryClient, newBookingsCount]);
 
   const bookings = useMemo(() => {
     return [...rawBookings].sort((a, b) => 
@@ -57,7 +86,14 @@ export default function AdminBookings() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
           <Text style={styles.title}>Manage Bookings</Text>
-          <Text style={styles.subtitle}>{bookings.length} total bookings</Text>
+          <View style={styles.headerInfo}>
+            <Text style={styles.subtitle}>{bookings.length} total bookings</Text>
+            {newBookingsCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{newBookingsCount} pending</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.bookingsList}>
@@ -213,5 +249,22 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: theme.colors.textLight,
+  },
+  headerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.xs,
+  },
+  badge: {
+    backgroundColor: theme.colors.warning,
+    borderRadius: theme.borderRadius.full,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+  },
+  badgeText: {
+    color: theme.colors.white,
+    fontSize: 11,
+    fontWeight: '700' as const,
   },
 });

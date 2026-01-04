@@ -34,8 +34,17 @@ export default function AdminClasses() {
 
   const createMutation = useMutation({
     mutationFn: (data: Omit<Class, 'id'>) => dataService.createClass(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['classes'] });
+    onMutate: async (newClass) => {
+      await queryClient.cancelQueries({ queryKey: ['classes'] });
+      const previousClasses = queryClient.getQueryData(['classes']);
+      const tempId = `temp-${Date.now()}`;
+      queryClient.setQueryData(['classes'], (old: any) => 
+        [...(old || []), { ...newClass, id: tempId }]
+      );
+      return { previousClasses };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['classes'] });
       if (Platform.OS === 'web') {
         alert('Class created successfully!');
       } else {
@@ -43,7 +52,10 @@ export default function AdminClasses() {
       }
       resetForm();
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousClasses) {
+        queryClient.setQueryData(['classes'], context.previousClasses);
+      }
       console.error('Error creating class:', error);
       if (Platform.OS === 'web') {
         alert('Failed to create class. Please try again.');
@@ -56,8 +68,18 @@ export default function AdminClasses() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Class> }) => 
       dataService.updateClass(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['classes'] });
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['classes'] });
+      const previousClasses = queryClient.getQueryData(['classes']);
+      queryClient.setQueryData(['classes'], (old: any) => 
+        (old || []).map((cls: Class) => 
+          cls.id === id ? { ...cls, ...data } : cls
+        )
+      );
+      return { previousClasses };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['classes'] });
       if (Platform.OS === 'web') {
         alert('Class updated successfully!');
       } else {
@@ -65,7 +87,10 @@ export default function AdminClasses() {
       }
       resetForm();
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousClasses) {
+        queryClient.setQueryData(['classes'], context.previousClasses);
+      }
       console.error('Error updating class:', error);
       if (Platform.OS === 'web') {
         alert('Failed to update class. Please try again.');

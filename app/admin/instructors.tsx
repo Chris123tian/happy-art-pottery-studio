@@ -37,12 +37,24 @@ export default function AdminInstructors() {
 
   const createMutation = useMutation({
     mutationFn: (data: Omit<Instructor, 'id'>) => dataService.createInstructor(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['instructors'] });
+    onMutate: async (newInstructor) => {
+      await queryClient.cancelQueries({ queryKey: ['instructors'] });
+      const previousInstructors = queryClient.getQueryData(['instructors']);
+      const tempId = `temp-${Date.now()}`;
+      queryClient.setQueryData(['instructors'], (old: any) => 
+        [...(old || []), { ...newInstructor, id: tempId }]
+      );
+      return { previousInstructors };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['instructors'] });
       Alert.alert('Success', 'Instructor created successfully!');
       closeModal();
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousInstructors) {
+        queryClient.setQueryData(['instructors'], context.previousInstructors);
+      }
       console.error('Error creating instructor:', error);
       Alert.alert('Error', 'Failed to create instructor. Please try again.');
     },
@@ -51,12 +63,25 @@ export default function AdminInstructors() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Instructor> }) => 
       dataService.updateInstructor(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['instructors'] });
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['instructors'] });
+      const previousInstructors = queryClient.getQueryData(['instructors']);
+      queryClient.setQueryData(['instructors'], (old: any) => 
+        (old || []).map((instructor: Instructor) => 
+          instructor.id === id ? { ...instructor, ...data } : instructor
+        )
+      );
+      return { previousInstructors };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['instructors'] });
       Alert.alert('Success', 'Instructor updated successfully!');
       closeModal();
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousInstructors) {
+        queryClient.setQueryData(['instructors'], context.previousInstructors);
+      }
       console.error('Error updating instructor:', error);
       Alert.alert('Error', 'Failed to update instructor. Please try again.');
     },

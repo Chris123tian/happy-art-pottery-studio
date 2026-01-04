@@ -30,23 +30,33 @@ export default function AdminGallery() {
 
   const createImageMutation = useMutation({
     mutationFn: (image: Omit<GalleryImage, 'id'>) => dataService.createGalleryImage(image),
+    onMutate: async (newImage) => {
+      await queryClient.cancelQueries({ queryKey: ['gallery'] });
+      const previousGallery = queryClient.getQueryData(['gallery']);
+      const tempId = `temp-${Date.now()}`;
+      queryClient.setQueryData(['gallery'], (old: any) => 
+        [...(old || []), { ...newImage, id: tempId }]
+      );
+      return { previousGallery };
+    },
     onSuccess: async () => {
-      console.log('Image created successfully, refetching gallery...');
+      console.log('Image created successfully');
       await queryClient.invalidateQueries({ queryKey: ['gallery'] });
-      await queryClient.refetchQueries({ queryKey: ['gallery'] });
-      console.log('Gallery refetched');
       if (Platform.OS === 'web') {
         alert('Image added successfully!');
       } else {
         Alert.alert('Success', 'Image added successfully!');
       }
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousGallery) {
+        queryClient.setQueryData(['gallery'], context.previousGallery);
+      }
       console.error('Error adding image:', error);
       if (Platform.OS === 'web') {
-        alert('Failed to add image');
+        alert('Failed to add image. Please try again.');
       } else {
-        Alert.alert('Error', 'Failed to add image');
+        Alert.alert('Error', 'Failed to add image. Please try again.');
       }
     },
   });
@@ -73,15 +83,26 @@ export default function AdminGallery() {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
-        quality: 0.7,
+        quality: 0.5,
         base64: false,
       });
 
       if (!result.canceled && result.assets[0]) {
-        console.log('Image selected:', result.assets[0].uri);
+        const uri = result.assets[0].uri;
+        console.log('Image selected:', uri);
         
-        const base64Image = await imageService.convertImageToBase64(result.assets[0].uri);
-        console.log('Base64 conversion complete, size:', (base64Image.length / 1024).toFixed(2), 'KB');
+        const base64Image = await imageService.convertImageToBase64(uri);
+        const imageSizeKB = (base64Image.length / 1024).toFixed(2);
+        console.log('Base64 conversion complete, size:', imageSizeKB, 'KB');
+        
+        if (base64Image.length > 5000000) {
+          if (Platform.OS === 'web') {
+            alert('Image is too large. Please select a smaller image (max 5MB).');
+          } else {
+            Alert.alert('Error', 'Image is too large. Please select a smaller image (max 5MB).');
+          }
+          return;
+        }
         
         const newImage: Omit<GalleryImage, 'id'> = {
           source: base64Image,
@@ -137,17 +158,22 @@ export default function AdminGallery() {
         <View style={styles.gallery}>
           {images.map((image) => (
             <View key={image.id} style={styles.imageItem}>
-              <Image
-                source={{ uri: image.source }}
-                style={styles.image}
-                resizeMode="cover"
-                onError={(error) => {
-                  console.error('Image load error for', image.id, error.nativeEvent);
-                }}
-                onLoad={() => {
-                  console.log('Image loaded successfully:', image.id);
-                }}
-              />
+              {image.source ? (
+                <Image
+                  source={{ uri: image.source }}
+                  style={styles.image}
+                  resizeMode="cover"
+                  onError={(error) => {
+                    console.error('Image load error for', image.id, error.nativeEvent?.error);
+                  }}
+                  onLoadStart={() => console.log('Loading image:', image.id)}
+                  onLoadEnd={() => console.log('Image loaded:', image.id)}
+                />
+              ) : (
+                <View style={[styles.image, styles.imagePlaceholder]}>
+                  <Text style={styles.placeholderText}>No Image</Text>
+                </View>
+              )}
               <TouchableOpacity
                 style={styles.deleteButton}
                 onPress={() => handleDelete(image.id)}
@@ -269,5 +295,14 @@ const styles = StyleSheet.create({
   loadingSubtext: {
     fontSize: 14,
     color: theme.colors.textLight,
+  },
+  imagePlaceholder: {
+    backgroundColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderText: {
+    color: theme.colors.textLight,
+    fontSize: 12,
   },
 });

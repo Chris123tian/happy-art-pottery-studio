@@ -39,8 +39,17 @@ export default function AdminEvents() {
 
   const createMutation = useMutation({
     mutationFn: (data: Omit<Event, 'id'>) => dataService.createEvent(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events'] });
+    onMutate: async (newEvent) => {
+      await queryClient.cancelQueries({ queryKey: ['events'] });
+      const previousEvents = queryClient.getQueryData(['events']);
+      const tempId = `temp-${Date.now()}`;
+      queryClient.setQueryData(['events'], (old: any) => 
+        [...(old || []), { ...newEvent, id: tempId }]
+      );
+      return { previousEvents };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
       if (Platform.OS === 'web') {
         alert('Event created successfully!');
       } else {
@@ -48,7 +57,10 @@ export default function AdminEvents() {
       }
       resetForm();
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousEvents) {
+        queryClient.setQueryData(['events'], context.previousEvents);
+      }
       console.error('Error creating event:', error);
       if (Platform.OS === 'web') {
         alert('Failed to create event. Please try again.');
@@ -61,8 +73,18 @@ export default function AdminEvents() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Event> }) => 
       dataService.updateEvent(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events'] });
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['events'] });
+      const previousEvents = queryClient.getQueryData(['events']);
+      queryClient.setQueryData(['events'], (old: any) => 
+        (old || []).map((event: Event) => 
+          event.id === id ? { ...event, ...data } : event
+        )
+      );
+      return { previousEvents };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
       if (Platform.OS === 'web') {
         alert('Event updated successfully!');
       } else {
@@ -70,7 +92,10 @@ export default function AdminEvents() {
       }
       resetForm();
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousEvents) {
+        queryClient.setQueryData(['events'], context.previousEvents);
+      }
       console.error('Error updating event:', error);
       if (Platform.OS === 'web') {
         alert('Failed to update event. Please try again.');
