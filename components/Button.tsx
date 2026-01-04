@@ -57,6 +57,10 @@ export const Button: React.FC<ButtonProps> = ({
       styles.push(baseStyles.outlineText);
     }
 
+    if (disabled || loading) {
+      styles.push(baseStyles.disabledText);
+    }
+
     if (textStyle) {
       styles.push(textStyle);
     }
@@ -112,5 +116,8 @@ const baseStyles = StyleSheet.create({
   },
   outlineText: {
     color: theme.colors.primary,
+  },
+  disabledText: {
+    opacity: 0.7,
   },
 });

@@ -15,6 +15,7 @@ export interface Booking {
   date: string;
   day: string;
   classType: 'Wheel Throwing' | 'Pot Painting';
+  bookingMethod: 'whatsapp' | 'email' | 'message';
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   createdAt: string;
 }

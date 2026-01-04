@@ -7,6 +7,7 @@ import {
   TextInput,
   Platform,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter } from 'lucide-react-native';
@@ -43,6 +44,15 @@ export default function Contact() {
         read: false,
         createdAt: new Date().toISOString(),
       });
+
+      const emailBody = `New Contact Message from Happy Art Website\n\nFrom: ${name}\nEmail: ${email}\nPhone: ${phone}\nSubject: ${subject}\n\nMessage:\n${message}\n\n---\nThis message was sent from the Happy Art contact form.`;
+      const emailUrl = `mailto:happyartgh@gmail.com?subject=New Contact: ${subject}&body=${encodeURIComponent(emailBody)}`;
+      
+      try {
+        await Linking.openURL(emailUrl);
+      } catch (emailError) {
+        console.log('Could not open email client:', emailError);
+      }
 
       if (Platform.OS === 'web') {
         alert('Message sent successfully! We will get back to you soon.');

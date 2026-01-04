@@ -63,22 +63,29 @@ export default function AdminGallery() {
   });
 
   const handleAddImage = async () => {
+    if (createImageMutation.isPending) {
+      console.log('Upload already in progress');
+      return;
+    }
+
     try {
       console.log('Starting image picker...');
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
-        quality: 0.8,
+        quality: 0.7,
+        base64: false,
       });
 
       if (!result.canceled && result.assets[0]) {
-        console.log('Image selected, converting to base64...');
-        const base64Image = await imageService.convertImageToBase64(result.assets[0].uri);
-        console.log('Base64 conversion complete, length:', base64Image.length);
+        console.log('Image selected:', result.assets[0].uri);
         
-        const newImage = {
+        const base64Image = await imageService.convertImageToBase64(result.assets[0].uri);
+        console.log('Base64 conversion complete, size:', (base64Image.length / 1024).toFixed(2), 'KB');
+        
+        const newImage: Omit<GalleryImage, 'id'> = {
           source: base64Image,
-          alt: 'Gallery image',
+          alt: `Gallery image ${Date.now()}`,
           category: 'pottery' as const,
           featured: false,
         };
@@ -158,8 +165,11 @@ export default function AdminGallery() {
         )}
 
         {createImageMutation.isPending && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Uploading image...</Text>
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingCard}>
+              <Text style={styles.loadingText}>Uploading image...</Text>
+              <Text style={styles.loadingSubtext}>Please wait</Text>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -231,6 +241,33 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
+    color: theme.colors.textLight,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  loadingCard: {
+    backgroundColor: theme.colors.white,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.lg,
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: theme.colors.text,
+  },
+  loadingSubtext: {
+    fontSize: 14,
     color: theme.colors.textLight,
   },
 });

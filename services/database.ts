@@ -9,6 +9,9 @@ import {
   deleteDoc,
   getDoc,
   Firestore,
+  onSnapshot,
+  query,
+  orderBy,
 } from 'firebase/firestore';
 
 class Database {
@@ -96,17 +99,50 @@ class Database {
     }
   }
 
+  subscribeToCollection<T = any>(
+    table: string,
+    callback: (data: T[]) => void,
+    errorCallback?: (error: Error) => void
+  ): () => void {
+    try {
+      this.ensureInitialized();
+      console.log('[DB Subscribe]', table);
+      
+      const colRef = collection(this.db!, table);
+      const q = query(colRef, orderBy('createdAt', 'desc'));
+      
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const data: T[] = [];
+          snapshot.forEach((docSnap) => {
+            data.push({ id: docSnap.id, ...docSnap.data() } as T);
+          });
+          console.log(`[DB] ✓ Real-time update: ${data.length} records from ${table}`);
+          callback(data);
+        },
+        (error) => {
+          console.error('[DB Subscribe Error]', table, error.message);
+          if (errorCallback) errorCallback(error);
+        }
+      );
+      
+      return unsubscribe;
+    } catch (error: any) {
+      console.error('[DB Subscribe Error]', table, error.message);
+      return () => {};
+    }
+  }
+
   async create<T = any>(table: string, data: any): Promise<T> {
     try {
       this.ensureInitialized();
-      console.log('[DB Create]', table);
-      
       const id = data.id || Date.now().toString();
       const docRef = doc(this.db!, table, id);
-      const newItem = { ...data, id };
+      const newItem = { ...data, id, createdAt: data.createdAt || new Date().toISOString() };
       
       await setDoc(docRef, newItem);
-      console.log('[DB] ✓ Created successfully');
+      console.log(`[DB] ✓ Created ${table}:${id}`);
       return newItem as T;
     } catch (error: any) {
       console.error('[DB Create Error]', table, error.message);
@@ -117,20 +153,13 @@ class Database {
   async update<T = any>(thing: string, data: any): Promise<T> {
     try {
       this.ensureInitialized();
-      console.log('[DB Update]', thing);
-      
       const [table, id] = thing.split(':');
       const docRef = doc(this.db!, table, id);
-      
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) {
-        throw new Error(`Item ${thing} not found`);
-      }
       
       await updateDoc(docRef, data);
       
       const updatedDoc = await getDoc(docRef);
-      console.log('[DB] ✓ Updated successfully');
+      console.log(`[DB] ✓ Updated ${thing}`);
       return { id: updatedDoc.id, ...updatedDoc.data() } as T;
     } catch (error: any) {
       console.error('[DB Update Error]', thing, error.message);
@@ -141,13 +170,11 @@ class Database {
   async delete(thing: string): Promise<void> {
     try {
       this.ensureInitialized();
-      console.log('[DB Delete]', thing);
-      
       const [table, id] = thing.split(':');
       const docRef = doc(this.db!, table, id);
       
       await deleteDoc(docRef);
-      console.log('[DB] ✓ Deleted successfully');
+      console.log(`[DB] ✓ Deleted ${thing}`);
     } catch (error: any) {
       console.error('[DB Delete Error]', thing, error.message);
       throw error;
@@ -157,13 +184,11 @@ class Database {
   async upsert<T = any>(table: string, id: string, data: any): Promise<T> {
     try {
       this.ensureInitialized();
-      console.log('[DB Upsert]', `${table}:${id}`);
-      
       const docRef = doc(this.db!, table, id);
       const result = { ...data, id };
       
       await setDoc(docRef, result, { merge: true });
-      console.log('[DB] ✓ Upserted successfully');
+      console.log(`[DB] ✓ Upserted ${table}:${id}`);
       return result as T;
     } catch (error: any) {
       console.error('[DB Upsert Error]', `${table}:${id}`, error.message);

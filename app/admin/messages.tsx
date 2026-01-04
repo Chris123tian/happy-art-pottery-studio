@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,39 @@ import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useData } from '@/contexts/DataContext';
+import { database } from '@/services/database';
+import { Message } from '@/types';
 
 export default function AdminMessages() {
   const queryClient = useQueryClient();
   const { messages: rawMessages } = useData();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    console.log('[Messages] Setting up real-time listener...');
+    const unsubscribe = database.subscribeToCollection<Message>(
+      'messages',
+      (newMessages) => {
+        console.log('[Messages] Real-time update received:', newMessages.length);
+        queryClient.setQueryData(['messages'], newMessages);
+        
+        const unread = newMessages.filter(m => !m.read).length;
+        setUnreadCount(unread);
+        
+        if (unread > unreadCount) {
+          console.log('[Messages] New unread message!');
+        }
+      },
+      (error) => {
+        console.error('[Messages] Real-time listener error:', error);
+      }
+    );
+
+    return () => {
+      console.log('[Messages] Cleaning up real-time listener');
+      unsubscribe();
+    };
+  }, [queryClient, unreadCount]);
 
   const messages = useMemo(() => {
     return [...rawMessages].sort((a, b) => 
@@ -62,9 +91,14 @@ export default function AdminMessages() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
           <Text style={styles.title}>Messages</Text>
-          <Text style={styles.subtitle}>
-            {messages.filter((m) => !m.read).length} unread
-          </Text>
+          <View style={styles.headerInfo}>
+            <Text style={styles.subtitle}>
+              {messages.filter((m) => !m.read).length} unread messages
+            </Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unreadCount}</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.messagesList}>
@@ -206,5 +240,24 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: theme.colors.textLight,
+  },
+  headerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  badge: {
+    backgroundColor: theme.colors.error,
+    borderRadius: theme.borderRadius.full,
+    minWidth: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.xs,
+  },
+  badgeText: {
+    color: theme.colors.white,
+    fontSize: 12,
+    fontWeight: '700' as const,
   },
 });
