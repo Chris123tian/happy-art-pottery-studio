@@ -39,11 +39,12 @@ export default function AdminInstructors() {
     mutationFn: (data: Omit<Instructor, 'id'>) => dataService.createInstructor(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['instructors'] });
+      Alert.alert('Success', 'Instructor created successfully!');
       closeModal();
     },
     onError: (error) => {
       console.error('Error creating instructor:', error);
-      Alert.alert('Error', 'Failed to create instructor');
+      Alert.alert('Error', 'Failed to create instructor. Please try again.');
     },
   });
 
@@ -52,11 +53,12 @@ export default function AdminInstructors() {
       dataService.updateInstructor(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['instructors'] });
+      Alert.alert('Success', 'Instructor updated successfully!');
       closeModal();
     },
     onError: (error) => {
       console.error('Error updating instructor:', error);
-      Alert.alert('Error', 'Failed to update instructor');
+      Alert.alert('Error', 'Failed to update instructor. Please try again.');
     },
   });
 
@@ -324,9 +326,13 @@ export default function AdminInstructors() {
               <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+              <TouchableOpacity 
+                style={[styles.saveButton, (createMutation.isPending || updateMutation.isPending) && styles.saveButtonDisabled]} 
+                onPress={handleSave}
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
                 <Text style={styles.saveButtonText}>
-                  {editingInstructor ? 'Update' : 'Add'}
+                  {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : (editingInstructor ? 'Update' : 'Add')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -593,5 +599,8 @@ const styles = StyleSheet.create({
   uploadHint: {
     fontSize: 12,
     color: theme.colors.textLight,
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
   },
 });

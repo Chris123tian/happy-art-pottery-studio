@@ -41,11 +41,20 @@ export default function AdminEvents() {
     mutationFn: (data: Omit<Event, 'id'>) => dataService.createEvent(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      if (Platform.OS === 'web') {
+        alert('Event created successfully!');
+      } else {
+        Alert.alert('Success', 'Event created successfully!');
+      }
       resetForm();
     },
     onError: (error) => {
       console.error('Error creating event:', error);
-      Alert.alert('Error', 'Failed to create event');
+      if (Platform.OS === 'web') {
+        alert('Failed to create event. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to create event. Please try again.');
+      }
     },
   });
 
@@ -54,11 +63,20 @@ export default function AdminEvents() {
       dataService.updateEvent(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      if (Platform.OS === 'web') {
+        alert('Event updated successfully!');
+      } else {
+        Alert.alert('Success', 'Event updated successfully!');
+      }
       resetForm();
     },
     onError: (error) => {
       console.error('Error updating event:', error);
-      Alert.alert('Error', 'Failed to update event');
+      if (Platform.OS === 'web') {
+        alert('Failed to update event. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to update event. Please try again.');
+      }
     },
   });
 
@@ -248,7 +266,11 @@ export default function AdminEvents() {
             <Button
               title={editingId ? 'Update Event' : 'Create Event'}
               onPress={handleSubmit}
+              disabled={createMutation.isPending || updateMutation.isPending}
             />
+            {(createMutation.isPending || updateMutation.isPending) && (
+              <Text style={styles.loadingText}>Saving...</Text>
+            )}
           </View>
         )}
 
@@ -382,5 +404,11 @@ const styles = StyleSheet.create({
   eventDetail: {
     fontSize: 14,
     color: theme.colors.text,
+  },
+  loadingText: {
+    textAlign: 'center' as const,
+    color: theme.colors.primary,
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });

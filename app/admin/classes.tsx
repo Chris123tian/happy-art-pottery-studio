@@ -36,11 +36,20 @@ export default function AdminClasses() {
     mutationFn: (data: Omit<Class, 'id'>) => dataService.createClass(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['classes'] });
+      if (Platform.OS === 'web') {
+        alert('Class created successfully!');
+      } else {
+        Alert.alert('Success', 'Class created successfully!');
+      }
       resetForm();
     },
     onError: (error) => {
       console.error('Error creating class:', error);
-      Alert.alert('Error', 'Failed to create class');
+      if (Platform.OS === 'web') {
+        alert('Failed to create class. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to create class. Please try again.');
+      }
     },
   });
 
@@ -49,11 +58,20 @@ export default function AdminClasses() {
       dataService.updateClass(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['classes'] });
+      if (Platform.OS === 'web') {
+        alert('Class updated successfully!');
+      } else {
+        Alert.alert('Success', 'Class updated successfully!');
+      }
       resetForm();
     },
     onError: (error) => {
       console.error('Error updating class:', error);
-      Alert.alert('Error', 'Failed to update class');
+      if (Platform.OS === 'web') {
+        alert('Failed to update class. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to update class. Please try again.');
+      }
     },
   });
 
@@ -195,7 +213,11 @@ export default function AdminClasses() {
             <Button
               title={editingId ? 'Update Class' : 'Create Class'}
               onPress={handleSubmit}
+              disabled={createMutation.isPending || updateMutation.isPending}
             />
+            {(createMutation.isPending || updateMutation.isPending) && (
+              <Text style={styles.loadingText}>Saving...</Text>
+            )}
           </View>
         )}
 
@@ -336,5 +358,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textLight,
     lineHeight: 20,
+  },
+  loadingText: {
+    textAlign: 'center' as const,
+    color: theme.colors.primary,
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });
