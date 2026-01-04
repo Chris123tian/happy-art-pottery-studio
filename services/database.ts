@@ -10,6 +10,11 @@ import {
   getDoc,
   Firestore,
   onSnapshot,
+  enableIndexedDbPersistence,
+  enableNetwork,
+  disableNetwork,
+  CACHE_SIZE_UNLIMITED,
+  initializeFirestore,
 } from 'firebase/firestore';
 
 class Database {
@@ -50,12 +55,18 @@ class Database {
       if (getApps().length === 0) {
         this.app = initializeApp(firebaseConfig);
         console.log('[DB] Firebase initialized');
+        
+        this.db = initializeFirestore(this.app, {
+          cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+        });
+        
+        this.setupPersistence();
       } else {
         this.app = getApps()[0];
+        this.db = getFirestore(this.app);
         console.log('[DB] Firebase already initialized');
       }
 
-      this.db = getFirestore(this.app);
       this.isInitialized = true;
       console.log('[DB] Firestore database connected');
       console.log('[DB] Data will sync across all devices');
@@ -65,9 +76,53 @@ class Database {
     }
   }
 
+  private async setupPersistence() {
+    if (!this.db) return;
+
+    try {
+      await enableIndexedDbPersistence(this.db);
+      console.log('[DB] Offline persistence enabled');
+    } catch (err: any) {
+      if (err.code === 'failed-precondition') {
+        console.warn('[DB] Persistence failed: Multiple tabs open');
+      } else if (err.code === 'unimplemented') {
+        console.warn('[DB] Persistence not available in this browser');
+      } else {
+        console.warn('[DB] Persistence setup failed:', err.message);
+      }
+    }
+
+    try {
+      await enableNetwork(this.db);
+      console.log('[DB] Network enabled - online mode active');
+    } catch (err: any) {
+      console.error('[DB] Failed to enable network:', err.message);
+    }
+  }
+
   private ensureInitialized() {
     if (!this.isInitialized || !this.db) {
       throw new Error('Database not initialized. Please check Firebase configuration.');
+    }
+  }
+
+  async forceOnline(): Promise<void> {
+    if (!this.db) return;
+    try {
+      await enableNetwork(this.db);
+      console.log('[DB] Forced online mode');
+    } catch (err: any) {
+      console.error('[DB] Failed to enable network:', err.message);
+    }
+  }
+
+  async goOffline(): Promise<void> {
+    if (!this.db) return;
+    try {
+      await disableNetwork(this.db);
+      console.log('[DB] Offline mode enabled');
+    } catch (err: any) {
+      console.error('[DB] Failed to disable network:', err.message);
     }
   }
 
