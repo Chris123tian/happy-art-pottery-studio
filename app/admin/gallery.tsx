@@ -19,6 +19,7 @@ import { dataService } from '@/services/dataService';
 import { GalleryImage } from '@/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useData } from '@/contexts/DataContext';
+import { imageService } from '@/services/imageService';
 
 const { width } = Dimensions.get('window');
 const imageSize = width > 768 ? 200 : (width - theme.spacing.lg * 3) / 2;
@@ -63,8 +64,10 @@ export default function AdminGallery() {
       });
 
       if (!result.canceled) {
+        const base64Image = await imageService.convertImageToBase64(result.assets[0].uri);
+        
         const newImage = {
-          source: result.assets[0].uri,
+          source: base64Image,
           alt: 'Gallery image',
           category: 'pottery' as const,
           featured: false,
@@ -74,6 +77,11 @@ export default function AdminGallery() {
       }
     } catch (error) {
       console.error('Error adding image:', error);
+      if (Platform.OS === 'web') {
+        alert('Failed to add image. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to add image. Please try again.');
+      }
     }
   };
 
