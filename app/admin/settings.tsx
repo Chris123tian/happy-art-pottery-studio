@@ -50,25 +50,30 @@ export default function AdminSettings() {
 
   const pickImage = async (type: 'hero' | 'about') => {
     try {
+      console.log(`[Settings] Picking ${type} image...`);
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: type === 'hero' ? [16, 9] : [4, 3],
-        quality: 0.8,
+        quality: 0.3,
       });
 
       if (!result.canceled && result.assets[0]) {
         const uri = result.assets[0].uri;
+        console.log(`[Settings] Converting ${type} image...`);
+        
+        const { imageService } = await import('@/services/imageService');
+        const base64Image = await imageService.convertImageToBase64(uri);
+        
         const updatedSettings = {
           ...settings,
-          [type === 'hero' ? 'heroImage' : 'aboutImage']: uri,
+          [type === 'hero' ? 'heroImage' : 'aboutImage']: base64Image,
         };
         setSettings(updatedSettings);
-        updateSettingsMutation.mutate(updatedSettings);
       }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to upload image. Please try again.');
+    } catch (error: any) {
+      console.error('[Settings] Error picking image:', error);
+      Alert.alert('Error', error?.message || 'Failed to upload image. Please try again.');
     }
   };
 

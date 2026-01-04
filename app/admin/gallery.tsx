@@ -11,7 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
+
 import { Plus, Trash2 } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
@@ -79,30 +79,14 @@ export default function AdminGallery() {
     }
 
     try {
-      console.log('Starting image picker...');
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+      console.log('[Gallery] Starting image picker...');
+      const base64Image = await imageService.pickImage({
         allowsEditing: true,
-        quality: 0.5,
-        base64: false,
+        quality: 0.3,
       });
 
-      if (!result.canceled && result.assets[0]) {
-        const uri = result.assets[0].uri;
-        console.log('Image selected:', uri);
-        
-        const base64Image = await imageService.convertImageToBase64(uri);
-        const imageSizeKB = (base64Image.length / 1024).toFixed(2);
-        console.log('Base64 conversion complete, size:', imageSizeKB, 'KB');
-        
-        if (base64Image.length > 5000000) {
-          if (Platform.OS === 'web') {
-            alert('Image is too large. Please select a smaller image (max 5MB).');
-          } else {
-            Alert.alert('Error', 'Image is too large. Please select a smaller image (max 5MB).');
-          }
-          return;
-        }
+      if (base64Image) {
+        console.log('[Gallery] Image selected, creating gallery entry...');
         
         const newImage: Omit<GalleryImage, 'id'> = {
           source: base64Image,
@@ -111,17 +95,17 @@ export default function AdminGallery() {
           featured: false,
         };
 
-        console.log('Saving image to database...');
         createImageMutation.mutate(newImage);
       } else {
         console.log('Image selection cancelled');
       }
-    } catch (error) {
-      console.error('Error adding image:', error);
+    } catch (error: any) {
+      console.error('[Gallery] Error adding image:', error);
+      const message = error?.message || 'Failed to add image. Please try again.';
       if (Platform.OS === 'web') {
-        alert('Failed to add image. Please try again.');
+        alert(message);
       } else {
-        Alert.alert('Error', 'Failed to add image. Please try again.');
+        Alert.alert('Error', message);
       }
     }
   };
@@ -190,14 +174,7 @@ export default function AdminGallery() {
           </View>
         )}
 
-        {createImageMutation.isPending && (
-          <View style={styles.loadingOverlay}>
-            <View style={styles.loadingCard}>
-              <Text style={styles.loadingText}>Uploading image...</Text>
-              <Text style={styles.loadingSubtext}>Please wait</Text>
-            </View>
-          </View>
-        )}
+
       </ScrollView>
     </SafeAreaView>
   );

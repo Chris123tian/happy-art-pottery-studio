@@ -1,42 +1,33 @@
 import * as ImagePicker from 'expo-image-picker';
-import { Platform } from 'react-native';
 
 export const imageService = {
   async convertImageToBase64(uri: string): Promise<string> {
     try {
-      if (Platform.OS === 'web') {
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            if (typeof reader.result === 'string') {
-              resolve(reader.result);
-            } else {
-              reject(new Error('Failed to convert image'));
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            const sizeKB = (reader.result.length / 1024).toFixed(2);
+            console.log(`[ImageService] Image size: ${sizeKB}KB`);
+            
+            if (reader.result.length > 300000) {
+              reject(new Error('Image too large. Please use a smaller image (max 300KB base64).'));
+              return;
             }
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-      } else {
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            if (typeof reader.result === 'string') {
-              resolve(reader.result);
-            } else {
-              reject(new Error('Failed to convert image'));
-            }
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-      }
+            
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to convert image'));
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
     } catch (error) {
-      console.error('Error converting image to base64:', error);
+      console.error('[ImageService] Error converting image:', error);
       throw error;
     }
   },
@@ -56,17 +47,19 @@ export const imageService = {
         mediaTypes: ['images'],
         allowsEditing: options?.allowsEditing ?? true,
         aspect: options?.aspect ?? [1, 1],
-        quality: options?.quality ?? 0.7,
+        quality: options?.quality ?? 0.3,
       });
 
       if (!result.canceled && result.assets[0]) {
+        console.log('[ImageService] Converting image to base64...');
         const base64 = await this.convertImageToBase64(result.assets[0].uri);
+        console.log('[ImageService] Image ready');
         return base64;
       }
 
       return null;
     } catch (error) {
-      console.error('Error picking image:', error);
+      console.error('[ImageService] Error picking image:', error);
       throw error;
     }
   },
