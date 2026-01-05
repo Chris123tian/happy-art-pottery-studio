@@ -9,9 +9,6 @@ import {
   Firestore,
   onSnapshot,
   enableNetwork,
-  disableNetwork,
-  CACHE_SIZE_UNLIMITED,
-  initializeFirestore,
 } from 'firebase/firestore';
 
 class Database {
@@ -51,11 +48,8 @@ class Database {
 
       if (getApps().length === 0) {
         this.app = initializeApp(firebaseConfig);
+        this.db = getFirestore(this.app);
         console.log('[DB] Firebase initialized');
-        
-        this.db = initializeFirestore(this.app, {
-          cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-        });
         
         this.setupPersistence();
       } else {
@@ -79,8 +73,9 @@ class Database {
     try {
       await enableNetwork(this.db);
       console.log('[DB] Network enabled - online mode active');
-    } catch (err: any) {
-      console.error('[DB] Failed to enable network:', err.message);
+      console.log('[DB] Using default persistence settings for cross-device sync');
+    } catch {
+      console.log('[DB] Network already enabled or persistence already set up');
     }
   }
 
@@ -94,19 +89,9 @@ class Database {
     if (!this.db) return;
     try {
       await enableNetwork(this.db);
-      console.log('[DB] Forced online mode');
-    } catch (err: any) {
-      console.error('[DB] Failed to enable network:', err.message);
-    }
-  }
-
-  async goOffline(): Promise<void> {
-    if (!this.db) return;
-    try {
-      await disableNetwork(this.db);
-      console.log('[DB] Offline mode enabled');
-    } catch (err: any) {
-      console.error('[DB] Failed to disable network:', err.message);
+      console.log('[DB] Network enabled');
+    } catch {
+      console.log('[DB] Network already enabled');
     }
   }
 
@@ -115,27 +100,38 @@ class Database {
     return [];
   }
 
-  async select<T = any>(table: string): Promise<T[]> {
-    try {
-      this.ensureInitialized();
-      await this.forceOnline();
-      
-      console.log('[DB Select]', table);
-      
-      const colRef = collection(this.db!, table);
-      const snapshot = await getDocs(colRef);
-      
-      const data: T[] = [];
-      snapshot.forEach((docSnap) => {
-        data.push({ id: docSnap.id, ...docSnap.data() } as T);
-      });
-      
-      console.log(`[DB] ✓ Retrieved ${data.length} records from ${table}`);
-      return data;
-    } catch (error: any) {
-      console.error('[DB Select Error]', table, error.message);
-      return [];
+  async select<T = any>(table: string, retries = 3): Promise<T[]> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        this.ensureInitialized();
+        await this.forceOnline();
+        
+        console.log(`[DB Select] ${table} (attempt ${attempt}/${retries})`);
+        
+        const colRef = collection(this.db!, table);
+        const snapshot = await getDocs(colRef);
+        
+        const data: T[] = [];
+        snapshot.forEach((docSnap) => {
+          data.push({ id: docSnap.id, ...docSnap.data() } as T);
+        });
+        
+        console.log(`[DB] ✓ Retrieved ${data.length} records from ${table}`);
+        return data;
+      } catch (error: any) {
+        console.error(`[DB Select Error] ${table} (attempt ${attempt}/${retries}):`, error.message);
+        
+        if (attempt < retries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`[DB] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          await this.forceOnline();
+        } else {
+          return [];
+        }
+      }
     }
+    return [];
   }
 
   subscribeToCollection<T = any>(
@@ -172,91 +168,135 @@ class Database {
     }
   }
 
-  async create<T = any>(table: string, data: any): Promise<T> {
-    try {
-      this.ensureInitialized();
-      await this.forceOnline();
-      
-      const id = data.id || Date.now().toString();
-      const docRef = doc(this.db!, table, id);
-      const timestamp = new Date().toISOString();
-      const newItem = { 
-        ...data, 
-        id, 
-        createdAt: data.createdAt || timestamp,
-        updatedAt: timestamp
-      };
-      
-      await setDoc(docRef, newItem);
-      console.log(`[DB] ✓ Created ${table}:${id}`);
-      return newItem as T;
-    } catch (error: any) {
-      console.error('[DB Create Error]', table, error.message);
-      throw error;
+  async create<T = any>(table: string, data: any, retries = 3): Promise<T> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        this.ensureInitialized();
+        await this.forceOnline();
+        
+        const id = data.id || Date.now().toString();
+        const docRef = doc(this.db!, table, id);
+        const timestamp = new Date().toISOString();
+        const newItem = { 
+          ...data, 
+          id, 
+          createdAt: data.createdAt || timestamp,
+          updatedAt: timestamp
+        };
+        
+        await setDoc(docRef, newItem);
+        console.log(`[DB] ✓ Created ${table}:${id}`);
+        return newItem as T;
+      } catch (error: any) {
+        console.error(`[DB Create Error] ${table} (attempt ${attempt}/${retries}):`, error.message);
+        
+        if (attempt < retries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`[DB] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          await this.forceOnline();
+        } else {
+          throw error;
+        }
+      }
+    }
+    throw new Error('Failed to create after retries');
+  }
+
+  async update<T = any>(thing: string, data: any, retries = 3): Promise<T> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        this.ensureInitialized();
+        await this.forceOnline();
+        
+        const [table, id] = thing.split(':');
+        const docRef = doc(this.db!, table, id);
+        
+        const updateData = {
+          ...data,
+          id,
+          updatedAt: new Date().toISOString()
+        };
+        
+        await setDoc(docRef, updateData, { merge: true });
+        console.log(`[DB] ✓ Updated ${thing}`);
+        return updateData as T;
+      } catch (error: any) {
+        console.error(`[DB Update Error] ${thing} (attempt ${attempt}/${retries}):`, error.message);
+        
+        if (attempt < retries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`[DB] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          await this.forceOnline();
+        } else {
+          throw error;
+        }
+      }
+    }
+    throw new Error('Failed to update after retries');
+  }
+
+  async delete(thing: string, retries = 3): Promise<void> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        this.ensureInitialized();
+        await this.forceOnline();
+        
+        const [table, id] = thing.split(':');
+        const docRef = doc(this.db!, table, id);
+        
+        await deleteDoc(docRef);
+        console.log(`[DB] ✓ Deleted ${thing}`);
+        return;
+      } catch (error: any) {
+        console.error(`[DB Delete Error] ${thing} (attempt ${attempt}/${retries}):`, error.message);
+        
+        if (attempt < retries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`[DB] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          await this.forceOnline();
+        } else {
+          throw error;
+        }
+      }
     }
   }
 
-  async update<T = any>(thing: string, data: any): Promise<T> {
-    try {
-      this.ensureInitialized();
-      await this.forceOnline();
-      
-      const [table, id] = thing.split(':');
-      const docRef = doc(this.db!, table, id);
-      
-      const updateData = {
-        ...data,
-        id,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await setDoc(docRef, updateData, { merge: true });
-      console.log(`[DB] ✓ Updated ${thing}`);
-      return updateData as T;
-    } catch (error: any) {
-      console.error('[DB Update Error]', thing, error.message);
-      throw error;
+  async upsert<T = any>(table: string, id: string, data: any, retries = 3): Promise<T> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        this.ensureInitialized();
+        await this.forceOnline();
+        
+        const docRef = doc(this.db!, table, id);
+        const timestamp = new Date().toISOString();
+        
+        const result = { 
+          ...data, 
+          id,
+          createdAt: data.createdAt || timestamp,
+          updatedAt: timestamp
+        };
+        
+        await setDoc(docRef, result, { merge: true });
+        console.log(`[DB] ✓ Upserted ${table}:${id}`);
+        return result as T;
+      } catch (error: any) {
+        console.error(`[DB Upsert Error] ${table}:${id} (attempt ${attempt}/${retries}):`, error.message);
+        
+        if (attempt < retries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`[DB] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          await this.forceOnline();
+        } else {
+          throw error;
+        }
+      }
     }
-  }
-
-  async delete(thing: string): Promise<void> {
-    try {
-      this.ensureInitialized();
-      await this.forceOnline();
-      
-      const [table, id] = thing.split(':');
-      const docRef = doc(this.db!, table, id);
-      
-      await deleteDoc(docRef);
-      console.log(`[DB] ✓ Deleted ${thing}`);
-    } catch (error: any) {
-      console.error('[DB Delete Error]', thing, error.message);
-      throw error;
-    }
-  }
-
-  async upsert<T = any>(table: string, id: string, data: any): Promise<T> {
-    try {
-      this.ensureInitialized();
-      await this.forceOnline();
-      
-      const docRef = doc(this.db!, table, id);
-      const timestamp = new Date().toISOString();
-      
-      const result = { 
-        ...data, 
-        id,
-        createdAt: data.createdAt || timestamp,
-        updatedAt: timestamp
-      };
-      
-      await setDoc(docRef, result, { merge: true });
-      console.log(`[DB] ✓ Upserted ${table}:${id}`);
-      return result as T;
-    } catch (error: any) {
-      console.error('[DB Upsert Error]', `${table}:${id}`, error.message);
-      throw error;
-    }
+    throw new Error('Failed to upsert after retries');
   }
 }
 

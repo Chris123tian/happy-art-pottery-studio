@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 
 export const imageService = {
-  async compressImage(uri: string, maxSizeMB: number = 5): Promise<string> {
+  async compressImage(uri: string, maxSizeMB: number = 10): Promise<string> {
     try {
       const response = await fetch(uri);
       const blob = await response.blob();
@@ -33,7 +33,7 @@ export const imageService = {
   },
 
   async convertImageToBase64(uri: string): Promise<string> {
-    return this.compressImage(uri, 5);
+    return this.compressImage(uri, 10);
   },
 
   async pickImage(options?: {

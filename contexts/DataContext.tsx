@@ -18,82 +18,162 @@ export const [DataProvider, useData] = createContextHook(() => {
 
   const settingsQuery = useQuery({
     queryKey: ['settings'],
-    queryFn: () => dataService.getSettings(),
-    staleTime: 1000,
+    queryFn: async () => {
+      try {
+        const result = await dataService.getSettings();
+        return result;
+      } catch (error) {
+        console.error('[DataContext] Failed to fetch settings:', error);
+        throw error;
+      }
+    },
+    staleTime: 0,
     gcTime: 300000,
-    refetchOnMount: true,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
-    retry: 3,
+    refetchOnReconnect: true,
+    retry: 5,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const classesQuery = useQuery({
     queryKey: ['classes'],
-    queryFn: () => dataService.getClasses(),
-    staleTime: 1000,
+    queryFn: async () => {
+      try {
+        const result = await dataService.getClasses();
+        return result;
+      } catch (error) {
+        console.error('[DataContext] Failed to fetch classes:', error);
+        throw error;
+      }
+    },
+    staleTime: 0,
     gcTime: 300000,
-    refetchOnMount: true,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
-    retry: 3,
+    refetchOnReconnect: true,
+    retry: 5,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const bookingsQuery = useQuery({
     queryKey: ['bookings'],
-    queryFn: () => dataService.getBookings(),
-    staleTime: 1000,
+    queryFn: async () => {
+      try {
+        const result = await dataService.getBookings();
+        return result;
+      } catch (error) {
+        console.error('[DataContext] Failed to fetch bookings:', error);
+        return [];
+      }
+    },
+    staleTime: 0,
     gcTime: 300000,
-    refetchOnMount: true,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
-    retry: 3,
+    refetchOnReconnect: true,
+    retry: 5,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const messagesQuery = useQuery({
     queryKey: ['messages'],
-    queryFn: () => dataService.getMessages(),
-    staleTime: 1000,
+    queryFn: async () => {
+      try {
+        const result = await dataService.getMessages();
+        return result;
+      } catch (error) {
+        console.error('[DataContext] Failed to fetch messages:', error);
+        return [];
+      }
+    },
+    staleTime: 0,
     gcTime: 300000,
-    refetchOnMount: true,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
-    retry: 3,
+    refetchOnReconnect: true,
+    retry: 5,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const instructorsQuery = useQuery({
     queryKey: ['instructors'],
-    queryFn: () => dataService.getInstructors(),
-    staleTime: 1000,
+    queryFn: async () => {
+      try {
+        const result = await dataService.getInstructors();
+        return result;
+      } catch (error) {
+        console.error('[DataContext] Failed to fetch instructors:', error);
+        throw error;
+      }
+    },
+    staleTime: 0,
     gcTime: 300000,
-    refetchOnMount: true,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
-    retry: 3,
+    refetchOnReconnect: true,
+    retry: 5,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const galleryQuery = useQuery({
     queryKey: ['gallery'],
-    queryFn: () => dataService.getGallery(),
-    staleTime: 1000,
+    queryFn: async () => {
+      try {
+        const result = await dataService.getGallery();
+        return result;
+      } catch (error) {
+        console.error('[DataContext] Failed to fetch gallery:', error);
+        throw error;
+      }
+    },
+    staleTime: 0,
     gcTime: 300000,
-    refetchOnMount: true,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
-    retry: 3,
+    refetchOnReconnect: true,
+    retry: 5,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const eventsQuery = useQuery({
     queryKey: ['events'],
-    queryFn: () => dataService.getEvents(),
-    staleTime: 1000,
+    queryFn: async () => {
+      try {
+        const result = await dataService.getEvents();
+        return result;
+      } catch (error) {
+        console.error('[DataContext] Failed to fetch events:', error);
+        throw error;
+      }
+    },
+    staleTime: 0,
     gcTime: 300000,
-    refetchOnMount: true,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
-    retry: 3,
+    refetchOnReconnect: true,
+    retry: 5,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const testimonialsQuery = useQuery({
     queryKey: ['testimonials'],
-    queryFn: () => dataService.getTestimonials(),
-    staleTime: 1000,
+    queryFn: async () => {
+      try {
+        const result = await dataService.getTestimonials();
+        return result;
+      } catch (error) {
+        console.error('[DataContext] Failed to fetch testimonials:', error);
+        throw error;
+      }
+    },
+    staleTime: 0,
     gcTime: 300000,
-    refetchOnMount: true,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
-    retry: 3,
+    refetchOnReconnect: true,
+    retry: 5,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   useEffect(() => {
