@@ -108,15 +108,7 @@ class Database {
   }
 
   async forceOnline(): Promise<void> {
-    if (!this.db) return;
-    try {
-      await enableNetwork(this.db);
-      console.log('[DB] ✓ Network force-enabled');
-    } catch (error: any) {
-      if (!error.message.includes('already enabled')) {
-        console.log('[DB] Network status:', error.message);
-      }
-    }
+    return;
   }
 
   async clearCache(): Promise<void> {
@@ -139,7 +131,6 @@ class Database {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         this.ensureInitialized();
-        await this.forceOnline();
         
         console.log(`[DB Select] ${table} (attempt ${attempt}/${retries})`);
         
@@ -156,12 +147,14 @@ class Database {
       } catch (error: any) {
         console.error(`[DB Select Error] ${table} (attempt ${attempt}/${retries}):`, error.message);
         
-        if (attempt < retries) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        if (attempt < retries && !error.message.includes('Missing or insufficient permissions')) {
+          const delay = 1000 * attempt;
           console.log(`[DB] Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
-          await this.forceOnline();
         } else {
+          if (error.message.includes('Missing or insufficient permissions')) {
+            console.log(`[DB] Skipping ${table} - requires authentication or security rules update`);
+          }
           return [];
         }
       }
@@ -182,17 +175,23 @@ class Database {
       
       const unsubscribe = onSnapshot(
         colRef,
-        (snapshot) => {
-          const data: T[] = [];
-          snapshot.forEach((docSnap) => {
-            data.push({ id: docSnap.id, ...docSnap.data() } as T);
-          });
-          console.log(`[DB] ✓ Real-time update: ${data.length} records from ${table}`);
-          callback(data);
-        },
-        (error) => {
-          console.error('[DB Subscribe Error]', table, error.message);
-          if (errorCallback) errorCallback(error);
+        {
+          next: (snapshot) => {
+            const data: T[] = [];
+            snapshot.forEach((docSnap) => {
+              data.push({ id: docSnap.id, ...docSnap.data() } as T);
+            });
+            console.log(`[DB] ✓ Real-time update: ${data.length} records from ${table}`);
+            callback(data);
+          },
+          error: (error) => {
+            if (error.message.includes('Missing or insufficient permissions')) {
+              console.log(`[DB] ${table} requires authentication or security rules update`);
+            } else {
+              console.error('[DB Subscribe Error]', table, error.message);
+            }
+            if (errorCallback) errorCallback(error);
+          }
         }
       );
       
@@ -203,11 +202,10 @@ class Database {
     }
   }
 
-  async create<T = any>(table: string, data: any, retries = 3): Promise<T> {
+  async create<T = any>(table: string, data: any, retries = 2): Promise<T> {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         this.ensureInitialized();
-        await this.forceOnline();
         
         const id = data.id || Date.now().toString();
         const docRef = doc(this.db!, table, id);
@@ -226,10 +224,7 @@ class Database {
         console.error(`[DB Create Error] ${table} (attempt ${attempt}/${retries}):`, error.message);
         
         if (attempt < retries) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-          console.log(`[DB] Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          await this.forceOnline();
+          await new Promise(resolve => setTimeout(resolve, 1000));
         } else {
           throw error;
         }
@@ -238,11 +233,10 @@ class Database {
     throw new Error('Failed to create after retries');
   }
 
-  async update<T = any>(thing: string, data: any, retries = 3): Promise<T> {
+  async update<T = any>(thing: string, data: any, retries = 2): Promise<T> {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         this.ensureInitialized();
-        await this.forceOnline();
         
         const [table, id] = thing.split(':');
         const docRef = doc(this.db!, table, id);
@@ -260,10 +254,7 @@ class Database {
         console.error(`[DB Update Error] ${thing} (attempt ${attempt}/${retries}):`, error.message);
         
         if (attempt < retries) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-          console.log(`[DB] Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          await this.forceOnline();
+          await new Promise(resolve => setTimeout(resolve, 1000));
         } else {
           throw error;
         }
@@ -272,11 +263,10 @@ class Database {
     throw new Error('Failed to update after retries');
   }
 
-  async delete(thing: string, retries = 3): Promise<void> {
+  async delete(thing: string, retries = 2): Promise<void> {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         this.ensureInitialized();
-        await this.forceOnline();
         
         const [table, id] = thing.split(':');
         const docRef = doc(this.db!, table, id);
@@ -288,10 +278,7 @@ class Database {
         console.error(`[DB Delete Error] ${thing} (attempt ${attempt}/${retries}):`, error.message);
         
         if (attempt < retries) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-          console.log(`[DB] Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          await this.forceOnline();
+          await new Promise(resolve => setTimeout(resolve, 1000));
         } else {
           throw error;
         }
@@ -299,11 +286,10 @@ class Database {
     }
   }
 
-  async upsert<T = any>(table: string, id: string, data: any, retries = 3): Promise<T> {
+  async upsert<T = any>(table: string, id: string, data: any, retries = 2): Promise<T> {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         this.ensureInitialized();
-        await this.forceOnline();
         
         const docRef = doc(this.db!, table, id);
         const timestamp = new Date().toISOString();
@@ -319,13 +305,10 @@ class Database {
         console.log(`[DB] ✓ Upserted ${table}:${id}`);
         return result as T;
       } catch (error: any) {
-        console.error(`[DB Upsert Error] ${table}:${id} (attempt ${attempt}/${retries}):`, error.message);
+        console.error(`[DB Upsert Error] ${table}:${id}`, error.message);
         
         if (attempt < retries) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-          console.log(`[DB] Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          await this.forceOnline();
+          await new Promise(resolve => setTimeout(resolve, 1000));
         } else {
           throw error;
         }

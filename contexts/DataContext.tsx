@@ -1,252 +1,144 @@
-import React, { ReactNode, useEffect, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { dataService } from '@/services/dataService';
+import React, { ReactNode, useEffect, useState, useRef } from 'react';
 import { database } from '@/services/database';
+import { dataService } from '@/services/dataService';
 import createContextHook from '@nkzw/create-context-hook';
 import { SiteSettings, Class, Booking, Message, Instructor, GalleryImage, Event, Testimonial } from '@/types';
 
 export const [DataProvider, useData] = createContextHook(() => {
-  const queryClient = useQueryClient();
-  const [realtimeSettings, setRealtimeSettings] = useState<SiteSettings | null>(null);
-  const [realtimeClasses, setRealtimeClasses] = useState<Class[]>([]);
-  const [realtimeBookings, setRealtimeBookings] = useState<Booking[]>([]);
-  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
-  const [realtimeInstructors, setRealtimeInstructors] = useState<Instructor[]>([]);
-  const [realtimeGallery, setRealtimeGallery] = useState<GalleryImage[]>([]);
-  const [realtimeEvents, setRealtimeEvents] = useState<Event[]>([]);
-  const [realtimeTestimonials, setRealtimeTestimonials] = useState<Testimonial[]>([]);
-
-  const settingsQuery = useQuery({
-    queryKey: ['settings'],
-    queryFn: async () => {
-      try {
-        const result = await dataService.getSettings();
-        return result;
-      } catch (error) {
-        console.error('[DataContext] Failed to fetch settings:', error);
-        throw error;
-      }
-    },
-    staleTime: 0,
-    gcTime: 300000,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    retry: 5,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
-
-  const classesQuery = useQuery({
-    queryKey: ['classes'],
-    queryFn: async () => {
-      try {
-        const result = await dataService.getClasses();
-        return result;
-      } catch (error) {
-        console.error('[DataContext] Failed to fetch classes:', error);
-        throw error;
-      }
-    },
-    staleTime: 0,
-    gcTime: 300000,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    retry: 5,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
-
-  const bookingsQuery = useQuery({
-    queryKey: ['bookings'],
-    queryFn: async () => {
-      try {
-        const result = await dataService.getBookings();
-        return result;
-      } catch (error) {
-        console.error('[DataContext] Failed to fetch bookings:', error);
-        return [];
-      }
-    },
-    staleTime: 0,
-    gcTime: 300000,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    retry: 5,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
-
-  const messagesQuery = useQuery({
-    queryKey: ['messages'],
-    queryFn: async () => {
-      try {
-        const result = await dataService.getMessages();
-        return result;
-      } catch (error) {
-        console.error('[DataContext] Failed to fetch messages:', error);
-        return [];
-      }
-    },
-    staleTime: 0,
-    gcTime: 300000,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    retry: 5,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
-
-  const instructorsQuery = useQuery({
-    queryKey: ['instructors'],
-    queryFn: async () => {
-      try {
-        const result = await dataService.getInstructors();
-        return result;
-      } catch (error) {
-        console.error('[DataContext] Failed to fetch instructors:', error);
-        throw error;
-      }
-    },
-    staleTime: 0,
-    gcTime: 300000,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    retry: 5,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
-
-  const galleryQuery = useQuery({
-    queryKey: ['gallery'],
-    queryFn: async () => {
-      try {
-        const result = await dataService.getGallery();
-        return result;
-      } catch (error) {
-        console.error('[DataContext] Failed to fetch gallery:', error);
-        throw error;
-      }
-    },
-    staleTime: 0,
-    gcTime: 300000,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    retry: 5,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
-
-  const eventsQuery = useQuery({
-    queryKey: ['events'],
-    queryFn: async () => {
-      try {
-        const result = await dataService.getEvents();
-        return result;
-      } catch (error) {
-        console.error('[DataContext] Failed to fetch events:', error);
-        throw error;
-      }
-    },
-    staleTime: 0,
-    gcTime: 300000,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    retry: 5,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
-
-  const testimonialsQuery = useQuery({
-    queryKey: ['testimonials'],
-    queryFn: async () => {
-      try {
-        const result = await dataService.getTestimonials();
-        return result;
-      } catch (error) {
-        console.error('[DataContext] Failed to fetch testimonials:', error);
-        throw error;
-      }
-    },
-    staleTime: 0,
-    gcTime: 300000,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    retry: 5,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
+  const [gallery, setGallery] = useState<GalleryImage[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const listenersSetup = useRef(false);
 
   useEffect(() => {
+    if (listenersSetup.current) {
+      console.log('[DataContext] Listeners already setup, skipping');
+      return;
+    }
+
     console.log('[DataContext] Setting up real-time listeners...');
+    listenersSetup.current = true;
+
+    const loadInitialData = async () => {
+      try {
+        setIsLoading(true);
+        const [settingsData, classesData, instructorsData, galleryData, eventsData, testimonialsData] = await Promise.all([
+          dataService.getSettings().catch(() => null),
+          dataService.getClasses().catch(() => []),
+          dataService.getInstructors().catch(() => []),
+          dataService.getGallery().catch(() => []),
+          dataService.getEvents().catch(() => []),
+          dataService.getTestimonials().catch(() => []),
+        ]);
+
+        if (settingsData) setSettings(settingsData);
+        setClasses(classesData);
+        setInstructors(instructorsData);
+        setGallery(galleryData);
+        setEvents(eventsData);
+        setTestimonials(testimonialsData);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('[DataContext] Failed to load initial data:', error);
+        setIsError(true);
+        setIsLoading(false);
+      }
+    };
+
+    loadInitialData();
     
     const unsubSettings = database.subscribeToCollection<SiteSettings>(
       'settings',
       (data) => {
         if (data.length > 0) {
-          setRealtimeSettings(data[0]);
-          queryClient.setQueryData(['settings'], data[0]);
+          setSettings(data[0]);
         }
+      },
+      (error) => {
+        console.error('[DataContext] Settings subscription error:', error);
       }
     );
 
     const unsubClasses = database.subscribeToCollection<Class>(
       'classes',
       (data) => {
-        setRealtimeClasses(data);
-        queryClient.setQueryData(['classes'], data);
+        setClasses(data);
+      },
+      (error) => {
+        console.error('[DataContext] Classes subscription error:', error);
       }
     );
 
     const unsubBookings = database.subscribeToCollection<Booking>(
       'bookings',
       (data) => {
-        setRealtimeBookings(data);
-        queryClient.setQueryData(['bookings'], data);
+        setBookings(data);
+      },
+      (error) => {
+        console.error('[DataContext] Bookings subscription error:', error);
       }
     );
 
     const unsubMessages = database.subscribeToCollection<Message>(
       'messages',
       (data) => {
-        setRealtimeMessages(data);
-        queryClient.setQueryData(['messages'], data);
+        setMessages(data);
+      },
+      (error) => {
+        console.error('[DataContext] Messages subscription error:', error);
       }
     );
 
     const unsubInstructors = database.subscribeToCollection<Instructor>(
       'instructors',
       (data) => {
-        setRealtimeInstructors(data);
-        queryClient.setQueryData(['instructors'], data);
+        setInstructors(data);
+      },
+      (error) => {
+        console.error('[DataContext] Instructors subscription error:', error);
       }
     );
 
     const unsubGallery = database.subscribeToCollection<GalleryImage>(
       'gallery',
       (data) => {
-        setRealtimeGallery(data);
-        queryClient.setQueryData(['gallery'], data);
+        setGallery(data);
+      },
+      (error) => {
+        console.error('[DataContext] Gallery subscription error:', error);
       }
     );
 
     const unsubEvents = database.subscribeToCollection<Event>(
       'events',
       (data) => {
-        setRealtimeEvents(data);
-        queryClient.setQueryData(['events'], data);
+        setEvents(data);
+      },
+      (error) => {
+        console.error('[DataContext] Events subscription error:', error);
       }
     );
 
     const unsubTestimonials = database.subscribeToCollection<Testimonial>(
       'testimonials',
       (data) => {
-        setRealtimeTestimonials(data);
-        queryClient.setQueryData(['testimonials'], data);
+        setTestimonials(data);
+      },
+      (error) => {
+        console.error('[DataContext] Testimonials subscription error:', error);
       }
     );
 
     return () => {
       console.log('[DataContext] Cleaning up real-time listeners');
+      listenersSetup.current = false;
       unsubSettings();
       unsubClasses();
       unsubBookings();
@@ -256,23 +148,7 @@ export const [DataProvider, useData] = createContextHook(() => {
       unsubEvents();
       unsubTestimonials();
     };
-  }, [queryClient]);
-
-  const isAnyLoading = 
-    settingsQuery.isLoading ||
-    classesQuery.isLoading ||
-    galleryQuery.isLoading ||
-    instructorsQuery.isLoading ||
-    testimonialsQuery.isLoading;
-
-  const settings = realtimeSettings || settingsQuery.data || null;
-  const classes = realtimeClasses.length > 0 ? realtimeClasses : (classesQuery.data || []);
-  const bookings = realtimeBookings.length > 0 ? realtimeBookings : (bookingsQuery.data || []);
-  const messages = realtimeMessages.length > 0 ? realtimeMessages : (messagesQuery.data || []);
-  const instructors = realtimeInstructors.length > 0 ? realtimeInstructors : (instructorsQuery.data || []);
-  const gallery = realtimeGallery.length > 0 ? realtimeGallery : (galleryQuery.data || []);
-  const events = realtimeEvents.length > 0 ? realtimeEvents : (eventsQuery.data || []);
-  const testimonials = realtimeTestimonials.length > 0 ? realtimeTestimonials : (testimonialsQuery.data || []);
+  }, []);
 
   return {
     settings,
@@ -283,8 +159,8 @@ export const [DataProvider, useData] = createContextHook(() => {
     gallery,
     events,
     testimonials,
-    isLoading: isAnyLoading,
-    isError: settingsQuery.isError || classesQuery.isError,
+    isLoading,
+    isError,
   };
 });
 
