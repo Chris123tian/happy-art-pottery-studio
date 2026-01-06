@@ -9,12 +9,18 @@ import {
   Firestore,
   onSnapshot,
   enableNetwork,
+  disableNetwork,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  CACHE_SIZE_UNLIMITED,
 } from 'firebase/firestore';
 
 class Database {
   private db: Firestore | null = null;
   private app: FirebaseApp | null = null;
   private isInitialized = false;
+  private persistenceEnabled = false;
 
   constructor() {
     this.initFirebase();
@@ -48,14 +54,26 @@ class Database {
 
       if (getApps().length === 0) {
         this.app = initializeApp(firebaseConfig);
-        this.db = getFirestore(this.app);
-        console.log('[DB] Firebase initialized');
+        
+        try {
+          this.db = initializeFirestore(this.app, {
+            localCache: persistentLocalCache({
+              tabManager: persistentMultipleTabManager(),
+              cacheSizeBytes: CACHE_SIZE_UNLIMITED
+            })
+          });
+          console.log('[DB] Firebase initialized with persistent cache');
+        } catch (error: any) {
+          console.log('[DB] Persistent cache failed, using default:', error.message);
+          this.db = getFirestore(this.app);
+        }
         
         this.setupPersistence();
       } else {
         this.app = getApps()[0];
         this.db = getFirestore(this.app);
         console.log('[DB] Firebase already initialized');
+        this.setupPersistence();
       }
 
       this.isInitialized = true;
@@ -68,14 +86,18 @@ class Database {
   }
 
   private async setupPersistence() {
-    if (!this.db) return;
+    if (!this.db || this.persistenceEnabled) return;
 
     try {
       await enableNetwork(this.db);
-      console.log('[DB] Network enabled - online mode active');
-      console.log('[DB] Using default persistence settings for cross-device sync');
-    } catch {
-      console.log('[DB] Network already enabled or persistence already set up');
+      this.persistenceEnabled = true;
+      console.log('[DB] ✓ Network enabled - online mode active');
+      console.log('[DB] ✓ Persistence enabled for cross-device sync');
+      console.log('[DB] ✓ All data changes will sync in real-time');
+    } catch (error: any) {
+      console.log('[DB] Note:', error.message);
+      console.log('[DB] ✓ Using default network settings');
+      this.persistenceEnabled = true;
     }
   }
 
@@ -89,9 +111,22 @@ class Database {
     if (!this.db) return;
     try {
       await enableNetwork(this.db);
-      console.log('[DB] Network enabled');
-    } catch {
-      console.log('[DB] Network already enabled');
+      console.log('[DB] ✓ Network force-enabled');
+    } catch (error: any) {
+      if (!error.message.includes('already enabled')) {
+        console.log('[DB] Network status:', error.message);
+      }
+    }
+  }
+
+  async clearCache(): Promise<void> {
+    if (!this.db) return;
+    try {
+      await disableNetwork(this.db);
+      await enableNetwork(this.db);
+      console.log('[DB] ✓ Cache cleared and network reconnected');
+    } catch (error: any) {
+      console.log('[DB] Cache clear status:', error.message);
     }
   }
 

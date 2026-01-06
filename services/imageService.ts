@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 
 export const imageService = {
-  async compressImage(uri: string, maxSizeMB: number = 10): Promise<string> {
+  async compressImage(uri: string, maxSizeMB: number = 5): Promise<string> {
     try {
       const response = await fetch(uri);
       const blob = await response.blob();
@@ -32,8 +32,8 @@ export const imageService = {
     }
   },
 
-  async convertImageToBase64(uri: string): Promise<string> {
-    return this.compressImage(uri, 10);
+  async convertImageToBase64(uri: string, maxSizeMB: number = 5): Promise<string> {
+    return this.compressImage(uri, maxSizeMB);
   },
 
   async pickImage(options?: {
@@ -51,7 +51,7 @@ export const imageService = {
         mediaTypes: ['images'],
         allowsEditing: options?.allowsEditing ?? true,
         aspect: options?.aspect ?? [1, 1],
-        quality: options?.quality ?? 0.7,
+        quality: options?.quality ?? 0.8,
       });
 
       if (!result.canceled && result.assets[0]) {
