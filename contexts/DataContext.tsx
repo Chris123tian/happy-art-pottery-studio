@@ -15,16 +15,10 @@ export const [DataProvider, useData] = createContextHook(() => {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
-  const listenersSetup = useRef(false);
+  const unsubscribeRef = useRef<(() => void)[]>([]);
 
   useEffect(() => {
-    if (listenersSetup.current) {
-      console.log('[DataContext] Listeners already setup, skipping');
-      return;
-    }
-
     console.log('[DataContext] Setting up real-time listeners...');
-    listenersSetup.current = true;
 
     const loadInitialData = async () => {
       try {
@@ -136,17 +130,27 @@ export const [DataProvider, useData] = createContextHook(() => {
       }
     );
 
+    unsubscribeRef.current = [
+      unsubSettings,
+      unsubClasses,
+      unsubBookings,
+      unsubMessages,
+      unsubInstructors,
+      unsubGallery,
+      unsubEvents,
+      unsubTestimonials,
+    ];
+
     return () => {
       console.log('[DataContext] Cleaning up real-time listeners');
-      listenersSetup.current = false;
-      unsubSettings();
-      unsubClasses();
-      unsubBookings();
-      unsubMessages();
-      unsubInstructors();
-      unsubGallery();
-      unsubEvents();
-      unsubTestimonials();
+      unsubscribeRef.current.forEach((unsub) => {
+        try {
+          unsub();
+        } catch (error) {
+          console.error('[DataContext] Error during cleanup:', error);
+        }
+      });
+      unsubscribeRef.current = [];
     };
   }, []);
 

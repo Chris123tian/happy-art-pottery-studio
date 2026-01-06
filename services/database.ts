@@ -21,6 +21,7 @@ class Database {
   private app: FirebaseApp | null = null;
   private isInitialized = false;
   private persistenceEnabled = false;
+  private activeListeners = new Map<string, () => void>();
 
   constructor() {
     this.initFirebase();
@@ -108,7 +109,15 @@ class Database {
   }
 
   async forceOnline(): Promise<void> {
-    return;
+    if (!this.db) return;
+    try {
+      await enableNetwork(this.db);
+      console.log('[DB] ✓ Network force-enabled');
+    } catch (error: any) {
+      if (!error.message.includes('already enabled')) {
+        console.log('[DB] Network status:', error.message);
+      }
+    }
   }
 
   async clearCache(): Promise<void> {
@@ -132,7 +141,9 @@ class Database {
       try {
         this.ensureInitialized();
         
-        console.log(`[DB Select] ${table} (attempt ${attempt}/${retries})`);
+        if (attempt === 1) {
+          console.log(`[DB Select] ${table}`);
+        }
         
         const colRef = collection(this.db!, table);
         const snapshot = await getDocs(colRef);
@@ -145,16 +156,17 @@ class Database {
         console.log(`[DB] ✓ Retrieved ${data.length} records from ${table}`);
         return data;
       } catch (error: any) {
-        console.error(`[DB Select Error] ${table} (attempt ${attempt}/${retries}):`, error.message);
+        if (error.message.includes('Missing or insufficient permissions')) {
+          console.log(`[DB] ${table} requires authentication`);
+          return [];
+        }
         
-        if (attempt < retries && !error.message.includes('Missing or insufficient permissions')) {
+        console.error(`[DB Select Error] ${table}:`, error.message);
+        
+        if (attempt < retries) {
           const delay = 1000 * attempt;
-          console.log(`[DB] Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         } else {
-          if (error.message.includes('Missing or insufficient permissions')) {
-            console.log(`[DB] Skipping ${table} - requires authentication or security rules update`);
-          }
           return [];
         }
       }
@@ -169,7 +181,13 @@ class Database {
   ): () => void {
     try {
       this.ensureInitialized();
-      console.log('[DB Subscribe]', table);
+      
+      if (this.activeListeners.has(table)) {
+        console.log(`[DB Subscribe] ${table} - Reusing existing listener`);
+        return this.activeListeners.get(table)!;
+      }
+      
+      console.log(`[DB Subscribe] ${table} - Creating new listener`);
       
       const colRef = collection(this.db!, table);
       
@@ -186,7 +204,7 @@ class Database {
           },
           error: (error) => {
             if (error.message.includes('Missing or insufficient permissions')) {
-              console.log(`[DB] ${table} requires authentication or security rules update`);
+              console.log(`[DB] ${table} requires authentication`);
             } else {
               console.error('[DB Subscribe Error]', table, error.message);
             }
@@ -195,11 +213,24 @@ class Database {
         }
       );
       
-      return unsubscribe;
+      const cleanup = () => {
+        console.log(`[DB Unsubscribe] ${table}`);
+        unsubscribe();
+        this.activeListeners.delete(table);
+      };
+      
+      this.activeListeners.set(table, cleanup);
+      return cleanup;
     } catch (error: any) {
       console.error('[DB Subscribe Error]', table, error.message);
       return () => {};
     }
+  }
+
+  unsubscribeAll(): void {
+    console.log(`[DB] Unsubscribing all ${this.activeListeners.size} listeners`);
+    this.activeListeners.forEach((cleanup) => cleanup());
+    this.activeListeners.clear();
   }
 
   async create<T = any>(table: string, data: any, retries = 2): Promise<T> {
