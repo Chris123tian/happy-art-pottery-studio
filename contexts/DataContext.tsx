@@ -2,8 +2,10 @@ import React, { ReactNode, useEffect, useState, useRef } from 'react';
 import { database } from '@/services/database';
 import createContextHook from '@nkzw/create-context-hook';
 import { SiteSettings, Class, Booking, Message, Instructor, GalleryImage, Event, Testimonial } from '@/types';
+import { useAuth } from './AuthContext';
 
 export const [DataProvider, useData] = createContextHook(() => {
+  const { isAuthenticated } = useAuth();
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [classes, setClasses] = useState<Class[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -25,9 +27,10 @@ export const [DataProvider, useData] = createContextHook(() => {
     
     listenersSetup.current = true;
     console.log('[DataContext] Setting up real-time listeners...');
+    console.log('[DataContext] Admin authenticated:', isAuthenticated);
 
     let dataReceived = 0;
-    const totalCollections = 8;
+    const totalCollections = isAuthenticated ? 8 : 6;
     
     const unsubSettings = database.subscribeToCollection<SiteSettings>(
       'settings',
@@ -67,41 +70,50 @@ export const [DataProvider, useData] = createContextHook(() => {
       }
     );
 
-    const unsubBookings = database.subscribeToCollection<Booking>(
-      'bookings',
-      (data) => {
-        setBookings(data);
-        dataReceived++;
-        if (dataReceived === totalCollections) {
-          setIsLoading(false);
-        }
-      },
-      (error) => {
-        console.error('[DataContext] Bookings subscription error:', error);
-        dataReceived++;
-        if (dataReceived === totalCollections) {
-          setIsLoading(false);
-        }
-      }
-    );
+    let unsubBookings: () => void = () => {};
+    let unsubMessages: () => void = () => {};
 
-    const unsubMessages = database.subscribeToCollection<Message>(
-      'messages',
-      (data) => {
-        setMessages(data);
-        dataReceived++;
-        if (dataReceived === totalCollections) {
-          setIsLoading(false);
+    if (isAuthenticated) {
+      unsubBookings = database.subscribeToCollection<Booking>(
+        'bookings',
+        (data) => {
+          setBookings(data);
+          dataReceived++;
+          if (dataReceived === totalCollections) {
+            setIsLoading(false);
+          }
+        },
+        (error) => {
+          console.error('[DataContext] Bookings subscription error:', error);
+          dataReceived++;
+          if (dataReceived === totalCollections) {
+            setIsLoading(false);
+          }
         }
-      },
-      (error) => {
-        console.error('[DataContext] Messages subscription error:', error);
-        dataReceived++;
-        if (dataReceived === totalCollections) {
-          setIsLoading(false);
+      );
+
+      unsubMessages = database.subscribeToCollection<Message>(
+        'messages',
+        (data) => {
+          setMessages(data);
+          dataReceived++;
+          if (dataReceived === totalCollections) {
+            setIsLoading(false);
+          }
+        },
+        (error) => {
+          console.error('[DataContext] Messages subscription error:', error);
+          dataReceived++;
+          if (dataReceived === totalCollections) {
+            setIsLoading(false);
+          }
         }
-      }
-    );
+      );
+    } else {
+      console.log('[DataContext] Skipping bookings/messages - admin authentication required');
+      setBookings([]);
+      setMessages([]);
+    }
 
     const unsubInstructors = database.subscribeToCollection<Instructor>(
       'instructors',
@@ -198,7 +210,7 @@ export const [DataProvider, useData] = createContextHook(() => {
       });
       unsubscribeRef.current = [];
     };
-  }, []);
+  }, [isAuthenticated]);
 
   return {
     settings,
