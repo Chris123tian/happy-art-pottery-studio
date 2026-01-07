@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Save, Facebook, Instagram, Twitter, Music, Globe, Clock, Upload } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
@@ -58,23 +57,20 @@ export default function AdminSettings() {
   const pickImage = async (type: 'hero' | 'about') => {
     try {
       console.log(`[Settings] Picking ${type} image...`);
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+      const { imageService } = await import('@/services/imageService');
+      
+      const imageUrl = await imageService.pickAndUploadImage({
         allowsEditing: true,
         aspect: type === 'hero' ? [16, 9] : [4, 3],
-        quality: 0.3,
+        quality: 0.8,
+        storagePath: `settings/${type}_${Date.now()}.jpg`,
       });
 
-      if (!result.canceled && result.assets[0]) {
-        const uri = result.assets[0].uri;
-        console.log(`[Settings] Converting ${type} image...`);
-        
-        const { imageService } = await import('@/services/imageService');
-        const base64Image = await imageService.convertImageToBase64(uri);
-        
+      if (imageUrl) {
+        console.log(`[Settings] ${type} image uploaded successfully`);
         const updatedSettings = {
           ...settings,
-          [type === 'hero' ? 'heroImage' : 'aboutImage']: base64Image,
+          [type === 'hero' ? 'heroImage' : 'aboutImage']: imageUrl,
         };
         setSettings(updatedSettings);
       }

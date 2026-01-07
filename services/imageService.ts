@@ -1,45 +1,45 @@
 import * as ImagePicker from 'expo-image-picker';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getApp } from 'firebase/app';
 
 export const imageService = {
-  async compressImage(uri: string, maxSizeMB: number = 5): Promise<string> {
+  async uploadImageToStorage(uri: string, path: string): Promise<string> {
     try {
+      console.log('[ImageService] Uploading to Firebase Storage:', path);
+      
       const response = await fetch(uri);
       const blob = await response.blob();
       
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (typeof reader.result === 'string') {
-            const sizeMB = (reader.result.length / (1024 * 1024)).toFixed(2);
-            console.log(`[ImageService] Image size: ${sizeMB}MB`);
-            
-            if (reader.result.length > maxSizeMB * 1024 * 1024) {
-              reject(new Error(`Image too large. Please use a smaller image (max ${maxSizeMB}MB).`));
-              return;
-            }
-            
-            resolve(reader.result);
-          } else {
-            reject(new Error('Failed to convert image'));
-          }
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error('[ImageService] Error processing image:', error);
+      const sizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+      console.log(`[ImageService] Image size: ${sizeMB}MB`);
+      
+      if (blob.size > 10 * 1024 * 1024) {
+        throw new Error('Image too large. Please use an image smaller than 10MB.');
+      }
+      
+      const app = getApp();
+      const storage = getStorage(app);
+      const storageRef = ref(storage, path);
+      
+      console.log('[ImageService] Uploading blob...');
+      await uploadBytes(storageRef, blob);
+      
+      console.log('[ImageService] Getting download URL...');
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      console.log('[ImageService] Upload complete:', downloadURL);
+      return downloadURL;
+    } catch (error: any) {
+      console.error('[ImageService] Upload error:', error.message);
       throw error;
     }
   },
 
-  async convertImageToBase64(uri: string, maxSizeMB: number = 5): Promise<string> {
-    return this.compressImage(uri, maxSizeMB);
-  },
-
-  async pickImage(options?: {
+  async pickAndUploadImage(options?: {
     allowsEditing?: boolean;
     aspect?: [number, number];
     quality?: number;
+    storagePath?: string;
   }): Promise<string | null> {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -55,16 +55,28 @@ export const imageService = {
       });
 
       if (!result.canceled && result.assets[0]) {
-        console.log('[ImageService] Converting image to base64...');
-        const base64 = await this.convertImageToBase64(result.assets[0].uri);
+        const timestamp = Date.now();
+        const fileName = `image_${timestamp}.jpg`;
+        const storagePath = options?.storagePath || `gallery/${fileName}`;
+        
+        console.log('[ImageService] Image selected, uploading...');
+        const downloadURL = await this.uploadImageToStorage(result.assets[0].uri, storagePath);
         console.log('[ImageService] Image ready');
-        return base64;
+        return downloadURL;
       }
 
       return null;
     } catch (error) {
-      console.error('[ImageService] Error picking image:', error);
+      console.error('[ImageService] Error picking/uploading image:', error);
       throw error;
     }
+  },
+
+  async pickImage(options?: {
+    allowsEditing?: boolean;
+    aspect?: [number, number];
+    quality?: number;
+  }): Promise<string | null> {
+    return this.pickAndUploadImage(options);
   },
 };
