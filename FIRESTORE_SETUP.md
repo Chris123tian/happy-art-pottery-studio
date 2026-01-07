@@ -20,51 +20,59 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Public read for all collections (website content)
-    // Write requires authentication (admin only)
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'happyartgh@gmail.com';
+    }
     
+    // Settings - Public read, admin write
     match /settings/{document=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
+    // Classes - Public read, admin write
     match /classes/{document=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
+    // Instructors - Public read, admin write
     match /instructors/{document=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
+    // Gallery - Public read, admin write
     match /gallery/{document=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
+    // Events - Public read, admin write
     match /events/{document=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
+    // Testimonials - Public read, admin write
     match /testimonials/{document=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
-    // Bookings - public can create, admin can read/update/delete
+    // Bookings - Anyone can create, admin can read/update/delete
     match /bookings/{document=**} {
-      allow read: if request.auth != null;
+      allow read: if isAdmin();
       allow create: if true;
-      allow update, delete: if request.auth != null;
+      allow update, delete: if isAdmin();
     }
     
-    // Messages - public can create, admin can read/delete
+    // Messages - Anyone can create, admin can read/delete
     match /messages/{document=**} {
-      allow read: if request.auth != null;
+      allow read: if isAdmin();
       allow create: if true;
-      allow delete: if request.auth != null;
+      allow update, delete: if isAdmin();
     }
   }
 }

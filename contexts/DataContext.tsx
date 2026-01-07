@@ -1,6 +1,5 @@
 import React, { ReactNode, useEffect, useState, useRef } from 'react';
 import { database } from '@/services/database';
-import { dataService } from '@/services/dataService';
 import createContextHook from '@nkzw/create-context-hook';
 import { SiteSettings, Class, Booking, Message, Instructor, GalleryImage, Event, Testimonial } from '@/types';
 
@@ -14,39 +13,21 @@ export const [DataProvider, useData] = createContextHook(() => {
   const [events, setEvents] = useState<Event[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+  const [isError] = useState(false);
   const unsubscribeRef = useRef<(() => void)[]>([]);
+  const listenersSetup = useRef(false);
 
   useEffect(() => {
+    if (listenersSetup.current) {
+      console.log('[DataContext] Listeners already set up, skipping');
+      return;
+    }
+    
+    listenersSetup.current = true;
     console.log('[DataContext] Setting up real-time listeners...');
 
-    const loadInitialData = async () => {
-      try {
-        setIsLoading(true);
-        const [settingsData, classesData, instructorsData, galleryData, eventsData, testimonialsData] = await Promise.all([
-          dataService.getSettings().catch(() => null),
-          dataService.getClasses().catch(() => []),
-          dataService.getInstructors().catch(() => []),
-          dataService.getGallery().catch(() => []),
-          dataService.getEvents().catch(() => []),
-          dataService.getTestimonials().catch(() => []),
-        ]);
-
-        if (settingsData) setSettings(settingsData);
-        setClasses(classesData);
-        setInstructors(instructorsData);
-        setGallery(galleryData);
-        setEvents(eventsData);
-        setTestimonials(testimonialsData);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('[DataContext] Failed to load initial data:', error);
-        setIsError(true);
-        setIsLoading(false);
-      }
-    };
-
-    loadInitialData();
+    let dataReceived = 0;
+    const totalCollections = 8;
     
     const unsubSettings = database.subscribeToCollection<SiteSettings>(
       'settings',
@@ -54,9 +35,17 @@ export const [DataProvider, useData] = createContextHook(() => {
         if (data.length > 0) {
           setSettings(data[0]);
         }
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       },
       (error) => {
         console.error('[DataContext] Settings subscription error:', error);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       }
     );
 
@@ -64,9 +53,17 @@ export const [DataProvider, useData] = createContextHook(() => {
       'classes',
       (data) => {
         setClasses(data);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       },
       (error) => {
         console.error('[DataContext] Classes subscription error:', error);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       }
     );
 
@@ -74,9 +71,17 @@ export const [DataProvider, useData] = createContextHook(() => {
       'bookings',
       (data) => {
         setBookings(data);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       },
       (error) => {
         console.error('[DataContext] Bookings subscription error:', error);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       }
     );
 
@@ -84,9 +89,17 @@ export const [DataProvider, useData] = createContextHook(() => {
       'messages',
       (data) => {
         setMessages(data);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       },
       (error) => {
         console.error('[DataContext] Messages subscription error:', error);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       }
     );
 
@@ -94,9 +107,17 @@ export const [DataProvider, useData] = createContextHook(() => {
       'instructors',
       (data) => {
         setInstructors(data);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       },
       (error) => {
         console.error('[DataContext] Instructors subscription error:', error);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       }
     );
 
@@ -104,9 +125,17 @@ export const [DataProvider, useData] = createContextHook(() => {
       'gallery',
       (data) => {
         setGallery(data);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       },
       (error) => {
         console.error('[DataContext] Gallery subscription error:', error);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       }
     );
 
@@ -114,9 +143,17 @@ export const [DataProvider, useData] = createContextHook(() => {
       'events',
       (data) => {
         setEvents(data);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       },
       (error) => {
         console.error('[DataContext] Events subscription error:', error);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       }
     );
 
@@ -124,9 +161,17 @@ export const [DataProvider, useData] = createContextHook(() => {
       'testimonials',
       (data) => {
         setTestimonials(data);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       },
       (error) => {
         console.error('[DataContext] Testimonials subscription error:', error);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
       }
     );
 
@@ -143,6 +188,7 @@ export const [DataProvider, useData] = createContextHook(() => {
 
     return () => {
       console.log('[DataContext] Cleaning up real-time listeners');
+      listenersSetup.current = false;
       unsubscribeRef.current.forEach((unsub) => {
         try {
           unsub();

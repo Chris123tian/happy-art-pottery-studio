@@ -14,7 +14,9 @@ import {
   persistentLocalCache,
   persistentMultipleTabManager,
   CACHE_SIZE_UNLIMITED,
+  memoryLocalCache,
 } from 'firebase/firestore';
+import { Platform } from 'react-native';
 
 class Database {
   private db: Firestore | null = null;
@@ -56,17 +58,24 @@ class Database {
       if (getApps().length === 0) {
         this.app = initializeApp(firebaseConfig);
         
-        try {
+        if (Platform.OS === 'web') {
           this.db = initializeFirestore(this.app, {
-            localCache: persistentLocalCache({
-              tabManager: persistentMultipleTabManager(),
-              cacheSizeBytes: CACHE_SIZE_UNLIMITED
-            })
+            localCache: memoryLocalCache()
           });
-          console.log('[DB] Firebase initialized with persistent cache');
-        } catch (error: any) {
-          console.log('[DB] Persistent cache failed, using default:', error.message);
-          this.db = getFirestore(this.app);
+          console.log('[DB] Firebase initialized with memory cache (web)');
+        } else {
+          try {
+            this.db = initializeFirestore(this.app, {
+              localCache: persistentLocalCache({
+                tabManager: persistentMultipleTabManager(),
+                cacheSizeBytes: CACHE_SIZE_UNLIMITED
+              })
+            });
+            console.log('[DB] Firebase initialized with persistent cache (native)');
+          } catch (error: any) {
+            console.log('[DB] Persistent cache failed, using memory cache:', error.message);
+            this.db = getFirestore(this.app);
+          }
         }
         
         this.setupPersistence();
@@ -74,7 +83,6 @@ class Database {
         this.app = getApps()[0];
         this.db = getFirestore(this.app);
         console.log('[DB] Firebase already initialized');
-        this.setupPersistence();
       }
 
       this.isInitialized = true;
@@ -136,42 +144,32 @@ class Database {
     return [];
   }
 
-  async select<T = any>(table: string, retries = 3): Promise<T[]> {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        this.ensureInitialized();
-        
-        if (attempt === 1) {
-          console.log(`[DB Select] ${table}`);
-        }
-        
-        const colRef = collection(this.db!, table);
-        const snapshot = await getDocs(colRef);
-        
-        const data: T[] = [];
-        snapshot.forEach((docSnap) => {
-          data.push({ id: docSnap.id, ...docSnap.data() } as T);
-        });
-        
-        console.log(`[DB] ✓ Retrieved ${data.length} records from ${table}`);
-        return data;
-      } catch (error: any) {
-        if (error.message.includes('Missing or insufficient permissions')) {
-          console.log(`[DB] ${table} requires authentication`);
-          return [];
-        }
-        
-        console.error(`[DB Select Error] ${table}:`, error.message);
-        
-        if (attempt < retries) {
-          const delay = 1000 * attempt;
-          await new Promise(resolve => setTimeout(resolve, delay));
-        } else {
-          return [];
-        }
+  async select<T = any>(table: string): Promise<T[]> {
+    try {
+      this.ensureInitialized();
+      await this.forceOnline();
+      
+      console.log(`[DB Select] ${table}`);
+      
+      const colRef = collection(this.db!, table);
+      const snapshot = await getDocs(colRef);
+      
+      const data: T[] = [];
+      snapshot.forEach((docSnap) => {
+        data.push({ id: docSnap.id, ...docSnap.data() } as T);
+      });
+      
+      console.log(`[DB] ✓ Retrieved ${data.length} records from ${table}`);
+      return data;
+    } catch (error: any) {
+      if (error.message.includes('Missing or insufficient permissions')) {
+        console.log(`[DB] ${table} requires authentication - returning empty array`);
+        return [];
       }
+      
+      console.error(`[DB Select Error] ${table}:`, error.message);
+      return [];
     }
-    return [];
   }
 
   subscribeToCollection<T = any>(
@@ -182,44 +180,47 @@ class Database {
     try {
       this.ensureInitialized();
       
-      if (this.activeListeners.has(table)) {
-        console.log(`[DB Subscribe] ${table} - Reusing existing listener`);
-        return this.activeListeners.get(table)!;
+      const listenerKey = table;
+      if (this.activeListeners.has(listenerKey)) {
+        console.log(`[DB Subscribe] ${table} - Listener already exists, returning existing cleanup`);
+        return this.activeListeners.get(listenerKey)!;
       }
       
-      console.log(`[DB Subscribe] ${table} - Creating new listener`);
+      console.log(`[DB Subscribe] ${table}`);
       
       const colRef = collection(this.db!, table);
       
       const unsubscribe = onSnapshot(
         colRef,
         {
-          next: (snapshot) => {
-            const data: T[] = [];
-            snapshot.forEach((docSnap) => {
-              data.push({ id: docSnap.id, ...docSnap.data() } as T);
-            });
-            console.log(`[DB] ✓ Real-time update: ${data.length} records from ${table}`);
-            callback(data);
-          },
-          error: (error) => {
-            if (error.message.includes('Missing or insufficient permissions')) {
-              console.log(`[DB] ${table} requires authentication`);
-            } else {
-              console.error('[DB Subscribe Error]', table, error.message);
-            }
-            if (errorCallback) errorCallback(error);
+          includeMetadataChanges: false,
+        },
+        (snapshot) => {
+          const data: T[] = [];
+          snapshot.forEach((docSnap) => {
+            data.push({ id: docSnap.id, ...docSnap.data() } as T);
+          });
+          console.log(`[DB] ✓ Real-time update: ${data.length} records from ${table}`);
+          callback(data);
+        },
+        (error) => {
+          if (error.message.includes('Missing or insufficient permissions')) {
+            console.log(`[DB] ${table} requires authentication - providing empty array`);
+            callback([]);
+          } else {
+            console.error('[DB Subscribe Error]', table, error.message);
           }
+          if (errorCallback) errorCallback(error);
         }
       );
       
       const cleanup = () => {
         console.log(`[DB Unsubscribe] ${table}`);
         unsubscribe();
-        this.activeListeners.delete(table);
+        this.activeListeners.delete(listenerKey);
       };
       
-      this.activeListeners.set(table, cleanup);
+      this.activeListeners.set(listenerKey, cleanup);
       return cleanup;
     } catch (error: any) {
       console.error('[DB Subscribe Error]', table, error.message);
