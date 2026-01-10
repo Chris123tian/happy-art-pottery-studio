@@ -96,7 +96,7 @@ export default function Contact() {
             </View>
             <View style={styles.infoCard}>
               <Mail color={theme.colors.primary} size={24} />
-              <Text style={styles.infoText}>happyart@gmail.com</Text>
+              <Text style={styles.infoText}>happyartgh@gmail.com</Text>
             </View>
             <View style={styles.infoCard}>
               <MapPin color={theme.colors.primary} size={24} />

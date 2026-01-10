@@ -4,6 +4,7 @@ export interface Class {
   description: string;
   level: 'beginner' | 'intermediate' | 'advanced';
   category: string;
+  image?: string;
   featured: boolean;
 }
 

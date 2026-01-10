@@ -8,13 +8,16 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Edit2, Trash2 } from 'lucide-react-native';
+import { Plus, Edit2, Trash2, Upload } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
 import { Button } from '@/components/Button';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
+import { imageService } from '@/services/imageService';
 import { Event } from '@/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useData } from '@/contexts/DataContext';
@@ -24,6 +27,7 @@ export default function AdminEvents() {
   const { events } = useData();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -147,6 +151,34 @@ export default function AdminEvents() {
     }
   };
 
+  const handleImageUpload = async () => {
+    try {
+      setUploadingImage(true);
+      const imageUrl = await imageService.pickAndUploadImage({
+        storagePath: `events/event_${Date.now()}.jpg`,
+        quality: 0.8,
+      });
+      
+      if (imageUrl) {
+        setFormData({ ...formData, image: imageUrl });
+        if (Platform.OS === 'web') {
+          alert('Image uploaded successfully!');
+        } else {
+          Alert.alert('Success', 'Image uploaded successfully!');
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      if (Platform.OS === 'web') {
+        alert('Failed to upload image. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to upload image. Please try again.');
+      }
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleEdit = (event: Event) => {
     setEditingId(event.id);
     setFormData({
@@ -220,6 +252,44 @@ export default function AdminEvents() {
             <Text style={styles.formTitle}>
               {editingId ? 'Edit Event' : 'Add New Event'}
             </Text>
+
+            <View style={styles.imageUploadSection}>
+              {formData.image ? (
+                <View style={styles.imagePreviewContainer}>
+                  <Image source={{ uri: formData.image }} style={styles.imagePreview} />
+                  <TouchableOpacity
+                    style={styles.changeImageButton}
+                    onPress={handleImageUpload}
+                    disabled={uploadingImage}
+                  >
+                    {uploadingImage ? (
+                      <ActivityIndicator size="small" color={theme.colors.white} />
+                    ) : (
+                      <>
+                        <Upload color={theme.colors.white} size={16} />
+                        <Text style={styles.changeImageText}>Change Image</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.uploadButton}
+                  onPress={handleImageUpload}
+                  disabled={uploadingImage}
+                >
+                  {uploadingImage ? (
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                  ) : (
+                    <>
+                      <Upload color={theme.colors.primary} size={32} />
+                      <Text style={styles.uploadButtonText}>Upload Event Image</Text>
+                      <Text style={styles.uploadButtonSubtext}>Tap to select image</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
 
             <TextInput
               style={styles.input}
@@ -435,5 +505,53 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  imageUploadSection: {
+    marginBottom: theme.spacing.md,
+  },
+  uploadButton: {
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    borderStyle: 'dashed' as const,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.surface,
+  },
+  uploadButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: theme.colors.primary,
+  },
+  uploadButtonSubtext: {
+    fontSize: 14,
+    color: theme.colors.textLight,
+  },
+  imagePreviewContainer: {
+    position: 'relative' as const,
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: theme.borderRadius.md,
+  },
+  changeImageButton: {
+    position: 'absolute' as const,
+    bottom: theme.spacing.md,
+    right: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    backgroundColor: theme.colors.primary,
+    padding: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+  },
+  changeImageText: {
+    color: theme.colors.white,
+    fontWeight: '600' as const,
+    fontSize: 14,
   },
 });
