@@ -22,8 +22,8 @@ export default function Home() {
   const router = useRouter();
   const { settings, instructors, gallery, testimonials } = useData();
 
-  const featuredGallery = useMemo(
-    () => gallery.filter((i) => i.featured),
+  const displayGallery = useMemo(
+    () => gallery.slice(0, 6),
     [gallery]
   );
 
@@ -134,14 +134,14 @@ export default function Home() {
           </View>
         )}
 
-        {featuredGallery.length > 0 && (
+        {displayGallery.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Our Gallery</Text>
             <Text style={styles.sectionSubtitle}>
               Explore beautiful pottery creations from our students and instructors
             </Text>
             <View style={styles.galleryGrid}>
-              {featuredGallery.map((image) => (
+              {displayGallery.map((image) => (
                 <TouchableOpacity
                   key={image.id}
                   onPress={handleGalleryPress}
