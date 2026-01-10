@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Header } from '@/components/Header';
@@ -98,18 +98,27 @@ export default function Classes() {
         <View style={styles.classList}>
           {filteredClasses.map((classItem: Class) => (
             <View key={classItem.id} style={styles.classCard}>
-              <View style={styles.levelBadge}>
-                <Text style={styles.levelText}>
-                  {classItem.level.toUpperCase()}
-                </Text>
+              {classItem.image && (
+                <Image
+                  source={{ uri: classItem.image }}
+                  style={styles.classImage}
+                  resizeMode="cover"
+                />
+              )}
+              <View style={styles.classContent}>
+                <View style={styles.levelBadge}>
+                  <Text style={styles.levelText}>
+                    {classItem.level.toUpperCase()}
+                  </Text>
+                </View>
+                <Text style={styles.classTitle}>{classItem.title}</Text>
+                <Text style={styles.classDescription}>{classItem.description}</Text>
+                <Button
+                  title="Book Now"
+                  onPress={handleBookingPress}
+                  style={styles.bookButton}
+                />
               </View>
-              <Text style={styles.classTitle}>{classItem.title}</Text>
-              <Text style={styles.classDescription}>{classItem.description}</Text>
-              <Button
-                title="Book Now"
-                onPress={handleBookingPress}
-                style={styles.bookButton}
-              />
             </View>
           ))}
         </View>
@@ -180,8 +189,15 @@ const styles = StyleSheet.create({
   classCard: {
     backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
+    overflow: 'hidden',
     ...theme.shadows.md,
+  },
+  classImage: {
+    width: '100%',
+    height: 200,
+  },
+  classContent: {
+    padding: theme.spacing.lg,
   },
   levelBadge: {
     backgroundColor: theme.colors.primary,
