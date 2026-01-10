@@ -32,6 +32,12 @@ service firebase.storage {
       allow write: if isAdmin();
     }
     
+    // Settings images (hero, about) - public read, admin write
+    match /settings/{imageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
     // Catch-all for any other paths - public read, admin write
     match /{allPaths=**} {
       allow read: if true;
