@@ -42,11 +42,9 @@ export default function Home() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [instructorIndex, setInstructorIndex] = useState(0);
   const [imagesPreloaded, setImagesPreloaded] = useState(false);
-  const heroFadeAnim = useRef(new Animated.Value(1)).current;
-  const heroNextFadeAnim = useRef(new Animated.Value(0)).current;
-  const instructorFadeAnim = useRef(new Animated.Value(1)).current;
-  const instructorScaleAnim = useRef(new Animated.Value(1)).current;
-  const instructorSlideAnim = useRef(new Animated.Value(0)).current;
+  const [heroImagesLoaded, setHeroImagesLoaded] = useState(false);
+  const heroOpacity = useRef(new Animated.Value(1)).current;
+  const instructorOpacity = useRef(new Animated.Value(1)).current;
 
   const displayGallery = useMemo(
     () => gallery.slice(0, 6),
@@ -54,8 +52,10 @@ export default function Home() {
   );
 
   const displaySettings = settings || seedSettings;
-  const heroImages = displaySettings.heroImages || [displaySettings.heroImage];
-  const nextHeroIndex = (heroIndex + 1) % heroImages.length;
+  const heroImages = useMemo(
+    () => displaySettings.heroImages || [displaySettings.heroImage],
+    [displaySettings.heroImages, displaySettings.heroImage]
+  );
 
   useEffect(() => {
     const fetchBlogPosts = async () => {
@@ -97,74 +97,70 @@ export default function Home() {
   }, [instructors]);
 
   useEffect(() => {
-    if (heroImages.length <= 1) return;
+    const preloadHeroImages = async () => {
+      if (heroImages.length === 0) return;
+      const imagePromises = heroImages.map((imageUrl) => {
+        return new Promise((resolve) => {
+          Image.prefetch(imageUrl).then(resolve).catch(resolve);
+        });
+      });
+      await Promise.all(imagePromises);
+      setHeroImagesLoaded(true);
+    };
+    preloadHeroImages();
+  }, [heroImages]);
+
+  useEffect(() => {
+    if (heroImages.length <= 1 || !heroImagesLoaded) return;
     const interval = setInterval(() => {
-      Animated.parallel([
-        Animated.timing(heroNextFadeAnim, {
-          toValue: 1,
-          duration: 1200,
+      Animated.sequence([
+        Animated.timing(heroOpacity, {
+          toValue: 0,
+          duration: 800,
           useNativeDriver: true,
         }),
-        Animated.timing(heroFadeAnim, {
+        Animated.timing(heroOpacity, {
           toValue: 0,
-          duration: 1200,
+          duration: 0,
           useNativeDriver: true,
         }),
       ]).start(() => {
         setHeroIndex((prev) => (prev + 1) % heroImages.length);
-        heroFadeAnim.setValue(1);
-        heroNextFadeAnim.setValue(0);
+        Animated.timing(heroOpacity, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }).start();
       });
-    }, 5000);
+    }, 4500);
     return () => clearInterval(interval);
-  }, [heroImages.length, heroFadeAnim, heroNextFadeAnim]);
+  }, [heroImages.length, heroImagesLoaded, heroOpacity]);
 
   useEffect(() => {
     if (instructors.length <= 1 || !imagesPreloaded) return;
     const interval = setInterval(() => {
-      Animated.parallel([
-        Animated.timing(instructorFadeAnim, {
+      Animated.sequence([
+        Animated.timing(instructorOpacity, {
           toValue: 0,
-          duration: 600,
+          duration: 500,
           useNativeDriver: true,
         }),
-        Animated.timing(instructorScaleAnim, {
-          toValue: 0.9,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(instructorSlideAnim, {
-          toValue: -30,
-          duration: 600,
+        Animated.timing(instructorOpacity, {
+          toValue: 0,
+          duration: 0,
           useNativeDriver: true,
         }),
       ]).start(() => {
         setInstructorIndex((prev) => (prev + 1) % instructors.length);
-        instructorSlideAnim.setValue(30);
-        Animated.parallel([
-          Animated.spring(instructorFadeAnim, {
-            toValue: 1,
-            useNativeDriver: true,
-            friction: 9,
-            tension: 50,
-          }),
-          Animated.spring(instructorScaleAnim, {
-            toValue: 1,
-            useNativeDriver: true,
-            friction: 9,
-            tension: 50,
-          }),
-          Animated.spring(instructorSlideAnim, {
-            toValue: 0,
-            useNativeDriver: true,
-            friction: 9,
-            tension: 50,
-          }),
-        ]).start();
+        Animated.timing(instructorOpacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
       });
-    }, 5000);
+    }, 4500);
     return () => clearInterval(interval);
-  }, [instructors.length, imagesPreloaded, instructorFadeAnim, instructorScaleAnim, instructorSlideAnim]);
+  }, [instructors.length, imagesPreloaded, instructorOpacity]);
 
   const openSocialMedia = useCallback((url: string) => {
     if (url) {
@@ -202,22 +198,19 @@ export default function Home() {
       <Header />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <Animated.View style={[styles.heroImageContainer, { opacity: heroFadeAnim }]}>
-            <Image
-              source={{ uri: heroImages[heroIndex] }}
-              style={styles.heroImage}
-              resizeMode="cover"
-            />
-          </Animated.View>
-          {heroImages.length > 1 && (
-            <Animated.View style={[styles.heroImageContainer, { opacity: heroNextFadeAnim }]}>
-              <Image
-                source={{ uri: heroImages[nextHeroIndex] }}
-                style={styles.heroImage}
-                resizeMode="cover"
-              />
-            </Animated.View>
-          )}
+          <View style={styles.heroImageContainer}>
+            {heroImagesLoaded ? (
+              <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacity }]}>
+                <Image
+                  source={{ uri: heroImages[heroIndex] }}
+                  style={styles.heroImage}
+                  resizeMode="cover"
+                />
+              </Animated.View>
+            ) : (
+              <View style={[styles.heroImage, styles.heroPlaceholder]} />
+            )}
+          </View>
           <View style={styles.heroOverlay}>
             <Text style={styles.heroTitle}>{displaySettings.studioName}</Text>
             <Text style={styles.heroSubtitle}>{displaySettings.tagline}</Text>
@@ -299,67 +292,56 @@ export default function Home() {
             <Text style={styles.instructorSubtitle}>
               Learn from experienced artists passionate about pottery
             </Text>
-            {imagesPreloaded ? (
-              <Animated.View
-                style={[
-                  styles.instructorSlideshow,
-                  {
-                    opacity: instructorFadeAnim,
-                    transform: [
-                      { scale: instructorScaleAnim },
-                      { translateX: instructorSlideAnim },
-                    ],
-                  },
-                ]}
-              >
-                <View style={styles.modernInstructorCard}>
-                  <View style={styles.instructorImageContainer}>
-                    <View style={styles.instructorImageBorder}>
-                      <Image
-                        source={{ uri: instructors[instructorIndex].image }}
-                        style={styles.instructorImage}
-                        resizeMode="cover"
-                      />
+            <View style={styles.instructorSlideshow}>
+              <View style={styles.modernInstructorCard}>
+                {imagesPreloaded ? (
+                  <Animated.View style={{ opacity: instructorOpacity }}>
+                    <View style={styles.instructorImageContainer}>
+                      <View style={styles.instructorImageBorder}>
+                        <Image
+                          source={{ uri: instructors[instructorIndex].image }}
+                          style={styles.instructorImage}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <View style={styles.instructorBadge}>
+                        <Award color={theme.colors.white} size={16} />
+                      </View>
                     </View>
-                    <View style={styles.instructorBadge}>
-                      <Award color={theme.colors.white} size={16} />
-                    </View>
-                  </View>
-                <View style={styles.instructorContent}>
-                  <Text style={styles.instructorName}>{instructors[instructorIndex].name}</Text>
-                  <View style={styles.instructorTitleContainer}>
-                    <View style={styles.titleDivider} />
-                    <Text style={styles.instructorTitle}>{instructors[instructorIndex].title}</Text>
-                    <View style={styles.titleDivider} />
-                  </View>
-                  <Text style={styles.instructorExperience}>{instructors[instructorIndex].experience}</Text>
-                  <Text style={styles.instructorBio}>{instructors[instructorIndex].bio}</Text>
-                  {instructors[instructorIndex].specialties?.length > 0 && (
-                    <View style={styles.specialtiesContainer}>
-                      {instructors[instructorIndex].specialties.map((specialty, idx) => (
-                        <View key={idx} style={styles.specialtyTag}>
-                          <Text style={styles.specialtyText}>{specialty}</Text>
+                    <View style={styles.instructorContent}>
+                      <Text style={styles.instructorName}>{instructors[instructorIndex].name}</Text>
+                      <View style={styles.instructorTitleContainer}>
+                        <View style={styles.titleDivider} />
+                        <Text style={styles.instructorTitle}>{instructors[instructorIndex].title}</Text>
+                        <View style={styles.titleDivider} />
+                      </View>
+                      <Text style={styles.instructorExperience}>{instructors[instructorIndex].experience}</Text>
+                      <Text style={styles.instructorBio}>{instructors[instructorIndex].bio}</Text>
+                      {instructors[instructorIndex].specialties?.length > 0 && (
+                        <View style={styles.specialtiesContainer}>
+                          {instructors[instructorIndex].specialties.map((specialty, idx) => (
+                            <View key={idx} style={styles.specialtyTag}>
+                              <Text style={styles.specialtyText}>{specialty}</Text>
+                            </View>
+                          ))}
                         </View>
-                      ))}
+                      )}
                     </View>
-                  )}
-                </View>
-              </View>
-            </Animated.View>
-            ) : (
-              <View style={styles.instructorSlideshow}>
-                <View style={styles.modernInstructorCard}>
-                  <View style={styles.instructorImageContainer}>
-                    <View style={styles.instructorImageBorder}>
-                      <View style={[styles.instructorImage, styles.instructorPlaceholder]} />
+                  </Animated.View>
+                ) : (
+                  <>
+                    <View style={styles.instructorImageContainer}>
+                      <View style={styles.instructorImageBorder}>
+                        <View style={[styles.instructorImage, styles.instructorPlaceholder]} />
+                      </View>
                     </View>
-                  </View>
-                  <View style={styles.instructorContent}>
-                    <Text style={styles.loadingText}>Loading instructors...</Text>
-                  </View>
-                </View>
+                    <View style={styles.instructorContent}>
+                      <Text style={styles.loadingText}>Loading instructors...</Text>
+                    </View>
+                  </>
+                )}
               </View>
-            )}
+            </View>
             {instructors.length > 1 && imagesPreloaded && (
               <View style={styles.modernInstructorIndicators}>
                 {instructors.map((_, index) => (
@@ -648,6 +630,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  heroPlaceholder: {
+    backgroundColor: theme.colors.surface,
+  },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
@@ -792,6 +777,7 @@ const styles = StyleSheet.create({
     borderRadius: 80,
     borderWidth: 4,
     borderColor: theme.colors.white,
+    backgroundColor: theme.colors.surface,
   },
   instructorBadge: {
     position: 'absolute',
@@ -901,7 +887,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
   },
   instructorPlaceholder: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: 'rgba(230, 215, 200, 0.3)',
   },
   loadingText: {
     fontSize: 16,
