@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Music } from 'lucide-react-native';
+import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Music, Award, Sparkles } from 'lucide-react-native';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
@@ -35,6 +35,8 @@ export default function Home() {
   const [instructorIndex, setInstructorIndex] = useState(0);
   const heroFadeAnim = useRef(new Animated.Value(1)).current;
   const instructorFadeAnim = useRef(new Animated.Value(1)).current;
+  const instructorScaleAnim = useRef(new Animated.Value(1)).current;
+  const instructorSlideAnim = useRef(new Animated.Value(0)).current;
 
   const displayGallery = useMemo(
     () => gallery.slice(0, 6),
@@ -91,21 +93,49 @@ export default function Home() {
   useEffect(() => {
     if (instructors.length <= 1) return;
     const interval = setInterval(() => {
-      Animated.timing(instructorFadeAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }).start(() => {
-        setInstructorIndex((prev) => (prev + 1) % instructors.length);
+      Animated.parallel([
         Animated.timing(instructorFadeAnim, {
-          toValue: 1,
-          duration: 500,
+          toValue: 0,
+          duration: 400,
           useNativeDriver: true,
-        }).start();
+        }),
+        Animated.timing(instructorScaleAnim, {
+          toValue: 0.85,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(instructorSlideAnim, {
+          toValue: -50,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setInstructorIndex((prev) => (prev + 1) % instructors.length);
+        instructorSlideAnim.setValue(50);
+        Animated.parallel([
+          Animated.spring(instructorFadeAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+            friction: 8,
+            tension: 40,
+          }),
+          Animated.spring(instructorScaleAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+            friction: 8,
+            tension: 40,
+          }),
+          Animated.spring(instructorSlideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+            friction: 8,
+            tension: 40,
+          }),
+        ]).start();
       });
-    }, 3000);
+    }, 4000);
     return () => clearInterval(interval);
-  }, [instructors.length, instructorFadeAnim]);
+  }, [instructors.length, instructorFadeAnim, instructorScaleAnim, instructorSlideAnim]);
 
   const openSocialMedia = useCallback((url: string) => {
     if (url) {
@@ -222,30 +252,76 @@ export default function Home() {
         </View>
 
         {instructors.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Our Instructors</Text>
-            <Animated.View style={[styles.instructorSlideshow, { opacity: instructorFadeAnim }]}>
-              <View style={styles.instructorCard}>
-                <Image
-                  source={{ uri: instructors[instructorIndex].image }}
-                  style={styles.instructorImage}
-                  resizeMode="cover"
-                />
-                <Text style={styles.instructorName}>{instructors[instructorIndex].name}</Text>
-                <Text style={styles.instructorTitle}>{instructors[instructorIndex].title}</Text>
-                <Text style={styles.instructorBio}>{instructors[instructorIndex].bio}</Text>
+          <View style={[styles.section, styles.instructorSection]}>
+            <View style={styles.instructorHeader}>
+              <Sparkles color={theme.colors.primary} size={28} />
+              <Text style={styles.sectionTitle}>Meet Our Expert Instructors</Text>
+              <Sparkles color={theme.colors.primary} size={28} />
+            </View>
+            <Text style={styles.instructorSubtitle}>
+              Learn from experienced artists passionate about pottery
+            </Text>
+            <Animated.View
+              style={[
+                styles.instructorSlideshow,
+                {
+                  opacity: instructorFadeAnim,
+                  transform: [
+                    { scale: instructorScaleAnim },
+                    { translateX: instructorSlideAnim },
+                  ],
+                },
+              ]}
+            >
+              <View style={styles.modernInstructorCard}>
+                <View style={styles.instructorImageContainer}>
+                  <View style={styles.instructorImageBorder}>
+                    <Image
+                      source={{ uri: instructors[instructorIndex].image }}
+                      style={styles.instructorImage}
+                      resizeMode="cover"
+                    />
+                  </View>
+                  <View style={styles.instructorBadge}>
+                    <Award color={theme.colors.white} size={16} />
+                  </View>
+                </View>
+                <View style={styles.instructorContent}>
+                  <Text style={styles.instructorName}>{instructors[instructorIndex].name}</Text>
+                  <View style={styles.instructorTitleContainer}>
+                    <View style={styles.titleDivider} />
+                    <Text style={styles.instructorTitle}>{instructors[instructorIndex].title}</Text>
+                    <View style={styles.titleDivider} />
+                  </View>
+                  <Text style={styles.instructorExperience}>{instructors[instructorIndex].experience}</Text>
+                  <Text style={styles.instructorBio}>{instructors[instructorIndex].bio}</Text>
+                  {instructors[instructorIndex].specialties?.length > 0 && (
+                    <View style={styles.specialtiesContainer}>
+                      {instructors[instructorIndex].specialties.map((specialty, idx) => (
+                        <View key={idx} style={styles.specialtyTag}>
+                          <Text style={styles.specialtyText}>{specialty}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
               </View>
             </Animated.View>
             {instructors.length > 1 && (
-              <View style={styles.instructorIndicators}>
+              <View style={styles.modernInstructorIndicators}>
                 {instructors.map((_, index) => (
-                  <View
+                  <TouchableOpacity
                     key={index}
+                    onPress={() => setInstructorIndex(index)}
                     style={[
-                      styles.instructorIndicator,
-                      index === instructorIndex && styles.instructorIndicatorActive,
+                      styles.modernInstructorIndicator,
+                      index === instructorIndex && styles.modernInstructorIndicatorActive,
                     ]}
-                  />
+                  >
+                    {index === instructorIndex && (
+                      <View style={styles.indicatorInner} />
+                    )}
+                  </TouchableOpacity>
                 ))}
               </View>
             )}
@@ -614,57 +690,162 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: theme.colors.textLight,
   },
-  instructorSlideshow: {
-    alignItems: 'center',
-    paddingVertical: theme.spacing.lg,
+  instructorSection: {
+    backgroundColor: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+    paddingVertical: theme.spacing.xl,
   },
-  instructorCard: {
+  instructorHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.lg,
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    ...theme.shadows.md,
-    maxWidth: 350,
-  },
-  instructorImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    justifyContent: 'center',
+    gap: theme.spacing.md,
     marginBottom: theme.spacing.sm,
   },
-  instructorName: {
-    fontSize: 18,
-    fontWeight: '600' as const,
-    color: theme.colors.text,
-    textAlign: 'center',
-  },
-  instructorTitle: {
-    fontSize: 14,
-    color: theme.colors.primary,
-    textAlign: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  instructorBio: {
-    fontSize: 14,
-    lineHeight: 20,
+  instructorSubtitle: {
+    fontSize: 15,
     color: theme.colors.textLight,
     textAlign: 'center',
+    marginBottom: theme.spacing.xl,
+    fontStyle: 'italic',
   },
-  instructorIndicators: {
+  instructorSlideshow: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.md,
+  },
+  modernInstructorCard: {
+    backgroundColor: theme.colors.white,
+    borderRadius: 24,
+    padding: theme.spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    ...theme.shadows.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  instructorImageContainer: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+    position: 'relative',
+  },
+  instructorImageBorder: {
+    padding: 6,
+    borderRadius: 100,
+    backgroundColor: `linear-gradient(135deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 100%)`,
+    ...theme.shadows.md,
+  },
+  instructorImage: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 4,
+    borderColor: theme.colors.white,
+  },
+  instructorBadge: {
+    position: 'absolute',
+    bottom: 10,
+    right: '30%',
+    backgroundColor: theme.colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: theme.colors.white,
+    ...theme.shadows.md,
+  },
+  instructorContent: {
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  instructorName: {
+    fontSize: 24,
+    fontWeight: '700' as const,
+    color: theme.colors.secondary,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  instructorTitleContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+  },
+  titleDivider: {
+    width: 30,
+    height: 1,
+    backgroundColor: theme.colors.primary,
+  },
+  instructorTitle: {
+    fontSize: 15,
+    color: theme.colors.primary,
+    textAlign: 'center',
+    fontWeight: '600' as const,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  instructorExperience: {
+    fontSize: 14,
+    color: theme.colors.text,
+    textAlign: 'center',
+    fontWeight: '600' as const,
+    marginTop: theme.spacing.xs,
+  },
+  instructorBio: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: theme.colors.textLight,
+    textAlign: 'center',
+    marginTop: theme.spacing.sm,
+  },
+  specialtiesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
     gap: theme.spacing.xs,
     marginTop: theme.spacing.md,
   },
-  instructorIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.surface,
+  specialtyTag: {
+    backgroundColor: theme.colors.accent,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
   },
-  instructorIndicatorActive: {
+  specialtyText: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    fontWeight: '600' as const,
+  },
+  modernInstructorIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.xl,
+  },
+  modernInstructorIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modernInstructorIndicatorActive: {
+    backgroundColor: theme.colors.white,
+    borderColor: theme.colors.primary,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  indicatorInner: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: theme.colors.primary,
-    width: 24,
   },
   galleryScroll: {
     gap: theme.spacing.sm,

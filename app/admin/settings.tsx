@@ -80,6 +80,41 @@ export default function AdminSettings() {
     }
   };
 
+  const pickHeroSlideImage = async (index: number) => {
+    try {
+      console.log(`[Settings] Picking hero slide image ${index}...`);
+      const { imageService } = await import('@/services/imageService');
+      
+      const imageUrl = await imageService.pickAndUploadImage({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+        storagePath: `settings/hero_slide_${index}_${Date.now()}.jpg`,
+      });
+
+      if (imageUrl) {
+        console.log(`[Settings] Hero slide image ${index} uploaded successfully`);
+        const updatedHeroImages = [...(settings.heroImages || [])];
+        updatedHeroImages[index] = imageUrl;
+        setSettings({
+          ...settings,
+          heroImages: updatedHeroImages,
+        });
+      }
+    } catch (error: any) {
+      console.error('[Settings] Error picking hero slide image:', error);
+      Alert.alert('Error', error?.message || 'Failed to upload image. Please try again.');
+    }
+  };
+
+  const removeHeroSlideImage = (index: number) => {
+    const updatedHeroImages = settings.heroImages?.filter((_, i) => i !== index) || [];
+    setSettings({
+      ...settings,
+      heroImages: updatedHeroImages,
+    });
+  };
+
   const updateField = (field: keyof SiteSettings, value: string) => {
     setSettings({ ...settings, [field]: value });
   };
@@ -299,25 +334,51 @@ export default function AdminSettings() {
             <Text style={styles.sectionTitle}>Site Images</Text>
           </View>
           <Text style={styles.helpText}>
-            Upload images from your device for hero and about sections
+            Upload images from your device for hero slideshow and about sections
           </Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Hero Image</Text>
-            {settings.heroImage && (
-              <Image
-                source={{ uri: settings.heroImage }}
-                style={styles.imagePreview}
-                resizeMode="cover"
-              />
-            )}
-            <TouchableOpacity
-              style={styles.uploadButton}
-              onPress={() => pickImage('hero')}
-            >
-              <Upload color={theme.colors.white} size={20} />
-              <Text style={styles.uploadButtonText}>Upload Hero Image</Text>
-            </TouchableOpacity>
+            <Text style={styles.label}>Hero Slideshow (Max 3 Images)</Text>
+            <Text style={styles.helpText}>
+              Add up to 3 images for the hero slideshow. Images will automatically rotate.
+            </Text>
+            {[0, 1, 2].map((index) => (
+              <View key={index} style={styles.heroSlideItem}>
+                <Text style={styles.slideLabel}>Image {index + 1}</Text>
+                {settings.heroImages?.[index] ? (
+                  <View style={styles.imageWithControls}>
+                    <Image
+                      source={{ uri: settings.heroImages[index] }}
+                      style={styles.imagePreview}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.imageControls}>
+                      <TouchableOpacity
+                        style={styles.changeButton}
+                        onPress={() => pickHeroSlideImage(index)}
+                      >
+                        <Upload color={theme.colors.white} size={18} />
+                        <Text style={styles.changeButtonText}>Change</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => removeHeroSlideImage(index)}
+                      >
+                        <Text style={styles.removeButtonText}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={() => pickHeroSlideImage(index)}
+                  >
+                    <Upload color={theme.colors.white} size={20} />
+                    <Text style={styles.uploadButtonText}>Upload Image {index + 1}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
           </View>
 
           <View style={styles.inputGroup}>
@@ -478,6 +539,50 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     color: theme.colors.white,
     fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  heroSlideItem: {
+    marginBottom: theme.spacing.lg,
+  },
+  slideLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.sm,
+  },
+  imageWithControls: {
+    gap: theme.spacing.sm,
+  },
+  imageControls: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  changeButton: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+  },
+  changeButtonText: {
+    color: theme.colors.white,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  removeButton: {
+    flex: 1,
+    backgroundColor: theme.colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+  },
+  removeButtonText: {
+    color: theme.colors.white,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
 });
