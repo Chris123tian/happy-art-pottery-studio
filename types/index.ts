@@ -89,6 +89,7 @@ export interface SiteSettings {
     tiktok: string;
   };
   heroImage: string;
+  heroImages: string[];
   aboutImage: string;
   description: string;
 }

@@ -170,6 +170,11 @@ export const seedSettings: SiteSettings = {
     tiktok: 'https://tiktok.com/@happyartstudio',
   },
   heroImage: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/nrkphw4hb8npuaic1h2vf',
+  heroImages: [
+    'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/nrkphw4hb8npuaic1h2vf',
+    'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/hk198e22k4hoq20n0pd18',
+    'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/njyc6lvxqzlewbhdv9hkz',
+  ],
   aboutImage: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/hk198e22k4hoq20n0pd18',
   description:
     'Happy Art is a family-run pottery studio located in Shiashie, Accra. We offer pottery classes for individuals, groups, parties, schools, and organizations. Our experienced instructors teach wheel throwing, hand building, and pot painting. We also have beautiful handmade pots and ceramic pieces for sale.',

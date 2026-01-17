@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Image,
   TouchableOpacity,
   Linking,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,9 +19,22 @@ import { theme } from '@/constants/theme';
 import { seedSettings } from '@/services/seedData';
 import { useData } from '@/contexts/DataContext';
 
+interface BlogPost {
+  id: string;
+  title: string;
+  published: string;
+  content: string;
+  url: string;
+}
+
 export default function Home() {
   const router = useRouter();
   const { settings, instructors, gallery, testimonials } = useData();
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [instructorIndex, setInstructorIndex] = useState(0);
+  const heroFadeAnim = useRef(new Animated.Value(1)).current;
+  const instructorFadeAnim = useRef(new Animated.Value(1)).current;
 
   const displayGallery = useMemo(
     () => gallery.slice(0, 6),
@@ -28,6 +42,70 @@ export default function Home() {
   );
 
   const displaySettings = settings || seedSettings;
+  const heroImages = displaySettings.heroImages || [displaySettings.heroImage];
+
+  useEffect(() => {
+    const fetchBlogPosts = async () => {
+      try {
+        const blogId = '3200822550075316870';
+        const apiKey = 'AIzaSyBk7_VGQCwnvOvD0_EXAMPLE';
+        const url = `https://www.googleapis.com/blogger/v3/blogs/${blogId}/posts?maxResults=3&key=${apiKey}`;
+        const response = await fetch(url);
+        if (response.ok) {
+          const data = await response.json();
+          const formattedPosts: BlogPost[] = data.items?.map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            published: item.published,
+            content: item.content,
+            url: item.url,
+          })) || [];
+          setBlogPosts(formattedPosts);
+        }
+      } catch (error) {
+        console.log('[Home] Blog fetch failed:', error);
+      }
+    };
+    fetchBlogPosts();
+  }, []);
+
+  useEffect(() => {
+    if (heroImages.length <= 1) return;
+    const interval = setInterval(() => {
+      Animated.timing(heroFadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        setHeroIndex((prev) => (prev + 1) % heroImages.length);
+        Animated.timing(heroFadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [heroImages.length, heroFadeAnim]);
+
+  useEffect(() => {
+    if (instructors.length <= 1) return;
+    const interval = setInterval(() => {
+      Animated.timing(instructorFadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        setInstructorIndex((prev) => (prev + 1) % instructors.length);
+        Animated.timing(instructorFadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [instructors.length, instructorFadeAnim]);
 
   const openSocialMedia = useCallback((url: string) => {
     if (url) {
@@ -43,16 +121,35 @@ export default function Home() {
     router.push('/gallery' as any);
   }, [router]);
 
+  const handleBlogPress = useCallback(() => {
+    router.push('/blog' as any);
+  }, [router]);
+
+  const formatDate = useCallback((dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }, []);
+
+  const stripHTML = useCallback((html: string) => {
+    return html.replace(/<[^>]*>/g, '').substring(0, 150) + '...';
+  }, []);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Header />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <Image
-            source={{ uri: displaySettings.heroImage }}
-            style={styles.heroImage}
-            resizeMode="cover"
-          />
+          <Animated.View style={[styles.heroImageContainer, { opacity: heroFadeAnim }]}>
+            <Image
+              source={{ uri: heroImages[heroIndex] }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          </Animated.View>
           <View style={styles.heroOverlay}>
             <Text style={styles.heroTitle}>{displaySettings.studioName}</Text>
             <Text style={styles.heroSubtitle}>{displaySettings.tagline}</Text>
@@ -61,6 +158,19 @@ export default function Home() {
               onPress={handleBookingPress}
               style={styles.heroButton}
             />
+            {heroImages.length > 1 && (
+              <View style={styles.heroIndicators}>
+                {heroImages.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.heroIndicator,
+                      index === heroIndex && styles.heroIndicatorActive,
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
           </View>
         </View>
 
@@ -114,23 +224,31 @@ export default function Home() {
         {instructors.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Our Instructors</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.instructorsScroll}
-            >
-              {instructors.map((instructor) => (
-                <View key={instructor.id} style={styles.instructorCard}>
-                  <Image
-                    source={{ uri: instructor.image }}
-                    style={styles.instructorImage}
-                    resizeMode="cover"
+            <Animated.View style={[styles.instructorSlideshow, { opacity: instructorFadeAnim }]}>
+              <View style={styles.instructorCard}>
+                <Image
+                  source={{ uri: instructors[instructorIndex].image }}
+                  style={styles.instructorImage}
+                  resizeMode="cover"
+                />
+                <Text style={styles.instructorName}>{instructors[instructorIndex].name}</Text>
+                <Text style={styles.instructorTitle}>{instructors[instructorIndex].title}</Text>
+                <Text style={styles.instructorBio}>{instructors[instructorIndex].bio}</Text>
+              </View>
+            </Animated.View>
+            {instructors.length > 1 && (
+              <View style={styles.instructorIndicators}>
+                {instructors.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.instructorIndicator,
+                      index === instructorIndex && styles.instructorIndicatorActive,
+                    ]}
                   />
-                  <Text style={styles.instructorName}>{instructor.name}</Text>
-                  <Text style={styles.instructorTitle}>{instructor.title}</Text>
-                </View>
-              ))}
-            </ScrollView>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -160,6 +278,31 @@ export default function Home() {
               onPress={handleGalleryPress}
               variant="outline"
               style={styles.galleryButton}
+            />
+          </View>
+        )}
+
+        {blogPosts.length > 0 && (
+          <View style={[styles.section, styles.blogSection]}>
+            <Text style={styles.sectionTitle}>Latest from Our Blog</Text>
+            <View style={styles.blogGrid}>
+              {blogPosts.map((post) => (
+                <TouchableOpacity
+                  key={post.id}
+                  style={styles.blogCard}
+                  onPress={() => Linking.openURL(post.url)}
+                >
+                  <Text style={styles.blogDate}>{formatDate(post.published)}</Text>
+                  <Text style={styles.blogTitle}>{post.title}</Text>
+                  <Text style={styles.blogExcerpt}>{stripHTML(post.content)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Button
+              title="Read More on Blog"
+              onPress={handleBlogPress}
+              variant="outline"
+              style={styles.blogButton}
             />
           </View>
         )}
@@ -369,6 +512,9 @@ const styles = StyleSheet.create({
     height: 280,
     position: 'relative',
   },
+  heroImageContainer: {
+    ...StyleSheet.absoluteFillObject,
+  },
   heroImage: {
     width: '100%',
     height: '100%',
@@ -396,6 +542,21 @@ const styles = StyleSheet.create({
   },
   heroButton: {
     minWidth: 200,
+  },
+  heroIndicators: {
+    flexDirection: 'row',
+    gap: theme.spacing.xs,
+    marginTop: theme.spacing.md,
+  },
+  heroIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  heroIndicatorActive: {
+    backgroundColor: theme.colors.white,
+    width: 24,
   },
   section: {
     padding: theme.spacing.md,
@@ -453,13 +614,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: theme.colors.textLight,
   },
-  instructorsScroll: {
-    gap: theme.spacing.md,
-    paddingHorizontal: theme.spacing.md,
+  instructorSlideshow: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.lg,
   },
   instructorCard: {
     alignItems: 'center',
-    width: 200,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.lg,
+    ...theme.shadows.md,
+    maxWidth: 350,
   },
   instructorImage: {
     width: 150,
@@ -475,8 +640,31 @@ const styles = StyleSheet.create({
   },
   instructorTitle: {
     fontSize: 14,
+    color: theme.colors.primary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  instructorBio: {
+    fontSize: 14,
+    lineHeight: 20,
     color: theme.colors.textLight,
     textAlign: 'center',
+  },
+  instructorIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+    marginTop: theme.spacing.md,
+  },
+  instructorIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.surface,
+  },
+  instructorIndicatorActive: {
+    backgroundColor: theme.colors.primary,
+    width: 24,
   },
   galleryScroll: {
     gap: theme.spacing.sm,
@@ -663,5 +851,36 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: theme.colors.textLight,
     marginLeft: 28,
+  },
+  blogSection: {
+    backgroundColor: theme.colors.surface,
+  },
+  blogGrid: {
+    gap: theme.spacing.md,
+  },
+  blogCard: {
+    backgroundColor: theme.colors.white,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    ...theme.shadows.md,
+  },
+  blogDate: {
+    fontSize: 12,
+    color: theme.colors.textLight,
+    marginBottom: theme.spacing.xs,
+  },
+  blogTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: theme.colors.secondary,
+    marginBottom: theme.spacing.sm,
+  },
+  blogExcerpt: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: theme.colors.text,
+  },
+  blogButton: {
+    marginTop: theme.spacing.md,
   },
 });
