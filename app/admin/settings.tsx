@@ -75,7 +75,7 @@ export default function AdminSettings() {
         tiktok: '',
       },
       heroImage: settings.heroImage || '',
-      heroImages: (settings.heroImages || []).filter(img => img && img !== ''),
+      heroImages: (settings.heroImages || []).filter(img => typeof img === 'string' && img !== ''),
       aboutImage: settings.aboutImage || '',
     };
     updateSettingsMutation.mutate(cleanSettings);
