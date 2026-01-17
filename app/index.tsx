@@ -30,6 +30,14 @@ interface BlogPost {
 export default function Home() {
   const router = useRouter();
   const { settings, instructors, gallery, testimonials } = useData();
+  
+  useEffect(() => {
+    console.log('[Home] Instructors count:', instructors.length);
+    if (instructors.length > 0) {
+      console.log('[Home] First instructor:', instructors[0]);
+      console.log('[Home] First instructor image URL:', instructors[0].image);
+    }
+  }, [instructors]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [heroIndex, setHeroIndex] = useState(0);
   const [instructorIndex, setInstructorIndex] = useState(0);

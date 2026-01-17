@@ -118,6 +118,10 @@ export const [DataProvider, useData] = createContextHook(() => {
     const unsubInstructors = database.subscribeToCollection<Instructor>(
       'instructors',
       (data) => {
+        console.log('[DataContext] Instructors loaded:', data.length);
+        if (data.length > 0) {
+          console.log('[DataContext] First instructor data:', data[0]);
+        }
         setInstructors(data);
         dataReceived++;
         if (dataReceived === totalCollections) {
