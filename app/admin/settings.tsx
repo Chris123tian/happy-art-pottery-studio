@@ -51,7 +51,34 @@ export default function AdminSettings() {
   });
 
   const handleSave = () => {
-    updateSettingsMutation.mutate(settings);
+    const cleanSettings: SiteSettings = {
+      studioName: settings.studioName || '',
+      tagline: settings.tagline || '',
+      phone: settings.phone || '',
+      whatsapp: settings.whatsapp || '',
+      email: settings.email || '',
+      address: settings.address || '',
+      description: settings.description || '',
+      openingHours: settings.openingHours || {
+        monday: '',
+        tuesday: '',
+        wednesday: '',
+        thursday: '',
+        friday: '',
+        saturday: '',
+        sunday: '',
+      },
+      socialMedia: settings.socialMedia || {
+        facebook: '',
+        instagram: '',
+        twitter: '',
+        tiktok: '',
+      },
+      heroImage: settings.heroImage || '',
+      heroImages: (settings.heroImages || []).filter(img => img && img !== ''),
+      aboutImage: settings.aboutImage || '',
+    };
+    updateSettingsMutation.mutate(cleanSettings);
   };
 
   const pickImage = async (type: 'hero' | 'about') => {
