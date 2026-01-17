@@ -234,6 +234,31 @@ class Database {
     this.activeListeners.clear();
   }
 
+  private removeUndefinedFields(obj: any): any {
+    if (obj === null || obj === undefined) {
+      return obj;
+    }
+
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.removeUndefinedFields(item));
+    }
+
+    if (typeof obj === 'object') {
+      const cleaned: any = {};
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          const value = obj[key];
+          if (value !== undefined) {
+            cleaned[key] = this.removeUndefinedFields(value);
+          }
+        }
+      }
+      return cleaned;
+    }
+
+    return obj;
+  }
+
   async create<T = any>(table: string, data: any, retries = 2): Promise<T> {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
@@ -242,10 +267,13 @@ class Database {
         const id = data.id || Date.now().toString();
         const docRef = doc(this.db!, table, id);
         const timestamp = new Date().toISOString();
+        
+        const cleanData = this.removeUndefinedFields(data);
+        
         const newItem = { 
-          ...data, 
+          ...cleanData, 
           id, 
-          createdAt: data.createdAt || timestamp,
+          createdAt: cleanData.createdAt || timestamp,
           updatedAt: timestamp
         };
         
@@ -273,8 +301,10 @@ class Database {
         const [table, id] = thing.split(':');
         const docRef = doc(this.db!, table, id);
         
+        const cleanData = this.removeUndefinedFields(data);
+        
         const updateData = {
-          ...data,
+          ...cleanData,
           id,
           updatedAt: new Date().toISOString()
         };
@@ -326,10 +356,12 @@ class Database {
         const docRef = doc(this.db!, table, id);
         const timestamp = new Date().toISOString();
         
+        const cleanData = this.removeUndefinedFields(data);
+        
         const result = { 
-          ...data, 
+          ...cleanData, 
           id,
-          createdAt: data.createdAt || timestamp,
+          createdAt: cleanData.createdAt || timestamp,
           updatedAt: timestamp
         };
         
