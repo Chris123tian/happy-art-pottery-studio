@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   Modal,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { Header } from '@/components/Header';
@@ -47,7 +47,10 @@ export default function Gallery() {
               <Image
                 source={{ uri: image.source }}
                 style={styles.image}
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
+                recyclingKey={`gallery-${image.id}`}
               />
             </TouchableOpacity>
           ))}
@@ -71,7 +74,9 @@ export default function Gallery() {
             <Image
               source={{ uri: selectedImage.source }}
               style={styles.modalImage}
-              resizeMode="contain"
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              transition={200}
             />
           )}
         </View>

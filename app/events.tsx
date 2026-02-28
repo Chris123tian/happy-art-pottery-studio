@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   Linking,
   TextInput,
   TouchableOpacity,
@@ -12,6 +11,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, Clock, Users, MapPin, X } from 'lucide-react-native';
 import { Header } from '@/components/Header';
@@ -129,7 +129,10 @@ Please confirm my booking. Thank you!`;
                 <Image
                   source={{ uri: event.image }}
                   style={styles.eventImage}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
+                  recyclingKey={`event-${event.id}`}
                 />
                 <View style={styles.eventContent}>
                   <View style={styles.categoryBadge}>

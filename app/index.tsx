@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   Linking,
   Animated,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles } from 'lucide-react-native';
@@ -43,8 +43,6 @@ export default function Home() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [nextHeroIndex, setNextHeroIndex] = useState(1);
   const [instructorIndex, setInstructorIndex] = useState(0);
-  const [imagesPreloaded, setImagesPreloaded] = useState(false);
-  const [heroImagesLoaded, setHeroImagesLoaded] = useState(false);
   const heroOpacity = useRef(new Animated.Value(1)).current;
   const instructorOpacity = useRef(new Animated.Value(1)).current;
 
@@ -85,35 +83,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const preloadImages = async () => {
-      if (instructors.length === 0) return;
-      const imagePromises = instructors.map((instructor) => {
-        return new Promise((resolve) => {
-          Image.prefetch(instructor.image).then(resolve).catch(resolve);
-        });
-      });
-      await Promise.all(imagePromises);
-      setImagesPreloaded(true);
-    };
-    preloadImages();
-  }, [instructors]);
-
-  useEffect(() => {
-    const preloadHeroImages = async () => {
-      if (heroImages.length === 0) return;
-      const imagePromises = heroImages.map((imageUrl) => {
-        return new Promise((resolve) => {
-          Image.prefetch(imageUrl).then(resolve).catch(resolve);
-        });
-      });
-      await Promise.all(imagePromises);
-      setHeroImagesLoaded(true);
-    };
-    preloadHeroImages();
-  }, [heroImages]);
-
-  useEffect(() => {
-    if (heroImages.length <= 1 || !heroImagesLoaded) return;
+    if (heroImages.length <= 1) return;
     const interval = setInterval(() => {
       const upcoming = (heroIndex + 1) % heroImages.length;
       setNextHeroIndex(upcoming);
@@ -127,10 +97,10 @@ export default function Home() {
       });
     }, 4500);
     return () => clearInterval(interval);
-  }, [heroImages.length, heroImagesLoaded, heroOpacity, heroIndex]);
+  }, [heroImages.length, heroOpacity, heroIndex]);
 
   useEffect(() => {
-    if (instructors.length <= 1 || !imagesPreloaded) return;
+    if (instructors.length <= 1) return;
     const interval = setInterval(() => {
       Animated.sequence([
         Animated.timing(instructorOpacity, {
@@ -153,7 +123,7 @@ export default function Home() {
       });
     }, 4500);
     return () => clearInterval(interval);
-  }, [instructors.length, imagesPreloaded, instructorOpacity]);
+  }, [instructors.length, instructorOpacity]);
 
   const openSocialMedia = useCallback((url: string) => {
     if (url) {
@@ -192,24 +162,24 @@ export default function Home() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <View style={styles.heroImageContainer}>
-            {heroImagesLoaded ? (
-              <>
-                <Image
-                  source={{ uri: heroImages[nextHeroIndex] }}
-                  style={[StyleSheet.absoluteFill, styles.heroImage]}
-                  resizeMode="cover"
-                />
-                <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacity }]}>
-                  <Image
-                    source={{ uri: heroImages[heroIndex] }}
-                    style={styles.heroImage}
-                    resizeMode="cover"
-                  />
-                </Animated.View>
-              </>
-            ) : (
-              <View style={[styles.heroImage, styles.heroPlaceholder]} />
-            )}
+            <Image
+              source={{ uri: heroImages[nextHeroIndex] }}
+              style={[StyleSheet.absoluteFill, styles.heroImage]}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={0}
+              recyclingKey={`hero-next-${nextHeroIndex}`}
+            />
+            <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacity }]}>
+              <Image
+                source={{ uri: heroImages[heroIndex] }}
+                style={styles.heroImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={0}
+                recyclingKey={`hero-${heroIndex}`}
+              />
+            </Animated.View>
           </View>
           <View style={styles.heroOverlay}>
             <Text style={styles.heroTitle}>{displaySettings.studioName}</Text>
@@ -228,7 +198,9 @@ export default function Home() {
             <Image
               source={{ uri: displaySettings.aboutImage }}
               style={styles.aboutImage}
-              resizeMode="cover"
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={200}
             />
             <View style={styles.aboutText}>
               <Text style={styles.paragraph}>{displaySettings.description}</Text>
@@ -278,14 +250,16 @@ export default function Home() {
             </Text>
             <View style={styles.instructorSlideshow}>
               <View style={styles.modernInstructorCard}>
-                {imagesPreloaded ? (
-                  <Animated.View style={{ opacity: instructorOpacity }}>
+                <Animated.View style={{ opacity: instructorOpacity }}>
                     <View style={styles.instructorImageContainer}>
                       <View style={styles.instructorImageBorder}>
                         <Image
                           source={{ uri: instructors[instructorIndex].image }}
                           style={styles.instructorImage}
-                          resizeMode="cover"
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
+                          transition={0}
+                          recyclingKey={`instructor-${instructorIndex}`}
                         />
                       </View>
                       <View style={styles.instructorBadge}>
@@ -312,21 +286,9 @@ export default function Home() {
                       )}
                     </View>
                   </Animated.View>
-                ) : (
-                  <>
-                    <View style={styles.instructorImageContainer}>
-                      <View style={styles.instructorImageBorder}>
-                        <View style={[styles.instructorImage, styles.instructorPlaceholder]} />
-                      </View>
-                    </View>
-                    <View style={styles.instructorContent}>
-                      <Text style={styles.loadingText}>Loading instructors...</Text>
-                    </View>
-                  </>
-                )}
               </View>
             </View>
-            {instructors.length > 1 && imagesPreloaded && (
+            {instructors.length > 1 && (
               <View style={styles.modernInstructorIndicators}>
                 {instructors.map((_, index) => (
                   <TouchableOpacity
@@ -363,7 +325,10 @@ export default function Home() {
                   <Image
                     source={{ uri: image.source }}
                     style={styles.galleryGridImage}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
+                    recyclingKey={`gallery-${image.id}`}
                   />
                 </TouchableOpacity>
               ))}
