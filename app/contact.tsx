@@ -7,15 +7,15 @@ import {
   TextInput,
   Platform,
   Alert,
+  Linking,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter } from 'lucide-react-native';
+import { Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, MessageCircle } from 'lucide-react-native';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
-import { dataService } from '@/services/dataService';
-import { emailService } from '@/services/emailService';
 
 export default function Contact() {
   const [name, setName] = useState('');
@@ -25,58 +25,54 @@ export default function Contact() {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!name || !email || !phone || !subject || !message) {
+  const handleSendViaWhatsApp = () => {
+    if (!name || !message) {
       if (Platform.OS === 'web') {
-        alert('Please fill in all fields');
+        alert('Please fill in at least your name and message');
       } else {
-        Alert.alert('Error', 'Please fill in all fields');
+        Alert.alert('Error', 'Please fill in at least your name and message');
       }
       return;
     }
 
-    setIsSubmitting(true);
+    const whatsappMessage = `Hello Happy Art!\n\nName: ${name}${email ? `\nEmail: ${email}` : ''}${phone ? `\nPhone: ${phone}` : ''}${subject ? `\nSubject: ${subject}` : ''}\n\nMessage: ${message}`;
 
-    try {
-      await dataService.createMessage({
-        name,
-        email,
-        phone,
-        subject,
-        message,
-        read: false,
-        createdAt: new Date().toISOString(),
-      });
+    const formattedNumber = '233244311110';
+    const whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodeURIComponent(whatsappMessage)}`;
 
-      await emailService.notifyAdminNewMessage({
-        name,
-        email,
-        phone,
-        subject,
-        message,
-      });
-
+    Linking.openURL(whatsappUrl).catch(() => {
+      console.log('[Contact] Failed to open WhatsApp');
       if (Platform.OS === 'web') {
-        alert('Message sent successfully! We will get back to you soon.');
+        alert('Could not open WhatsApp. Please try email instead.');
       } else {
-        Alert.alert('Success', 'Message sent successfully! We will get back to you soon.');
+        Alert.alert('Error', 'Could not open WhatsApp. Please try email instead.');
       }
+    });
+  };
 
-      setName('');
-      setEmail('');
-      setPhone('');
-      setSubject('');
-      setMessage('');
-    } catch (error) {
-      console.error('Error sending message:', error);
+  const handleSendViaEmail = () => {
+    if (!name || !message) {
       if (Platform.OS === 'web') {
-        alert('Failed to send message. Please try again.');
+        alert('Please fill in at least your name and message');
       } else {
-        Alert.alert('Error', 'Failed to send message. Please try again.');
+        Alert.alert('Error', 'Please fill in at least your name and message');
       }
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    const emailSubject = subject || 'Message from Website';
+    const emailBody = `Name: ${name}${email ? `\nEmail: ${email}` : ''}${phone ? `\nPhone: ${phone}` : ''}\n\n${message}`;
+
+    const mailtoUrl = `mailto:happyartghana@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+
+    Linking.openURL(mailtoUrl).catch(() => {
+      console.log('[Contact] Failed to open email client');
+      if (Platform.OS === 'web') {
+        alert('Could not open email client. Please email happyartghana@gmail.com directly.');
+      } else {
+        Alert.alert('Error', 'Could not open email client. Please email happyartghana@gmail.com directly.');
+      }
+    });
   };
 
   return (
@@ -182,11 +178,22 @@ export default function Contact() {
               />
             </View>
 
-            <Button 
-              title={isSubmitting ? 'Sending...' : 'Send Message'} 
-              onPress={handleSubmit}
-              disabled={isSubmitting}
-            />
+            <View style={styles.sendButtons}>
+              <TouchableOpacity
+                style={styles.whatsappButton}
+                onPress={handleSendViaWhatsApp}
+              >
+                <MessageCircle color={theme.colors.white} size={20} />
+                <Text style={styles.sendButtonText}>Send via WhatsApp</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.emailButton}
+                onPress={handleSendViaEmail}
+              >
+                <Mail color={theme.colors.white} size={20} />
+                <Text style={styles.sendButtonText}>Send via Email</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -287,5 +294,31 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 120,
     textAlignVertical: 'top',
+  },
+  sendButtons: {
+    gap: theme.spacing.md,
+  },
+  whatsappButton: {
+    backgroundColor: '#25D366',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+  },
+  emailButton: {
+    backgroundColor: theme.colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+  },
+  sendButtonText: {
+    color: theme.colors.white,
+    fontSize: 16,
+    fontWeight: '700' as const,
   },
 });

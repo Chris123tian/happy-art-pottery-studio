@@ -59,25 +59,26 @@ export default function AdminSettings() {
       email: settings.email || '',
       address: settings.address || '',
       description: settings.description || '',
-      openingHours: settings.openingHours || {
-        monday: '',
-        tuesday: '',
-        wednesday: '',
-        thursday: '',
-        friday: '',
-        saturday: '',
-        sunday: '',
+      openingHours: {
+        monday: settings.openingHours?.monday || '',
+        tuesday: settings.openingHours?.tuesday || '',
+        wednesday: settings.openingHours?.wednesday || '',
+        thursday: settings.openingHours?.thursday || '',
+        friday: settings.openingHours?.friday || '',
+        saturday: settings.openingHours?.saturday || '',
+        sunday: settings.openingHours?.sunday || '',
       },
-      socialMedia: settings.socialMedia || {
-        facebook: '',
-        instagram: '',
-        twitter: '',
-        tiktok: '',
+      socialMedia: {
+        facebook: settings.socialMedia?.facebook || '',
+        instagram: settings.socialMedia?.instagram || '',
+        twitter: settings.socialMedia?.twitter || '',
+        tiktok: settings.socialMedia?.tiktok || '',
       },
       heroImage: settings.heroImage || '',
-      heroImages: (settings.heroImages || []).filter(img => typeof img === 'string' && img !== ''),
+      heroImages: (settings.heroImages || []).filter((img): img is string => typeof img === 'string' && img !== ''),
       aboutImage: settings.aboutImage || '',
     };
+    console.log('[Settings] Clean settings to save:', JSON.stringify(cleanSettings, null, 2));
     updateSettingsMutation.mutate(cleanSettings);
   };
 

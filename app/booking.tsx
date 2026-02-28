@@ -24,13 +24,13 @@ export default function Booking() {
   const [numberOfPersons, setNumberOfPersons] = useState('1');
   const [date, setDate] = useState('');
   const [day, setDay] = useState('');
-  const [classType, setClassType] = useState<'Wheel Throwing' | 'Pot Painting'>(
-    'Wheel Throwing'
+  const [classType, setClassType] = useState<'Pot Making' | 'Pot Painting'>(
+    'Pot Making'
   );
   const [classModalVisible, setClassModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const classOptions = ['Wheel Throwing', 'Pot Painting'];
+  const classOptions = ['Pot Making', 'Pot Painting'];
 
   const handleSubmit = async () => {
     if (!name || !phone || !numberOfPersons || !date || !day) {
@@ -52,10 +52,7 @@ export default function Booking() {
         formattedNumber = '233' + formattedNumber.substring(1);
       }
 
-      const whatsappUrl =
-        Platform.OS === 'web'
-          ? `https://web.whatsapp.com/send?phone=${formattedNumber}&text=${encodeURIComponent(message)}`
-          : `whatsapp://send?phone=${formattedNumber}&text=${encodeURIComponent(message)}`;
+      const whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`;
 
       await Linking.openURL(whatsappUrl);
 
@@ -194,7 +191,7 @@ export default function Booking() {
                   classType === option && styles.optionButtonSelected,
                 ]}
                 onPress={() => {
-                  setClassType(option as 'Wheel Throwing' | 'Pot Painting');
+                  setClassType(option as 'Pot Making' | 'Pot Painting');
                   setClassModalVisible(false);
                 }}
               >

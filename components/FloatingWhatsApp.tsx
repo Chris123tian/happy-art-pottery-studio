@@ -17,10 +17,7 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({
     }
 
     const message = 'Hello! I would like to inquire about Happy Art Pottery Studio.';
-    const whatsappUrl =
-      Platform.OS === 'web'
-        ? `https://web.whatsapp.com/send?phone=${formattedNumber}&text=${encodeURIComponent(message)}`
-        : `whatsapp://send?phone=${formattedNumber}&text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`;
 
     Linking.openURL(whatsappUrl).catch(() => {
       console.log('WhatsApp is not installed');

@@ -12,7 +12,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Music, Award, Sparkles } from 'lucide-react-native';
+import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles } from 'lucide-react-native';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
@@ -233,9 +233,6 @@ export default function Home() {
             />
             <View style={styles.aboutText}>
               <Text style={styles.paragraph}>{displaySettings.description}</Text>
-              <Text style={styles.paragraph}>
-                Join us {displaySettings.openingHours.monday}. We welcome 1 to 100 people!
-              </Text>
             </View>
           </View>
         </View>
@@ -593,14 +590,7 @@ export default function Home() {
                   <Twitter color={theme.colors.white} size={24} />
                 </TouchableOpacity>
               )}
-              {displaySettings.socialMedia.tiktok && (
-                <TouchableOpacity
-                  style={[styles.socialButton, { backgroundColor: '#000000' }]}
-                  onPress={() => openSocialMedia(displaySettings.socialMedia.tiktok)}
-                >
-                  <Music color={theme.colors.white} size={24} />
-                </TouchableOpacity>
-              )}
+
             </View>
           </View>
         </View>

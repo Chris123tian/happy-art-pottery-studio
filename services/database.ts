@@ -235,12 +235,18 @@ class Database {
   }
 
   private removeUndefinedFields(obj: any): any {
-    if (obj === null || obj === undefined) {
-      return obj;
+    if (obj === null) {
+      return null;
+    }
+
+    if (obj === undefined) {
+      return null;
     }
 
     if (Array.isArray(obj)) {
-      return obj.map(item => this.removeUndefinedFields(item));
+      return obj
+        .filter(item => item !== undefined)
+        .map(item => this.removeUndefinedFields(item));
     }
 
     if (typeof obj === 'object') {
