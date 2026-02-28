@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
   Linking,
   Animated,
+  Platform,
 } from 'react-native';
-import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles } from 'lucide-react-native';
@@ -553,12 +553,27 @@ export default function Home() {
           <View style={styles.mapContainer}>
             <Text style={styles.mapTitle}>Visit Us</Text>
             <View style={styles.mapWrapper}>
-              <WebView
-                source={{ uri: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3970.5894634776437!2d-0.18566552603040923!3d5.627459532929082!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xfdf9b473890b8fd%3A0x831efdb91c838cfa!2sHappy%20Art!5e0!3m2!1sen!2sgh!4v1768613314968!5m2!1sen!2sgh' }}
-                style={styles.map}
-                scrollEnabled={false}
-                javaScriptEnabled={true}
-              />
+              {Platform.OS === 'web' ? (
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3970.5894634776437!2d-0.18566552603040923!3d5.627459532929082!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xfdf9b473890b8fd%3A0x831efdb91c838cfa!2sHappy%20Art!5e0!3m2!1sen!2sgh!4v1768613314968!5m2!1sen!2sgh"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0, borderRadius: 12 } as any}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              ) : (
+                <View style={styles.map}>
+                  <TouchableOpacity
+                    style={styles.mapFallback}
+                    onPress={() => Linking.openURL('https://maps.google.com/?q=5.627459532929082,-0.18566552603040923')}
+                  >
+                    <MapPin color={theme.colors.primary} size={32} />
+                    <Text style={styles.mapFallbackText}>Open in Google Maps</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
 
@@ -942,6 +957,20 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  mapFallback: {
+    flex: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    backgroundColor: theme.colors.background,
+    borderRadius: 12,
+    gap: 8,
+  },
+  mapFallbackText: {
+    fontSize: 16,
+    color: theme.colors.primary,
+    fontWeight: '600' as const,
+    marginTop: 8,
   },
   sectionSubtitle: {
     fontSize: 16,
