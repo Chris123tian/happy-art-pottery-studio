@@ -41,6 +41,7 @@ export default function Home() {
   }, [instructors]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [nextHeroIndex, setNextHeroIndex] = useState(1);
   const [instructorIndex, setInstructorIndex] = useState(0);
   const [imagesPreloaded, setImagesPreloaded] = useState(false);
   const [heroImagesLoaded, setHeroImagesLoaded] = useState(false);
@@ -114,28 +115,19 @@ export default function Home() {
   useEffect(() => {
     if (heroImages.length <= 1 || !heroImagesLoaded) return;
     const interval = setInterval(() => {
-      Animated.sequence([
-        Animated.timing(heroOpacity, {
-          toValue: 0,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(heroOpacity, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setHeroIndex((prev) => (prev + 1) % heroImages.length);
-        Animated.timing(heroOpacity, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }).start();
+      const upcoming = (heroIndex + 1) % heroImages.length;
+      setNextHeroIndex(upcoming);
+      Animated.timing(heroOpacity, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        setHeroIndex(upcoming);
+        heroOpacity.setValue(1);
       });
     }, 4500);
     return () => clearInterval(interval);
-  }, [heroImages.length, heroImagesLoaded, heroOpacity]);
+  }, [heroImages.length, heroImagesLoaded, heroOpacity, heroIndex]);
 
   useEffect(() => {
     if (instructors.length <= 1 || !imagesPreloaded) return;
@@ -201,13 +193,20 @@ export default function Home() {
         <View style={styles.hero}>
           <View style={styles.heroImageContainer}>
             {heroImagesLoaded ? (
-              <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacity }]}>
+              <>
                 <Image
-                  source={{ uri: heroImages[heroIndex] }}
-                  style={styles.heroImage}
+                  source={{ uri: heroImages[nextHeroIndex] }}
+                  style={[StyleSheet.absoluteFill, styles.heroImage]}
                   resizeMode="cover"
                 />
-              </Animated.View>
+                <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacity }]}>
+                  <Image
+                    source={{ uri: heroImages[heroIndex] }}
+                    style={styles.heroImage}
+                    resizeMode="cover"
+                  />
+                </Animated.View>
+              </>
             ) : (
               <View style={[styles.heroImage, styles.heroPlaceholder]} />
             )}
