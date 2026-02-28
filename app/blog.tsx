@@ -15,7 +15,7 @@ import { Header } from '@/components/Header';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
 
-const BLOG_URL = 'https://happyartghana.blogspot.com';
+const BLOG_URL = 'https://happyartacademy702.blogspot.com';
 
 export default function Blog() {
   const [loading, setLoading] = useState(true);
