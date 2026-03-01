@@ -30,7 +30,7 @@ interface BlogPost {
 
 export default function Home() {
   const router = useRouter();
-  const { settings, instructors, gallery, testimonials } = useData();
+  const { settings, instructors, gallery, testimonials, isLoading } = useData();
   
   useEffect(() => {
     console.log('[Home] Instructors count:', instructors.length);
@@ -52,9 +52,10 @@ export default function Home() {
   );
 
   const displaySettings = settings || seedSettings;
+  const settingsReady = settings !== null;
   const heroImages = useMemo(
-    () => displaySettings.heroImages || [displaySettings.heroImage],
-    [displaySettings.heroImages, displaySettings.heroImage]
+    () => settingsReady ? (displaySettings.heroImages || [displaySettings.heroImage]) : [],
+    [settingsReady, displaySettings.heroImages, displaySettings.heroImage]
   );
 
   useEffect(() => {
@@ -162,24 +163,30 @@ export default function Home() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <View style={styles.heroImageContainer}>
-            <Image
-              source={{ uri: heroImages[nextHeroIndex] }}
-              style={[StyleSheet.absoluteFill, styles.heroImage]}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              transition={0}
-              recyclingKey={`hero-next-${nextHeroIndex}`}
-            />
-            <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacity }]}>
-              <Image
-                source={{ uri: heroImages[heroIndex] }}
-                style={styles.heroImage}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={0}
-                recyclingKey={`hero-${heroIndex}`}
-              />
-            </Animated.View>
+            {heroImages.length > 0 ? (
+              <>
+                <Image
+                  source={{ uri: heroImages[nextHeroIndex] }}
+                  style={[StyleSheet.absoluteFill, styles.heroImage]}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={0}
+                  recyclingKey={`hero-next-${nextHeroIndex}-${heroImages[nextHeroIndex]}`}
+                />
+                <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacity }]}>
+                  <Image
+                    source={{ uri: heroImages[heroIndex] }}
+                    style={styles.heroImage}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={0}
+                    recyclingKey={`hero-${heroIndex}-${heroImages[heroIndex]}`}
+                  />
+                </Animated.View>
+              </>
+            ) : (
+              <View style={[StyleSheet.absoluteFill, styles.heroPlaceholder]} />
+            )}
           </View>
           <View style={styles.heroOverlay}>
             <Text style={styles.heroTitle}>{displaySettings.studioName}</Text>
@@ -600,7 +607,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   heroPlaceholder: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#2c2c2c',
   },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
