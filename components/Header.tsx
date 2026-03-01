@@ -7,14 +7,12 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import { Menu, X, Shield } from 'lucide-react-native';
+import { Menu, X } from 'lucide-react-native';
 import { theme } from '@/constants/theme';
-import { useAuth } from '@/contexts/AuthContext';
 
 const HeaderComponent: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
 
@@ -80,13 +78,6 @@ const HeaderComponent: React.FC = () => {
                 </Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity
-              onPress={() => navigate(isAuthenticated ? '/admin/dashboard' : '/admin/login')}
-              style={styles.adminButton}
-            >
-              <Shield color={theme.colors.white} size={18} />
-              <Text style={styles.adminButtonText}>Admin</Text>
-            </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
@@ -120,13 +111,6 @@ const HeaderComponent: React.FC = () => {
               </Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity
-            onPress={() => navigate(isAuthenticated ? '/admin/dashboard' : '/admin/login')}
-            style={styles.mobileMenuItemAdmin}
-          >
-            <Shield color={theme.colors.white} size={18} />
-            <Text style={styles.mobileMenuTextAdmin}>Admin</Text>
-          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -182,20 +166,7 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '600' as const,
   },
-  adminButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    backgroundColor: theme.colors.primary,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-  },
-  adminButtonText: {
-    color: theme.colors.white,
-    fontWeight: '600' as const,
-    fontSize: 16,
-  },
+
   mobileMenu: {
     backgroundColor: theme.colors.white,
     borderTopWidth: 1,
@@ -220,20 +191,5 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '600' as const,
   },
-  mobileMenuItemAdmin: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    backgroundColor: theme.colors.primary,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.md,
-    marginHorizontal: theme.spacing.md,
-    marginVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-  },
-  mobileMenuTextAdmin: {
-    color: theme.colors.white,
-    fontWeight: '600' as const,
-    fontSize: 16,
-  },
+
 });
