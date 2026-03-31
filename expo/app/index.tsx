@@ -30,7 +30,7 @@ interface BlogPost {
 
 export default function Home() {
   const router = useRouter();
-  const { settings, instructors, gallery, testimonials, isLoading } = useData();
+  const { settings, instructors, gallery, testimonials } = useData();
   
   useEffect(() => {
     console.log('[Home] Instructors count:', instructors.length);
@@ -40,10 +40,12 @@ export default function Home() {
     }
   }, [instructors]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const [heroIndex, setHeroIndex] = useState(0);
-  const [nextHeroIndex, setNextHeroIndex] = useState(1);
+  const [heroIndexA, setHeroIndexA] = useState(0);
+  const [heroIndexB, setHeroIndexB] = useState(1);
+  const [_activeLayer, setActiveLayer] = useState<'A' | 'B'>('A');
+  const heroOpacityA = useRef(new Animated.Value(1)).current;
+  const heroOpacityB = useRef(new Animated.Value(0)).current;
   const [instructorIndex, setInstructorIndex] = useState(0);
-  const heroOpacity = useRef(new Animated.Value(1)).current;
   const instructorOpacity = useRef(new Animated.Value(1)).current;
 
   const displayGallery = useMemo(
@@ -83,22 +85,63 @@ export default function Home() {
     fetchBlogPosts();
   }, []);
 
+  const transitioningRef = useRef(false);
+  const activeLayerRef = useRef<'A' | 'B'>('A');
+  const heroIndexARef = useRef(0);
+  const heroIndexBRef = useRef(1);
+
+  useEffect(() => {
+    if (heroImages.length <= 1) return;
+    setHeroIndexA(0);
+    setHeroIndexB(heroImages.length > 1 ? 1 : 0);
+    heroIndexARef.current = 0;
+    heroIndexBRef.current = heroImages.length > 1 ? 1 : 0;
+    setActiveLayer('A');
+    activeLayerRef.current = 'A';
+    heroOpacityA.setValue(1);
+    heroOpacityB.setValue(0);
+    transitioningRef.current = false;
+  }, [heroImages.length]);
+
   useEffect(() => {
     if (heroImages.length <= 1) return;
     const interval = setInterval(() => {
-      const upcoming = (heroIndex + 1) % heroImages.length;
-      setNextHeroIndex(upcoming);
-      Animated.timing(heroOpacity, {
-        toValue: 0,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start(() => {
-        setHeroIndex(upcoming);
-        heroOpacity.setValue(1);
-      });
+      if (transitioningRef.current) return;
+      transitioningRef.current = true;
+
+      const currentActive = activeLayerRef.current;
+      if (currentActive === 'A') {
+        const nextIdx = (heroIndexARef.current + 1) % heroImages.length;
+        heroIndexBRef.current = nextIdx;
+        setHeroIndexB(nextIdx);
+        setTimeout(() => {
+          Animated.parallel([
+            Animated.timing(heroOpacityB, { toValue: 1, duration: 900, useNativeDriver: true }),
+            Animated.timing(heroOpacityA, { toValue: 0, duration: 900, useNativeDriver: true }),
+          ]).start(() => {
+            activeLayerRef.current = 'B';
+            setActiveLayer('B');
+            transitioningRef.current = false;
+          });
+        }, 50);
+      } else {
+        const nextIdx = (heroIndexBRef.current + 1) % heroImages.length;
+        heroIndexARef.current = nextIdx;
+        setHeroIndexA(nextIdx);
+        setTimeout(() => {
+          Animated.parallel([
+            Animated.timing(heroOpacityA, { toValue: 1, duration: 900, useNativeDriver: true }),
+            Animated.timing(heroOpacityB, { toValue: 0, duration: 900, useNativeDriver: true }),
+          ]).start(() => {
+            activeLayerRef.current = 'A';
+            setActiveLayer('A');
+            transitioningRef.current = false;
+          });
+        }, 50);
+      }
     }, 4500);
     return () => clearInterval(interval);
-  }, [heroImages.length, heroOpacity, heroIndex]);
+  }, [heroImages.length, heroOpacityA, heroOpacityB]);
 
   useEffect(() => {
     if (instructors.length <= 1) return;
@@ -165,22 +208,24 @@ export default function Home() {
           <View style={styles.heroImageContainer}>
             {heroImages.length > 0 ? (
               <>
-                <Image
-                  source={{ uri: heroImages[nextHeroIndex] }}
-                  style={[StyleSheet.absoluteFill, styles.heroImage]}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                  transition={0}
-                  recyclingKey={`hero-next-${nextHeroIndex}-${heroImages[nextHeroIndex]}`}
-                />
-                <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacity }]}>
+                <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityA }]}>
                   <Image
-                    source={{ uri: heroImages[heroIndex] }}
+                    source={{ uri: heroImages[heroIndexA] }}
                     style={styles.heroImage}
                     contentFit="cover"
                     cachePolicy="memory-disk"
                     transition={0}
-                    recyclingKey={`hero-${heroIndex}-${heroImages[heroIndex]}`}
+                    recyclingKey={`hero-a-${heroIndexA}`}
+                  />
+                </Animated.View>
+                <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityB }]}>
+                  <Image
+                    source={{ uri: heroImages[heroIndexB] }}
+                    style={styles.heroImage}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={0}
+                    recyclingKey={`hero-b-${heroIndexB}`}
                   />
                 </Animated.View>
               </>
