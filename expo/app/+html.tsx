@@ -29,6 +29,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="geo.position" content="5.6037;-0.1870" />
         <meta name="ICBM" content="5.6037, -0.1870" />
         
+        <meta name="google-site-verification" content="QW__FI-iR1f7ic44TzHrEQA-BtGiWnPXOkikftDsUwo" />
         <meta name="robots" content="index, follow" />
         <meta name="googlebot" content="index, follow" />
         
