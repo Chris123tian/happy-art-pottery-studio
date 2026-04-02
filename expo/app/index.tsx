@@ -12,7 +12,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles } from 'lucide-react-native';
+import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles, BookOpen, ArrowRight } from 'lucide-react-native';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
@@ -181,6 +181,10 @@ export default function Home() {
 
   const handleGalleryPress = useCallback(() => {
     router.push('/gallery' as any);
+  }, [router]);
+
+  const handleClassesPress = useCallback(() => {
+    router.push('/classes' as any);
   }, [router]);
 
   const handleBlogPress = useCallback(() => {
@@ -418,6 +422,20 @@ export default function Home() {
             />
           </View>
         )}
+
+        <View style={[styles.section, styles.classesCtaSection]}>
+          <View style={styles.classesCtaInner}>
+            <BookOpen color={theme.colors.primary} size={36} />
+            <Text style={styles.classesCtaTitle}>Explore Our Classes</Text>
+            <Text style={styles.classesCtaText}>
+              From beginner wheel throwing to advanced pot painting, find the perfect class for you.
+            </Text>
+            <TouchableOpacity style={styles.classesCtaButton} onPress={handleClassesPress} activeOpacity={0.8}>
+              <Text style={styles.classesCtaButtonText}>View All Classes</Text>
+              <ArrowRight color={theme.colors.white} size={18} />
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <View style={[styles.section, styles.processSection]}>
           <Text style={styles.sectionTitle}>How It Works</Text>
@@ -1150,5 +1168,43 @@ const styles = StyleSheet.create({
   },
   blogButton: {
     marginTop: theme.spacing.md,
+  },
+  classesCtaSection: {
+    backgroundColor: theme.colors.accent,
+  },
+  classesCtaInner: {
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.lg,
+    ...theme.shadows.md,
+    gap: theme.spacing.md,
+  },
+  classesCtaTitle: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    color: theme.colors.secondary,
+    textAlign: 'center',
+  },
+  classesCtaText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: theme.colors.textLight,
+    textAlign: 'center',
+  },
+  classesCtaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.borderRadius.full,
+    ...theme.shadows.md,
+  },
+  classesCtaButtonText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: theme.colors.white,
   },
 });

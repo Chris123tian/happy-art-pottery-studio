@@ -12,7 +12,7 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronDown } from 'lucide-react-native';
+import { ChevronDown, Clock, Users, Paintbrush, Info, CreditCard } from 'lucide-react-native';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
@@ -27,13 +27,25 @@ export default function Booking() {
   const [classType, setClassType] = useState<'Pot Making' | 'Pot Painting'>(
     'Pot Making'
   );
+  const [time, setTime] = useState('');
   const [classModalVisible, setClassModalVisible] = useState(false);
+  const [timeModalVisible, setTimeModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPriceList, setShowPriceList] = useState(true);
+
+  const timeSlots = [
+    '1:00 PM',
+    '1:30 PM',
+    '2:00 PM',
+    '2:30 PM',
+    '3:00 PM',
+    '3:30 PM',
+  ];
 
   const classOptions = ['Pot Making', 'Pot Painting'];
 
   const handleSubmit = async () => {
-    if (!name || !phone || !numberOfPersons || !date || !day) {
+    if (!name || !phone || !numberOfPersons || !date || !day || !time) {
       if (Platform.OS === 'web') {
         alert('Please fill in all fields');
       } else {
@@ -45,7 +57,7 @@ export default function Booking() {
     setIsSubmitting(true);
 
     try {
-      const message = `Hello! I would like to book a pottery class at Happy Art.\n\nName: ${name}\nPhone: ${phone}\nNumber of Persons: ${numberOfPersons}\nDate: ${date}\nDay: ${day}\nClass Type: ${classType}\n\nPlease confirm my booking. Thank you!`;
+      const message = `Hello! I would like to book a pottery class at Happy Art.\n\nName: ${name}\nPhone: ${phone}\nNumber of Persons: ${numberOfPersons}\nDate: ${date}\nDay: ${day}\nTime: ${time}\nClass Type: ${classType}\n\nPlease confirm my booking. Thank you!`;
 
       let formattedNumber = '0244311110'.replace(/[^0-9]/g, '');
       if (formattedNumber.startsWith('0')) {
@@ -61,6 +73,7 @@ export default function Booking() {
       setNumberOfPersons('1');
       setDate('');
       setDay('');
+      setTime('');
     } catch (error) {
       console.error('Error submitting booking:', error);
       if (Platform.OS === 'web') {
@@ -82,6 +95,111 @@ export default function Booking() {
           <Text style={styles.subtitle}>
             Fill in the form below and we&apos;ll contact you via WhatsApp
           </Text>
+        </View>
+
+        <View style={styles.priceListContainer}>
+          <TouchableOpacity
+            style={styles.priceListToggle}
+            onPress={() => setShowPriceList(!showPriceList)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.priceListToggleLeft}>
+              <CreditCard color={theme.colors.primary} size={20} />
+              <Text style={styles.priceListToggleText}>View Price List</Text>
+            </View>
+            <ChevronDown
+              color={theme.colors.primary}
+              size={20}
+              style={showPriceList ? { transform: [{ rotate: '180deg' }] } : undefined}
+            />
+          </TouchableOpacity>
+
+          {showPriceList && (
+            <View style={styles.priceListContent}>
+              <View style={styles.priceCategory}>
+                <View style={styles.priceCategoryHeader}>
+                  <Paintbrush color={theme.colors.secondary} size={18} />
+                  <Text style={styles.priceCategoryTitle}>POT MAKING</Text>
+                </View>
+
+                <Text style={styles.priceSubHeader}>Weekdays (Mon-Fri, except Wed)</Text>
+                <View style={styles.priceRow}>
+                  <View style={styles.priceRowLeft}>
+                    <Users color={theme.colors.textLight} size={14} />
+                    <Text style={styles.priceRowText}>1-7 persons</Text>
+                  </View>
+                  <View style={styles.priceRowRight}>
+                    <Text style={styles.priceDuration}>2 hrs</Text>
+                    <Text style={styles.priceAmount}>GHS 320/person</Text>
+                  </View>
+                </View>
+                <View style={styles.priceRow}>
+                  <View style={styles.priceRowLeft}>
+                    <Users color={theme.colors.textLight} size={14} />
+                    <Text style={styles.priceRowText}>8+ persons</Text>
+                  </View>
+                  <View style={styles.priceRowRight}>
+                    <Text style={styles.priceDuration}>2 hrs</Text>
+                    <Text style={styles.priceAmount}>GHS 290/person</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.priceSubHeader}>Weekends (Sat) &amp; Holidays</Text>
+                <View style={styles.priceRow}>
+                  <View style={styles.priceRowLeft}>
+                    <Users color={theme.colors.textLight} size={14} />
+                    <Text style={styles.priceRowText}>1-7 persons</Text>
+                  </View>
+                  <View style={styles.priceRowRight}>
+                    <Text style={styles.priceDuration}>2 hrs</Text>
+                    <Text style={styles.priceAmount}>GHS 370/person</Text>
+                  </View>
+                </View>
+                <View style={styles.priceRow}>
+                  <View style={styles.priceRowLeft}>
+                    <Users color={theme.colors.textLight} size={14} />
+                    <Text style={styles.priceRowText}>8+ persons</Text>
+                  </View>
+                  <View style={styles.priceRowRight}>
+                    <Text style={styles.priceDuration}>2 hrs</Text>
+                    <Text style={styles.priceAmount}>GHS 340/person</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.priceDivider} />
+
+              <View style={styles.priceCategory}>
+                <View style={styles.priceCategoryHeader}>
+                  <Paintbrush color={theme.colors.secondary} size={18} />
+                  <Text style={styles.priceCategoryTitle}>POT PAINTING</Text>
+                </View>
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceRowText}>GHS 150 and above (depends on pot size)</Text>
+                </View>
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceRowText}>Painting your own pots (made at Happy Art): GHS 120</Text>
+                </View>
+              </View>
+
+              <View style={styles.priceDivider} />
+
+              <View style={styles.priceNotes}>
+                <View style={styles.noteRow}>
+                  <Info color={theme.colors.primary} size={14} />
+                  <Text style={styles.noteText}>Groups of 20+ may request a customized class</Text>
+                </View>
+                <View style={styles.noteRow}>
+                  <Info color={theme.colors.primary} size={14} />
+                  <Text style={styles.noteText}>Payment: Cash or Momo (0243418149)</Text>
+                </View>
+                <View style={styles.noteRow}>
+                  <Info color={theme.colors.primary} size={14} />
+                  <Text style={styles.noteText}>30% non-refundable deposit required with booking</Text>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.form}>
@@ -143,6 +261,22 @@ export default function Booking() {
           </View>
 
           <View style={styles.inputGroup}>
+            <Text style={styles.label}>Preferred Time *</Text>
+            <TouchableOpacity
+              style={styles.selectButton}
+              onPress={() => setTimeModalVisible(true)}
+            >
+              <View style={styles.selectButtonInner}>
+                <Clock color={time ? theme.colors.text : theme.colors.textLight} size={18} />
+                <Text style={[styles.selectButtonText, !time && { color: theme.colors.textLight }]}>
+                  {time || 'Select a time slot'}
+                </Text>
+              </View>
+              <ChevronDown color={theme.colors.textLight} size={20} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.inputGroup}>
             <Text style={styles.label}>Select Class *</Text>
             <TouchableOpacity
               style={styles.selectButton}
@@ -167,6 +301,47 @@ export default function Booking() {
         </View>
       </ScrollView>
       <FloatingWhatsApp />
+
+      <Modal
+        visible={timeModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTimeModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setTimeModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Time</Text>
+            </View>
+            {timeSlots.map((slot) => (
+              <TouchableOpacity
+                key={slot}
+                style={[
+                  styles.optionButton,
+                  time === slot && styles.optionButtonSelected,
+                ]}
+                onPress={() => {
+                  setTime(slot);
+                  setTimeModalVisible(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.optionText,
+                    time === slot && styles.optionTextSelected,
+                  ]}
+                >
+                  {slot}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <Modal
         visible={classModalVisible}
@@ -326,5 +501,113 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     color: theme.colors.textLight,
+  },
+  selectButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  priceListContainer: {
+    margin: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.white,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
+  },
+  priceListToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.accent,
+  },
+  priceListToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  priceListToggleText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: theme.colors.primary,
+  },
+  priceListContent: {
+    padding: theme.spacing.md,
+  },
+  priceCategory: {
+    gap: theme.spacing.sm,
+  },
+  priceCategoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+  },
+  priceCategoryTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: theme.colors.secondary,
+    letterSpacing: 0.5,
+  },
+  priceSubHeader: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: theme.colors.textLight,
+    marginTop: theme.spacing.xs,
+    marginBottom: 2,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: theme.spacing.sm,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.sm,
+    marginBottom: 4,
+  },
+  priceRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    flex: 1,
+  },
+  priceRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  priceRowText: {
+    fontSize: 14,
+    color: theme.colors.text,
+  },
+  priceDuration: {
+    fontSize: 12,
+    color: theme.colors.textLight,
+  },
+  priceAmount: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: theme.colors.primary,
+  },
+  priceDivider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginVertical: theme.spacing.md,
+  },
+  priceNotes: {
+    gap: theme.spacing.sm,
+  },
+  noteRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: theme.spacing.sm,
+  },
+  noteText: {
+    fontSize: 13,
+    color: theme.colors.textLight,
+    flex: 1,
+    lineHeight: 18,
   },
 });
