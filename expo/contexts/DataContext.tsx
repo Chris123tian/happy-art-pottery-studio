@@ -1,7 +1,7 @@
 import React, { ReactNode, useEffect, useState, useRef } from 'react';
 import { database } from '@/services/database';
 import createContextHook from '@nkzw/create-context-hook';
-import { SiteSettings, Class, Booking, Message, Instructor, GalleryImage, Event, Testimonial } from '@/types';
+import { SiteSettings, Class, Booking, Message, Instructor, GalleryImage, Event, Testimonial, Review } from '@/types';
 import { useAuth } from './AuthContext';
 
 export const [DataProvider, useData] = createContextHook(() => {
@@ -14,6 +14,7 @@ export const [DataProvider, useData] = createContextHook(() => {
   const [gallery, setGallery] = useState<GalleryImage[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError] = useState(false);
   const unsubscribeRef = useRef<(() => void)[]>([]);
@@ -30,7 +31,7 @@ export const [DataProvider, useData] = createContextHook(() => {
     console.log('[DataContext] Admin authenticated:', isAuthenticated);
 
     let dataReceived = 0;
-    const totalCollections = isAuthenticated ? 8 : 6;
+    const totalCollections = isAuthenticated ? 9 : 7;
     
     const unsubSettings = database.subscribeToCollection<SiteSettings>(
       'settings',
@@ -191,6 +192,24 @@ export const [DataProvider, useData] = createContextHook(() => {
       }
     );
 
+    const unsubReviews = database.subscribeToCollection<Review>(
+      'reviews',
+      (data) => {
+        setReviews(data);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
+      },
+      (error) => {
+        console.error('[DataContext] Reviews subscription error:', error);
+        dataReceived++;
+        if (dataReceived === totalCollections) {
+          setIsLoading(false);
+        }
+      }
+    );
+
     unsubscribeRef.current = [
       unsubSettings,
       unsubClasses,
@@ -200,6 +219,7 @@ export const [DataProvider, useData] = createContextHook(() => {
       unsubGallery,
       unsubEvents,
       unsubTestimonials,
+      unsubReviews,
     ];
 
     return () => {
@@ -225,6 +245,7 @@ export const [DataProvider, useData] = createContextHook(() => {
     gallery,
     events,
     testimonials,
+    reviews,
     isLoading,
     isError,
   };

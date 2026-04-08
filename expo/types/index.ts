@@ -66,6 +66,37 @@ export interface Event {
   category: string;
 }
 
+export interface PriceItem {
+  label: string;
+  persons: string;
+  duration: string;
+  amount: string;
+}
+
+export interface PriceCategory {
+  title: string;
+  subcategories: {
+    label: string;
+    items: PriceItem[];
+  }[];
+}
+
+export interface PriceList {
+  potMaking: PriceCategory;
+  potPainting: {
+    title: string;
+    items: { label: string; amount: string }[];
+  };
+  notes: string[];
+}
+
+export interface ServiceItem {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+}
+
 export interface SiteSettings {
   studioName: string;
   tagline: string;
@@ -92,6 +123,18 @@ export interface SiteSettings {
   heroImages: string[];
   aboutImage: string;
   description: string;
+  priceList?: PriceList;
+  services?: ServiceItem[];
+}
+
+export interface Review {
+  id: string;
+  name: string;
+  text: string;
+  rating: number;
+  date: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
 }
 
 export interface Testimonial {

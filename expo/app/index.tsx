@@ -8,17 +8,25 @@ import {
   Linking,
   Animated,
   Platform,
+  Modal,
+  TextInput,
+  Alert,
+  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles, BookOpen, ArrowRight } from 'lucide-react-native';
+import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles, BookOpen, ArrowRight, X, Send } from 'lucide-react-native';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
-import { seedSettings } from '@/services/seedData';
+import { seedSettings, seedServices } from '@/services/seedData';
 import { useData } from '@/contexts/DataContext';
+import { dataService } from '@/services/dataService';
+import { Review, ServiceItem } from '@/types';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface BlogPost {
   id: string;
@@ -30,7 +38,7 @@ interface BlogPost {
 
 export default function Home() {
   const router = useRouter();
-  const { settings, instructors, gallery, testimonials } = useData();
+  const { settings, instructors, gallery, testimonials, reviews } = useData();
   
   useEffect(() => {
     console.log('[Home] Instructors count:', instructors.length);
@@ -48,6 +56,15 @@ export default function Home() {
   const [instructorIndex, setInstructorIndex] = useState(0);
   const instructorOpacity = useRef(new Animated.Value(1)).current;
 
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ name: '', text: '', rating: 5 });
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const approvedReviews = useMemo(
+    () => reviews.filter((r) => r.status === 'approved'),
+    [reviews]
+  );
+
   const displayGallery = useMemo(
     () => gallery.slice(0, 6),
     [gallery]
@@ -58,6 +75,11 @@ export default function Home() {
   const heroImages = useMemo(
     () => settingsReady ? (displaySettings.heroImages || [displaySettings.heroImage]) : [],
     [settingsReady, displaySettings.heroImages, displaySettings.heroImage]
+  );
+
+  const services: ServiceItem[] = useMemo(
+    () => displaySettings.services && displaySettings.services.length > 0 ? displaySettings.services : seedServices,
+    [displaySettings.services]
   );
 
   useEffect(() => {
@@ -204,6 +226,65 @@ export default function Home() {
     return html.replace(/<[^>]*>/g, '').substring(0, 150) + '...';
   }, []);
 
+  const handleSubmitReview = useCallback(async () => {
+    if (!reviewForm.name.trim() || !reviewForm.text.trim()) {
+      if (Platform.OS === 'web') {
+        alert('Please fill in your name and review');
+      } else {
+        Alert.alert('Error', 'Please fill in your name and review');
+      }
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      const newReview: Omit<Review, 'id'> = {
+        name: reviewForm.name.trim(),
+        text: reviewForm.text.trim(),
+        rating: reviewForm.rating,
+        date: new Date().toISOString().split('T')[0],
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      };
+      await dataService.createReview(newReview);
+      setReviewModalVisible(false);
+      setReviewForm({ name: '', text: '', rating: 5 });
+      if (Platform.OS === 'web') {
+        alert('Thank you! Your review has been submitted and will appear after approval.');
+      } else {
+        Alert.alert('Thank You!', 'Your review has been submitted and will appear after approval.');
+      }
+    } catch (error) {
+      console.error('[Home] Error submitting review:', error);
+      if (Platform.OS === 'web') {
+        alert('Failed to submit review. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to submit review. Please try again.');
+      }
+    } finally {
+      setSubmittingReview(false);
+    }
+  }, [reviewForm]);
+
+  const renderStarSelector = useCallback(() => {
+    return (
+      <View style={styles.starSelector}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <TouchableOpacity
+            key={star}
+            onPress={() => setReviewForm((prev) => ({ ...prev, rating: star }))}
+            style={styles.starButton}
+          >
+            <Star
+              color={star <= reviewForm.rating ? '#F5A623' : theme.colors.border}
+              size={32}
+              fill={star <= reviewForm.rating ? '#F5A623' : 'transparent'}
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  }, [reviewForm.rating]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Header />
@@ -219,6 +300,7 @@ export default function Home() {
                     contentFit="cover"
                     cachePolicy="memory-disk"
                     transition={0}
+                    placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                     recyclingKey={`hero-a-${heroIndexA}`}
                   />
                 </Animated.View>
@@ -229,6 +311,7 @@ export default function Home() {
                     contentFit="cover"
                     cachePolicy="memory-disk"
                     transition={0}
+                    placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                     recyclingKey={`hero-b-${heroIndexB}`}
                   />
                 </Animated.View>
@@ -257,6 +340,7 @@ export default function Home() {
               contentFit="cover"
               cachePolicy="memory-disk"
               transition={200}
+              placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
             />
             <View style={styles.aboutText}>
               <Text style={styles.paragraph}>{displaySettings.description}</Text>
@@ -267,30 +351,25 @@ export default function Home() {
         <View style={[styles.section, styles.servicesSection]}>
           <Text style={styles.sectionTitle}>Our Services</Text>
           <View style={styles.servicesGrid}>
-            <View style={styles.serviceCard}>
-              <Text style={styles.serviceTitle}>Wheel Throwing</Text>
-              <Text style={styles.serviceDescription}>
-                Learn the art of shaping clay on the pottery wheel. Perfect for all skill levels.
-              </Text>
-            </View>
-            <View style={styles.serviceCard}>
-              <Text style={styles.serviceTitle}>Pot Painting</Text>
-              <Text style={styles.serviceDescription}>
-                Express your creativity by painting and decorating ceramic pieces.
-              </Text>
-            </View>
-            <View style={styles.serviceCard}>
-              <Text style={styles.serviceTitle}>Free Hand Modeling</Text>
-              <Text style={styles.serviceDescription}>
-                Create unique pottery pieces using traditional hand-building techniques.
-              </Text>
-            </View>
-            <View style={styles.serviceCard}>
-              <Text style={styles.serviceTitle}>Pottery & Ceramics Sales</Text>
-              <Text style={styles.serviceDescription}>
-                Browse our collection of handmade pots and ceramic pieces for purchase.
-              </Text>
-            </View>
+            {services.map((service) => (
+              <View key={service.id} style={styles.serviceCard}>
+                <Image
+                  source={{ uri: service.image }}
+                  style={styles.serviceImage}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
+                  placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
+                  recyclingKey={`service-${service.id}`}
+                />
+                <View style={styles.serviceCardContent}>
+                  <Text style={styles.serviceTitle}>{service.title}</Text>
+                  <Text style={styles.serviceDescription}>
+                    {service.description}
+                  </Text>
+                </View>
+              </View>
+            ))}
           </View>
         </View>
 
@@ -315,6 +394,7 @@ export default function Home() {
                           contentFit="cover"
                           cachePolicy="memory-disk"
                           transition={0}
+                          placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                           recyclingKey={`instructor-${instructorIndex}`}
                         />
                       </View>
@@ -384,6 +464,7 @@ export default function Home() {
                     contentFit="cover"
                     cachePolicy="memory-disk"
                     transition={200}
+                    placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                     recyclingKey={`gallery-${image.id}`}
                   />
                 </TouchableOpacity>
@@ -439,7 +520,11 @@ export default function Home() {
 
         <View style={[styles.section, styles.processSection]}>
           <Text style={styles.sectionTitle}>How It Works</Text>
-          <View style={styles.processSteps}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.processSteps}
+          >
             <View style={styles.processStep}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>1</Text>
@@ -476,12 +561,12 @@ export default function Home() {
                 Learn pottery techniques and take home your masterpiece
               </Text>
             </View>
-          </View>
+          </ScrollView>
         </View>
 
-        {testimonials.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>What Our Students Say</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>What Our Students Say</Text>
+          {(testimonials.length > 0 || approvedReviews.length > 0) && (
             <View style={styles.testimonialsGrid}>
               {testimonials.map((testimonial) => (
                 <View key={testimonial.id} style={styles.testimonialCard}>
@@ -489,9 +574,9 @@ export default function Home() {
                     {[...Array(testimonial.rating)].map((_, i) => (
                       <Star
                         key={i}
-                        color={theme.colors.primary}
+                        color="#F5A623"
                         size={16}
-                        fill={theme.colors.primary}
+                        fill="#F5A623"
                       />
                     ))}
                   </View>
@@ -499,9 +584,33 @@ export default function Home() {
                   <Text style={styles.testimonialAuthor}>- {testimonial.name}</Text>
                 </View>
               ))}
+              {approvedReviews.map((review) => (
+                <View key={review.id} style={styles.testimonialCard}>
+                  <View style={styles.starsRow}>
+                    {[...Array(review.rating)].map((_, i) => (
+                      <Star
+                        key={i}
+                        color="#F5A623"
+                        size={16}
+                        fill="#F5A623"
+                      />
+                    ))}
+                  </View>
+                  <Text style={styles.testimonialText}>&ldquo;{review.text}&rdquo;</Text>
+                  <Text style={styles.testimonialAuthor}>- {review.name}</Text>
+                </View>
+              ))}
             </View>
-          </View>
-        )}
+          )}
+          <TouchableOpacity
+            style={styles.leaveReviewButton}
+            onPress={() => setReviewModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Star color={theme.colors.white} size={20} fill={theme.colors.white} />
+            <Text style={styles.leaveReviewText}>Leave a Review</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={[styles.section, styles.faqSection]}>
           <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
@@ -645,6 +754,71 @@ export default function Home() {
         </View>
       </ScrollView>
       <FloatingWhatsApp />
+
+      <Modal
+        visible={reviewModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setReviewModalVisible(false)}
+      >
+        <View style={styles.reviewModalOverlay}>
+          <View style={styles.reviewModalContent}>
+            <View style={styles.reviewModalHeader}>
+              <Text style={styles.reviewModalTitle}>Leave a Review</Text>
+              <TouchableOpacity onPress={() => setReviewModalVisible(false)}>
+                <X color={theme.colors.text} size={24} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.reviewModalBody}>
+              <View style={styles.reviewFormGroup}>
+                <Text style={styles.reviewFormLabel}>Your Name *</Text>
+                <TextInput
+                  style={styles.reviewFormInput}
+                  value={reviewForm.name}
+                  onChangeText={(text) => setReviewForm((prev) => ({ ...prev, name: text }))}
+                  placeholder="Enter your name"
+                  placeholderTextColor={theme.colors.textLight}
+                />
+              </View>
+              <View style={styles.reviewFormGroup}>
+                <Text style={styles.reviewFormLabel}>Rating *</Text>
+                {renderStarSelector()}
+              </View>
+              <View style={styles.reviewFormGroup}>
+                <Text style={styles.reviewFormLabel}>Your Review *</Text>
+                <TextInput
+                  style={[styles.reviewFormInput, styles.reviewFormTextArea]}
+                  value={reviewForm.text}
+                  onChangeText={(text) => setReviewForm((prev) => ({ ...prev, text }))}
+                  placeholder="Share your experience at Happy Art..."
+                  placeholderTextColor={theme.colors.textLight}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+            </ScrollView>
+            <View style={styles.reviewModalFooter}>
+              <TouchableOpacity
+                style={styles.reviewCancelButton}
+                onPress={() => setReviewModalVisible(false)}
+              >
+                <Text style={styles.reviewCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.reviewSubmitButton, submittingReview && { opacity: 0.6 }]}
+                onPress={handleSubmitReview}
+                disabled={submittingReview}
+              >
+                <Send color={theme.colors.white} size={18} />
+                <Text style={styles.reviewSubmitText}>
+                  {submittingReview ? 'Submitting...' : 'Submit Review'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -657,13 +831,13 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-
   hero: {
     height: 280,
     position: 'relative',
   },
   heroImageContainer: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#2c2c2c',
   },
   heroImage: {
     width: '100%',
@@ -721,6 +895,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 220,
     borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.surface,
   },
   aboutText: {
     flex: 1,
@@ -732,14 +907,25 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: theme.spacing.md,
+    justifyContent: 'space-between',
   },
   serviceCard: {
     backgroundColor: theme.colors.white,
-    padding: theme.spacing.md,
     borderRadius: theme.borderRadius.lg,
-    width: '100%',
+    width: SCREEN_WIDTH > 500 ? '48%' : '100%',
+    overflow: 'hidden',
     ...theme.shadows.md,
+  },
+  serviceImage: {
+    width: '100%',
+    height: 140,
+    backgroundColor: theme.colors.surface,
+  },
+  serviceCardContent: {
+    padding: theme.spacing.md,
   },
   serviceTitle: {
     fontSize: 18,
@@ -753,7 +939,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textLight,
   },
   instructorSection: {
-    backgroundColor: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+    backgroundColor: theme.colors.surface,
     paddingVertical: theme.spacing.xl,
   },
   instructorHeader: {
@@ -792,7 +978,8 @@ const styles = StyleSheet.create({
   instructorImageBorder: {
     padding: 6,
     borderRadius: 100,
-    backgroundColor: `linear-gradient(135deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 100%)`,
+    borderWidth: 3,
+    borderColor: theme.colors.primary,
     ...theme.shadows.md,
   },
   instructorImage: {
@@ -910,29 +1097,6 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: theme.colors.primary,
   },
-  instructorPlaceholder: {
-    backgroundColor: 'rgba(230, 215, 200, 0.3)',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: theme.colors.textLight,
-    textAlign: 'center',
-  },
-  galleryScroll: {
-    gap: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
-  },
-  galleryItem: {
-    width: 200,
-    height: 200,
-    borderRadius: theme.borderRadius.md,
-    overflow: 'hidden',
-  },
-  galleryImage: {
-    width: '100%',
-    height: '100%',
-  },
   galleryButton: {
     marginHorizontal: theme.spacing.lg,
   },
@@ -1025,6 +1189,7 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: theme.borderRadius.md,
     overflow: 'hidden',
+    backgroundColor: theme.colors.surface,
   },
   galleryGridImage: {
     width: '100%',
@@ -1034,12 +1199,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
   },
   processSteps: {
-    flexDirection: 'column',
-    gap: theme.spacing.lg,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
   },
   processStep: {
-    flex: 1,
+    width: SCREEN_WIDTH > 500 ? (SCREEN_WIDTH - 96) / 3 : SCREEN_WIDTH * 0.7,
     alignItems: 'center',
     padding: theme.spacing.md,
     backgroundColor: theme.colors.white,
@@ -1203,6 +1370,115 @@ const styles = StyleSheet.create({
     ...theme.shadows.md,
   },
   classesCtaButtonText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: theme.colors.white,
+  },
+  leaveReviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.borderRadius.full,
+    marginTop: theme.spacing.lg,
+    alignSelf: 'center',
+    ...theme.shadows.md,
+  },
+  leaveReviewText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: theme.colors.white,
+  },
+  reviewModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  reviewModalContent: {
+    backgroundColor: theme.colors.white,
+    borderTopLeftRadius: theme.borderRadius.xl,
+    borderTopRightRadius: theme.borderRadius.xl,
+    maxHeight: '85%',
+  },
+  reviewModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  reviewModalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: theme.colors.text,
+  },
+  reviewModalBody: {
+    padding: theme.spacing.lg,
+  },
+  reviewFormGroup: {
+    marginBottom: theme.spacing.lg,
+  },
+  reviewFormLabel: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.sm,
+  },
+  reviewFormInput: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    fontSize: 16,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.white,
+  },
+  reviewFormTextArea: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  starSelector: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  starButton: {
+    padding: 4,
+  },
+  reviewModalFooter: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    padding: theme.spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  reviewCancelButton: {
+    flex: 1,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+  },
+  reviewCancelText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: theme.colors.text,
+  },
+  reviewSubmitButton: {
+    flex: 1,
+    flexDirection: 'row',
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+  },
+  reviewSubmitText: {
     fontSize: 16,
     fontWeight: '700' as const,
     color: theme.colors.white,

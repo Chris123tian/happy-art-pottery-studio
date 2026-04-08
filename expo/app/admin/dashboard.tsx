@@ -19,6 +19,8 @@ import {
   TrendingUp,
   Clock,
   Star,
+  DollarSign,
+  MessageSquare,
 } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
@@ -29,7 +31,7 @@ const cardWidth = width > 768 ? (width - theme.spacing.lg * 4) / 3 : (width - th
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { bookings, events, gallery, messages, classes, instructors } = useData();
+  const { bookings, events, gallery, messages, classes, instructors, reviews } = useData();
 
   const stats = useMemo(() => ({
     bookings: bookings.length,
@@ -40,7 +42,9 @@ export default function AdminDashboard() {
     unreadMessages: messages.filter((m) => !m.read).length,
     classes: classes.length,
     instructors: instructors.length,
-  }), [bookings, events, gallery, messages, classes, instructors]);
+    reviews: reviews.length,
+    pendingReviews: reviews.filter((r) => r.status === 'pending').length,
+  }), [bookings, events, gallery, messages, classes, instructors, reviews]);
 
   const handleNavigate = useCallback((route: string) => {
     router.push(route as any);
@@ -123,6 +127,20 @@ export default function AdminDashboard() {
       icon: Mail,
       color: '#F44336',
       route: '/admin/messages',
+    },
+    {
+      title: 'Reviews',
+      count: stats.reviews,
+      icon: MessageSquare,
+      color: '#FF9800',
+      route: '/admin/reviews',
+    },
+    {
+      title: 'Prices',
+      count: 0,
+      icon: DollarSign,
+      color: '#009688',
+      route: '/admin/prices',
     },
   ], [stats]);
 
@@ -227,6 +245,24 @@ export default function AdminDashboard() {
             >
               <BookOpen color={theme.colors.white} size={20} />
               <Text style={styles.actionText}>Add Class</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.actionsGrid}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#FF9800' }]}
+              onPress={() => handleNavigate('/admin/reviews')}
+            >
+              <MessageSquare color={theme.colors.white} size={20} />
+              <Text style={styles.actionText}>
+                Reviews{stats.pendingReviews > 0 ? ` (${stats.pendingReviews})` : ''}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#009688' }]}
+              onPress={() => handleNavigate('/admin/prices')}
+            >
+              <DollarSign color={theme.colors.white} size={20} />
+              <Text style={styles.actionText}>Prices</Text>
             </TouchableOpacity>
           </View>
         </View>

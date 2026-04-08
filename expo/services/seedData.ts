@@ -1,4 +1,4 @@
-import { Class, Instructor, GalleryImage, Event, SiteSettings, Testimonial } from '@/types';
+import { Class, Instructor, GalleryImage, Event, SiteSettings, Testimonial, PriceList, ServiceItem } from '@/types';
 
 export const seedClasses: Class[] = [
   {
@@ -147,6 +147,67 @@ export const seedEvents: Event[] = [
   },
 ];
 
+export const seedPriceList: PriceList = {
+  potMaking: {
+    title: 'POT MAKING',
+    subcategories: [
+      {
+        label: 'Weekdays (Mon-Fri, except Wed)',
+        items: [
+          { label: 'Small group', persons: '1-7 persons', duration: '2 hrs', amount: 'GHS 320/person' },
+          { label: 'Large group', persons: '8+ persons', duration: '2 hrs', amount: 'GHS 290/person' },
+        ],
+      },
+      {
+        label: 'Weekends (Sat) & Holidays',
+        items: [
+          { label: 'Small group', persons: '1-7 persons', duration: '2 hrs', amount: 'GHS 370/person' },
+          { label: 'Large group', persons: '8+ persons', duration: '2 hrs', amount: 'GHS 340/person' },
+        ],
+      },
+    ],
+  },
+  potPainting: {
+    title: 'POT PAINTING',
+    items: [
+      { label: 'Painting a pot (depends on pot size)', amount: 'GHS 150 and above' },
+      { label: 'Painting your own pots (made at Happy Art)', amount: 'GHS 120' },
+    ],
+  },
+  notes: [
+    'Groups of 20+ may request a customized class',
+    'Payment: Cash or Momo (0243418149)',
+    '30% non-refundable deposit required with booking',
+  ],
+};
+
+export const seedServices: ServiceItem[] = [
+  {
+    id: 'service-1',
+    title: 'Wheel Throwing',
+    description: 'Learn the art of shaping clay on the pottery wheel. Perfect for all skill levels.',
+    image: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400',
+  },
+  {
+    id: 'service-2',
+    title: 'Pot Painting',
+    description: 'Express your creativity by painting and decorating ceramic pieces.',
+    image: 'https://images.unsplash.com/photo-1607344645866-009c320b63e0?w=400',
+  },
+  {
+    id: 'service-3',
+    title: 'Free Hand Modeling',
+    description: 'Create unique pottery pieces using traditional hand-building techniques.',
+    image: 'https://images.unsplash.com/photo-1590422749897-47036da0b0ff?w=400',
+  },
+  {
+    id: 'service-4',
+    title: 'Pottery & Ceramics Sales',
+    description: 'Browse our collection of handmade pots and ceramic pieces for purchase.',
+    image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400',
+  },
+];
+
 export const seedSettings: SiteSettings = {
   studioName: 'Happy Art Pottery Studio',
   tagline: 'Creating Beautiful Pottery Together',
@@ -178,6 +239,8 @@ export const seedSettings: SiteSettings = {
   aboutImage: 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/hk198e22k4hoq20n0pd18',
   description:
     'Happy Art is a family-run pottery studio located in Shiashie, Accra. We offer pottery classes for individuals, groups, parties, schools, and organizations. Our experienced instructors teach wheel throwing, hand building, and pot painting. We also have beautiful handmade pots and ceramic pieces for sale.',
+  priceList: seedPriceList,
+  services: seedServices,
 };
 
 export const seedTestimonials: Testimonial[] = [

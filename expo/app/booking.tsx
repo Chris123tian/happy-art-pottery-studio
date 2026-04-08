@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,26 +12,39 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronDown, Clock, Users, Paintbrush, Info, CreditCard } from 'lucide-react-native';
+import { ChevronDown, ChevronLeft, ChevronRight, Clock, Users, Paintbrush, Info, CreditCard, Calendar } from 'lucide-react-native';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
+import { useData } from '@/contexts/DataContext';
+import { seedPriceList } from '@/services/seedData';
+import { PriceList } from '@/types';
+
+const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const FULL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function Booking() {
+  const { settings } = useData();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [numberOfPersons, setNumberOfPersons] = useState('1');
-  const [date, setDate] = useState('');
-  const [day, setDay] = useState('');
-  const [classType, setClassType] = useState<'Pot Making' | 'Pot Painting'>(
-    'Pot Making'
-  );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [classType, setClassType] = useState<'Pot Making' | 'Pot Painting'>('Pot Making');
   const [time, setTime] = useState('');
   const [classModalVisible, setClassModalVisible] = useState(false);
   const [timeModalVisible, setTimeModalVisible] = useState(false);
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPriceList, setShowPriceList] = useState(true);
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+
+  const priceList: PriceList = useMemo(
+    () => settings?.priceList || seedPriceList,
+    [settings?.priceList]
+  );
 
   const timeSlots = [
     '1:00 PM',
@@ -44,8 +57,66 @@ export default function Booking() {
 
   const classOptions = ['Pot Making', 'Pot Painting'];
 
+  const formattedDate = useMemo(() => {
+    if (!selectedDate) return '';
+    return `${MONTHS[selectedDate.getMonth()]} ${selectedDate.getDate()}, ${selectedDate.getFullYear()}`;
+  }, [selectedDate]);
+
+  const formattedDay = useMemo(() => {
+    if (!selectedDate) return '';
+    return FULL_DAYS[selectedDate.getDay()];
+  }, [selectedDate]);
+
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const days: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(i);
+    }
+    return days;
+  }, [calendarMonth, calendarYear]);
+
+  const isDateDisabled = useCallback((day: number) => {
+    const date = new Date(calendarYear, calendarMonth, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) return true;
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 3) return true;
+    return false;
+  }, [calendarMonth, calendarYear]);
+
+  const handleDateSelect = useCallback((day: number) => {
+    if (isDateDisabled(day)) return;
+    const date = new Date(calendarYear, calendarMonth, day);
+    setSelectedDate(date);
+    setDatePickerVisible(false);
+  }, [calendarYear, calendarMonth, isDateDisabled]);
+
+  const goToPrevMonth = useCallback(() => {
+    if (calendarMonth === 0) {
+      setCalendarMonth(11);
+      setCalendarYear((y) => y - 1);
+    } else {
+      setCalendarMonth((m) => m - 1);
+    }
+  }, [calendarMonth]);
+
+  const goToNextMonth = useCallback(() => {
+    if (calendarMonth === 11) {
+      setCalendarMonth(0);
+      setCalendarYear((y) => y + 1);
+    } else {
+      setCalendarMonth((m) => m + 1);
+    }
+  }, [calendarMonth]);
+
   const handleSubmit = async () => {
-    if (!name || !phone || !numberOfPersons || !date || !day || !time) {
+    if (!name || !phone || !numberOfPersons || !selectedDate || !time) {
       if (Platform.OS === 'web') {
         alert('Please fill in all fields');
       } else {
@@ -57,7 +128,7 @@ export default function Booking() {
     setIsSubmitting(true);
 
     try {
-      const message = `Hello! I would like to book a pottery class at Happy Art.\n\nName: ${name}\nPhone: ${phone}\nNumber of Persons: ${numberOfPersons}\nDate: ${date}\nDay: ${day}\nTime: ${time}\nClass Type: ${classType}\n\nPlease confirm my booking. Thank you!`;
+      const message = `Hello! I would like to book a pottery class at Happy Art.\n\nName: ${name}\nPhone: ${phone}\nNumber of Persons: ${numberOfPersons}\nDate: ${formattedDate}\nDay: ${formattedDay}\nTime: ${time}\nClass Type: ${classType}\n\nPlease confirm my booking. Thank you!`;
 
       let formattedNumber = '0244311110'.replace(/[^0-9]/g, '');
       if (formattedNumber.startsWith('0')) {
@@ -71,8 +142,7 @@ export default function Booking() {
       setName('');
       setPhone('');
       setNumberOfPersons('1');
-      setDate('');
-      setDay('');
+      setSelectedDate(null);
       setTime('');
     } catch (error) {
       console.error('Error submitting booking:', error);
@@ -119,52 +189,26 @@ export default function Booking() {
               <View style={styles.priceCategory}>
                 <View style={styles.priceCategoryHeader}>
                   <Paintbrush color={theme.colors.secondary} size={18} />
-                  <Text style={styles.priceCategoryTitle}>POT MAKING</Text>
+                  <Text style={styles.priceCategoryTitle}>{priceList.potMaking.title}</Text>
                 </View>
 
-                <Text style={styles.priceSubHeader}>Weekdays (Mon-Fri, except Wed)</Text>
-                <View style={styles.priceRow}>
-                  <View style={styles.priceRowLeft}>
-                    <Users color={theme.colors.textLight} size={14} />
-                    <Text style={styles.priceRowText}>1-7 persons</Text>
+                {priceList.potMaking.subcategories.map((sub, subIdx) => (
+                  <View key={subIdx}>
+                    <Text style={styles.priceSubHeader}>{sub.label}</Text>
+                    {sub.items.map((item, itemIdx) => (
+                      <View key={itemIdx} style={styles.priceRow}>
+                        <View style={styles.priceRowLeft}>
+                          <Users color={theme.colors.textLight} size={14} />
+                          <Text style={styles.priceRowText}>{item.persons}</Text>
+                        </View>
+                        <View style={styles.priceRowRight}>
+                          <Text style={styles.priceDuration}>{item.duration}</Text>
+                          <Text style={styles.priceAmount}>{item.amount}</Text>
+                        </View>
+                      </View>
+                    ))}
                   </View>
-                  <View style={styles.priceRowRight}>
-                    <Text style={styles.priceDuration}>2 hrs</Text>
-                    <Text style={styles.priceAmount}>GHS 320/person</Text>
-                  </View>
-                </View>
-                <View style={styles.priceRow}>
-                  <View style={styles.priceRowLeft}>
-                    <Users color={theme.colors.textLight} size={14} />
-                    <Text style={styles.priceRowText}>8+ persons</Text>
-                  </View>
-                  <View style={styles.priceRowRight}>
-                    <Text style={styles.priceDuration}>2 hrs</Text>
-                    <Text style={styles.priceAmount}>GHS 290/person</Text>
-                  </View>
-                </View>
-
-                <Text style={styles.priceSubHeader}>Weekends (Sat) &amp; Holidays</Text>
-                <View style={styles.priceRow}>
-                  <View style={styles.priceRowLeft}>
-                    <Users color={theme.colors.textLight} size={14} />
-                    <Text style={styles.priceRowText}>1-7 persons</Text>
-                  </View>
-                  <View style={styles.priceRowRight}>
-                    <Text style={styles.priceDuration}>2 hrs</Text>
-                    <Text style={styles.priceAmount}>GHS 370/person</Text>
-                  </View>
-                </View>
-                <View style={styles.priceRow}>
-                  <View style={styles.priceRowLeft}>
-                    <Users color={theme.colors.textLight} size={14} />
-                    <Text style={styles.priceRowText}>8+ persons</Text>
-                  </View>
-                  <View style={styles.priceRowRight}>
-                    <Text style={styles.priceDuration}>2 hrs</Text>
-                    <Text style={styles.priceAmount}>GHS 340/person</Text>
-                  </View>
-                </View>
+                ))}
               </View>
 
               <View style={styles.priceDivider} />
@@ -172,31 +216,24 @@ export default function Booking() {
               <View style={styles.priceCategory}>
                 <View style={styles.priceCategoryHeader}>
                   <Paintbrush color={theme.colors.secondary} size={18} />
-                  <Text style={styles.priceCategoryTitle}>POT PAINTING</Text>
+                  <Text style={styles.priceCategoryTitle}>{priceList.potPainting.title}</Text>
                 </View>
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceRowText}>GHS 150 and above (depends on pot size)</Text>
-                </View>
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceRowText}>Painting your own pots (made at Happy Art): GHS 120</Text>
-                </View>
+                {priceList.potPainting.items.map((item, idx) => (
+                  <View key={idx} style={styles.priceRow}>
+                    <Text style={styles.priceRowText}>{item.label}: {item.amount}</Text>
+                  </View>
+                ))}
               </View>
 
               <View style={styles.priceDivider} />
 
               <View style={styles.priceNotes}>
-                <View style={styles.noteRow}>
-                  <Info color={theme.colors.primary} size={14} />
-                  <Text style={styles.noteText}>Groups of 20+ may request a customized class</Text>
-                </View>
-                <View style={styles.noteRow}>
-                  <Info color={theme.colors.primary} size={14} />
-                  <Text style={styles.noteText}>Payment: Cash or Momo (0243418149)</Text>
-                </View>
-                <View style={styles.noteRow}>
-                  <Info color={theme.colors.primary} size={14} />
-                  <Text style={styles.noteText}>30% non-refundable deposit required with booking</Text>
-                </View>
+                {priceList.notes.map((note, idx) => (
+                  <View key={idx} style={styles.noteRow}>
+                    <Info color={theme.colors.primary} size={14} />
+                    <Text style={styles.noteText}>{note}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           )}
@@ -240,24 +277,18 @@ export default function Booking() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Date *</Text>
-            <TextInput
-              style={styles.input}
-              value={date}
-              onChangeText={setDate}
-              placeholder="e.g., November 25, 2025"
-              placeholderTextColor={theme.colors.textLight}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Day *</Text>
-            <TextInput
-              style={styles.input}
-              value={day}
-              onChangeText={setDay}
-              placeholder="e.g., Monday"
-              placeholderTextColor={theme.colors.textLight}
-            />
+            <TouchableOpacity
+              style={styles.selectButton}
+              onPress={() => setDatePickerVisible(true)}
+            >
+              <View style={styles.selectButtonInner}>
+                <Calendar color={selectedDate ? theme.colors.text : theme.colors.textLight} size={18} />
+                <Text style={[styles.selectButtonText, !selectedDate && { color: theme.colors.textLight }]}>
+                  {selectedDate ? `${formattedDate} (${formattedDay})` : 'Select a date'}
+                </Text>
+              </View>
+              <ChevronDown color={theme.colors.textLight} size={20} />
+            </TouchableOpacity>
           </View>
 
           <View style={styles.inputGroup}>
@@ -301,6 +332,87 @@ export default function Booking() {
         </View>
       </ScrollView>
       <FloatingWhatsApp />
+
+      <Modal
+        visible={datePickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDatePickerVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setDatePickerVisible(false)}
+        >
+          <View style={styles.calendarModal} onStartShouldSetResponder={() => true}>
+            <View style={styles.calendarHeader}>
+              <TouchableOpacity onPress={goToPrevMonth} style={styles.calendarNavButton}>
+                <ChevronLeft color={theme.colors.text} size={24} />
+              </TouchableOpacity>
+              <Text style={styles.calendarMonthTitle}>
+                {MONTHS[calendarMonth]} {calendarYear}
+              </Text>
+              <TouchableOpacity onPress={goToNextMonth} style={styles.calendarNavButton}>
+                <ChevronRight color={theme.colors.text} size={24} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.calendarWeekHeader}>
+              {DAYS_OF_WEEK.map((day) => (
+                <Text key={day} style={styles.calendarWeekDay}>{day}</Text>
+              ))}
+            </View>
+
+            <View style={styles.calendarGrid}>
+              {calendarDays.map((day, index) => {
+                if (day === null) {
+                  return <View key={`empty-${index}`} style={styles.calendarDayEmpty} />;
+                }
+                const disabled = isDateDisabled(day);
+                const isSelected = selectedDate &&
+                  selectedDate.getDate() === day &&
+                  selectedDate.getMonth() === calendarMonth &&
+                  selectedDate.getFullYear() === calendarYear;
+                const today = new Date();
+                const isToday = today.getDate() === day &&
+                  today.getMonth() === calendarMonth &&
+                  today.getFullYear() === calendarYear;
+
+                return (
+                  <TouchableOpacity
+                    key={`day-${day}`}
+                    style={[
+                      styles.calendarDay,
+                      disabled && styles.calendarDayDisabled,
+                      isSelected && styles.calendarDaySelected,
+                      isToday && !isSelected && styles.calendarDayToday,
+                    ]}
+                    onPress={() => handleDateSelect(day)}
+                    disabled={disabled}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarDayText,
+                        disabled && styles.calendarDayTextDisabled,
+                        isSelected && styles.calendarDayTextSelected,
+                      ]}
+                    >
+                      {day}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={styles.calendarLegend}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: theme.colors.border }]} />
+                <Text style={styles.legendText}>Closed (Wed & Sun)</Text>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <Modal
         visible={timeModalVisible}
@@ -383,8 +495,6 @@ export default function Booking() {
           </View>
         </TouchableOpacity>
       </Modal>
-
-
     </SafeAreaView>
   );
 }
@@ -448,16 +558,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.colors.text,
   },
+  selectButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    flex: 1,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContent: {
     backgroundColor: theme.colors.white,
     borderTopLeftRadius: theme.borderRadius.xl,
     borderTopRightRadius: theme.borderRadius.xl,
     paddingBottom: 40,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   modalHeader: {
     padding: theme.spacing.lg,
@@ -501,11 +622,6 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     color: theme.colors.textLight,
-  },
-  selectButtonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
   },
   priceListContainer: {
     margin: theme.spacing.md,
@@ -609,5 +725,98 @@ const styles = StyleSheet.create({
     color: theme.colors.textLight,
     flex: 1,
     lineHeight: 18,
+  },
+  calendarModal: {
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
+    marginHorizontal: theme.spacing.lg,
+    width: '90%',
+    maxWidth: 380,
+    ...theme.shadows.lg,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  calendarNavButton: {
+    padding: theme.spacing.sm,
+  },
+  calendarMonthTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: theme.colors.secondary,
+  },
+  calendarWeekHeader: {
+    flexDirection: 'row',
+    marginBottom: theme.spacing.sm,
+  },
+  calendarWeekDay: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: theme.colors.textLight,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calendarDayEmpty: {
+    width: '14.28%',
+    height: 40,
+  },
+  calendarDay: {
+    width: '14.28%',
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+  },
+  calendarDayDisabled: {
+    opacity: 0.3,
+  },
+  calendarDaySelected: {
+    backgroundColor: theme.colors.primary,
+  },
+  calendarDayToday: {
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+  },
+  calendarDayText: {
+    fontSize: 15,
+    color: theme.colors.text,
+    fontWeight: '500' as const,
+  },
+  calendarDayTextDisabled: {
+    color: theme.colors.textLight,
+  },
+  calendarDayTextSelected: {
+    color: theme.colors.white,
+    fontWeight: '700' as const,
+  },
+  calendarLegend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 12,
+    color: theme.colors.textLight,
   },
 });

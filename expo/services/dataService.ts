@@ -7,6 +7,7 @@ import {
   Event,
   SiteSettings,
   Testimonial,
+  Review,
 } from '@/types';
 import { database } from './database';
 import { seedClasses, seedInstructors, seedGallery, seedEvents, seedSettings, seedTestimonials } from './seedData';
@@ -278,5 +279,27 @@ export const dataService = {
 
   async deleteTestimonial(id: string): Promise<void> {
     await database.delete(`testimonials:${id}`);
+  },
+
+  async getReviews(): Promise<Review[]> {
+    try {
+      return await database.select<Review>('reviews');
+    } catch (error) {
+      console.error('[DataService] Error getting reviews:', error);
+      return [];
+    }
+  },
+
+  async createReview(review: Omit<Review, 'id'>): Promise<Review> {
+    const id = Date.now().toString();
+    return await database.create('reviews', { ...review, id });
+  },
+
+  async updateReview(id: string, review: Partial<Review>): Promise<Review> {
+    return await database.update(`reviews:${id}`, review);
+  },
+
+  async deleteReview(id: string): Promise<void> {
+    await database.delete(`reviews:${id}`);
   },
 };

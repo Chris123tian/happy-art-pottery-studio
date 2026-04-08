@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Edit2, Trash2, Upload } from 'lucide-react-native';
+import { Plus, Edit2, Trash2, Upload, X } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
 import { Button } from '@/components/Button';
 import { theme } from '@/constants/theme';
@@ -22,24 +22,36 @@ import { Event } from '@/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useData } from '@/contexts/DataContext';
 
+const INITIAL_FORM = {
+  title: '',
+  description: '',
+  date: '',
+  time: '',
+  duration: '',
+  price: '0',
+  maxParticipants: '20',
+  instructor: '',
+  category: '',
+  image: '',
+};
+
 export default function AdminEvents() {
   const queryClient = useQueryClient();
   const { events } = useData();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    date: '',
-    time: '',
-    duration: '',
-    price: '0',
-    maxParticipants: '20',
-    instructor: '',
-    category: '',
-    image: '',
-  });
+  const [formData, setFormData] = useState({ ...INITIAL_FORM });
+  const formRef = useRef(formData);
+  formRef.current = formData;
+
+  const showAlert = (title: string, message: string) => {
+    if (Platform.OS === 'web') {
+      alert(message);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: (data: Omit<Event, 'id'>) => dataService.createEvent(data),
@@ -54,11 +66,7 @@ export default function AdminEvents() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['events'] });
-      if (Platform.OS === 'web') {
-        alert('Event created successfully!');
-      } else {
-        Alert.alert('Success', 'Event created successfully!');
-      }
+      showAlert('Success', 'Event created successfully!');
       resetForm();
     },
     onError: (error, _, context) => {
@@ -66,11 +74,7 @@ export default function AdminEvents() {
         queryClient.setQueryData(['events'], context.previousEvents);
       }
       console.error('Error creating event:', error);
-      if (Platform.OS === 'web') {
-        alert('Failed to create event. Please try again.');
-      } else {
-        Alert.alert('Error', 'Failed to create event. Please try again.');
-      }
+      showAlert('Error', 'Failed to create event. Please check your connection and try again.');
     },
   });
 
@@ -89,11 +93,7 @@ export default function AdminEvents() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['events'] });
-      if (Platform.OS === 'web') {
-        alert('Event updated successfully!');
-      } else {
-        Alert.alert('Success', 'Event updated successfully!');
-      }
+      showAlert('Success', 'Event updated successfully!');
       resetForm();
     },
     onError: (error, _, context) => {
@@ -101,11 +101,7 @@ export default function AdminEvents() {
         queryClient.setQueryData(['events'], context.previousEvents);
       }
       console.error('Error updating event:', error);
-      if (Platform.OS === 'web') {
-        alert('Failed to update event. Please try again.');
-      } else {
-        Alert.alert('Error', 'Failed to update event. Please try again.');
-      }
+      showAlert('Error', 'Failed to update event. Please check your connection and try again.');
     },
   });
 
@@ -116,32 +112,29 @@ export default function AdminEvents() {
     },
     onError: (error) => {
       console.error('Error deleting event:', error);
-      Alert.alert('Error', 'Failed to delete event');
+      showAlert('Error', 'Failed to delete event. Please try again.');
     },
   });
 
   const handleSubmit = () => {
-    if (!formData.title || !formData.date) {
-      if (Platform.OS === 'web') {
-        alert('Please fill in required fields');
-      } else {
-        Alert.alert('Error', 'Please fill in required fields');
-      }
+    const current = formRef.current;
+    if (!current.title || !current.date) {
+      showAlert('Error', 'Please fill in the event title and date.');
       return;
     }
 
     const eventData = {
-      title: formData.title,
-      description: formData.description,
-      date: formData.date,
-      time: formData.time,
-      duration: formData.duration,
-      price: parseFloat(formData.price) || 0,
-      maxParticipants: parseInt(formData.maxParticipants) || 20,
+      title: current.title,
+      description: current.description,
+      date: current.date,
+      time: current.time,
+      duration: current.duration,
+      price: parseFloat(current.price) || 0,
+      maxParticipants: parseInt(current.maxParticipants) || 20,
       currentParticipants: 0,
-      image: formData.image || 'https://images.unsplash.com/photo-1593118247619-cb00ea46c309?w=800',
-      instructor: formData.instructor,
-      category: formData.category,
+      image: current.image || 'https://images.unsplash.com/photo-1593118247619-cb00ea46c309?w=800',
+      instructor: current.instructor,
+      category: current.category,
     };
 
     if (editingId) {
@@ -152,28 +145,29 @@ export default function AdminEvents() {
   };
 
   const handleImageUpload = async () => {
+    if (uploadingImage) return;
     try {
       setUploadingImage(true);
+      console.log('[AdminEvents] Starting image upload...');
       const imageUrl = await imageService.pickAndUploadImage({
         storagePath: `events/event_${Date.now()}.jpg`,
         quality: 0.8,
+        aspect: [16, 9],
       });
       
       if (imageUrl) {
-        setFormData({ ...formData, image: imageUrl });
-        if (Platform.OS === 'web') {
-          alert('Image uploaded successfully!');
-        } else {
-          Alert.alert('Success', 'Image uploaded successfully!');
-        }
+        console.log('[AdminEvents] Image uploaded:', imageUrl);
+        setFormData((prev) => ({ ...prev, image: imageUrl }));
+        showAlert('Success', 'Image uploaded successfully!');
       }
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      if (Platform.OS === 'web') {
-        alert('Failed to upload image. Please try again.');
-      } else {
-        Alert.alert('Error', 'Failed to upload image. Please try again.');
-      }
+    } catch (error: any) {
+      console.error('[AdminEvents] Error uploading image:', error);
+      const message = error?.message?.includes('permission')
+        ? 'Please allow access to your photo library in settings.'
+        : error?.message?.includes('too large')
+        ? 'Image is too large. Please use an image smaller than 10MB.'
+        : 'Failed to upload image. Please check your internet connection and try again.';
+      showAlert('Upload Failed', message);
     } finally {
       setUploadingImage(false);
     }
@@ -216,19 +210,10 @@ export default function AdminEvents() {
   const resetForm = () => {
     setShowForm(false);
     setEditingId(null);
-    setFormData({
-      title: '',
-      description: '',
-      date: '',
-      time: '',
-      duration: '',
-      price: '0',
-      maxParticipants: '20',
-      instructor: '',
-      category: '',
-      image: '',
-    });
+    setFormData({ ...INITIAL_FORM });
   };
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -238,9 +223,19 @@ export default function AdminEvents() {
           <Text style={styles.title}>Manage Events</Text>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => setShowForm(!showForm)}
+            onPress={() => {
+              if (showForm) {
+                resetForm();
+              } else {
+                setShowForm(true);
+              }
+            }}
           >
-            <Plus color={theme.colors.white} size={24} />
+            {showForm ? (
+              <X color={theme.colors.white} size={20} />
+            ) : (
+              <Plus color={theme.colors.white} size={20} />
+            )}
             <Text style={styles.addButtonText}>
               {showForm ? 'Cancel' : 'Add Event'}
             </Text>
@@ -256,9 +251,9 @@ export default function AdminEvents() {
             <View style={styles.imageUploadSection}>
               {formData.image ? (
                 <View style={styles.imagePreviewContainer}>
-                  <Image source={{ uri: formData.image }} style={styles.imagePreview} />
+                  <Image source={{ uri: formData.image }} style={styles.imagePreview} contentFit="cover" />
                   <TouchableOpacity
-                    style={styles.changeImageButton}
+                    style={[styles.changeImageButton, uploadingImage && { opacity: 0.6 }]}
                     onPress={handleImageUpload}
                     disabled={uploadingImage}
                   >
@@ -274,17 +269,20 @@ export default function AdminEvents() {
                 </View>
               ) : (
                 <TouchableOpacity
-                  style={styles.uploadButton}
+                  style={[styles.uploadButton, uploadingImage && { opacity: 0.6 }]}
                   onPress={handleImageUpload}
                   disabled={uploadingImage}
                 >
                   {uploadingImage ? (
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <>
+                      <ActivityIndicator size="large" color={theme.colors.primary} />
+                      <Text style={styles.uploadButtonText}>Uploading...</Text>
+                    </>
                   ) : (
                     <>
                       <Upload color={theme.colors.primary} size={32} />
                       <Text style={styles.uploadButtonText}>Upload Event Image</Text>
-                      <Text style={styles.uploadButtonSubtext}>Tap to select image</Text>
+                      <Text style={styles.uploadButtonSubtext}>Tap to select image (max 10MB)</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -294,7 +292,7 @@ export default function AdminEvents() {
             <TextInput
               style={styles.input}
               value={formData.title}
-              onChangeText={(text) => setFormData({ ...formData, title: text })}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, title: text }))}
               placeholder="Event Title *"
               placeholderTextColor={theme.colors.textLight}
             />
@@ -302,7 +300,7 @@ export default function AdminEvents() {
             <TextInput
               style={[styles.input, styles.textArea]}
               value={formData.description}
-              onChangeText={(text) => setFormData({ ...formData, description: text })}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, description: text }))}
               placeholder="Description"
               multiline
               numberOfLines={4}
@@ -312,7 +310,7 @@ export default function AdminEvents() {
             <TextInput
               style={styles.input}
               value={formData.date}
-              onChangeText={(text) => setFormData({ ...formData, date: text })}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, date: text }))}
               placeholder="Date (e.g., 2025-11-25) *"
               placeholderTextColor={theme.colors.textLight}
             />
@@ -320,7 +318,7 @@ export default function AdminEvents() {
             <TextInput
               style={styles.input}
               value={formData.time}
-              onChangeText={(text) => setFormData({ ...formData, time: text })}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, time: text }))}
               placeholder="Time (e.g., 2:00 PM)"
               placeholderTextColor={theme.colors.textLight}
             />
@@ -328,7 +326,7 @@ export default function AdminEvents() {
             <TextInput
               style={styles.input}
               value={formData.duration}
-              onChangeText={(text) => setFormData({ ...formData, duration: text })}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, duration: text }))}
               placeholder="Duration (e.g., 3 hours)"
               placeholderTextColor={theme.colors.textLight}
             />
@@ -336,7 +334,7 @@ export default function AdminEvents() {
             <TextInput
               style={styles.input}
               value={formData.maxParticipants}
-              onChangeText={(text) => setFormData({ ...formData, maxParticipants: text })}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, maxParticipants: text }))}
               placeholder="Max Participants"
               keyboardType="number-pad"
               placeholderTextColor={theme.colors.textLight}
@@ -345,7 +343,7 @@ export default function AdminEvents() {
             <TextInput
               style={styles.input}
               value={formData.instructor}
-              onChangeText={(text) => setFormData({ ...formData, instructor: text })}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, instructor: text }))}
               placeholder="Instructor Name"
               placeholderTextColor={theme.colors.textLight}
             />
@@ -353,47 +351,54 @@ export default function AdminEvents() {
             <TextInput
               style={styles.input}
               value={formData.category}
-              onChangeText={(text) => setFormData({ ...formData, category: text })}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, category: text }))}
               placeholder="Category (e.g., workshop, party)"
               placeholderTextColor={theme.colors.textLight}
             />
 
             <Button
-              title={editingId ? 'Update Event' : 'Create Event'}
+              title={isSaving ? 'Saving...' : editingId ? 'Update Event' : 'Create Event'}
               onPress={handleSubmit}
-              disabled={createMutation.isPending || updateMutation.isPending}
+              disabled={isSaving || uploadingImage}
             />
-            {(createMutation.isPending || updateMutation.isPending) && (
-              <Text style={styles.loadingText}>Saving...</Text>
-            )}
           </View>
         )}
 
         <View style={styles.eventsList}>
+          {events.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No events yet. Tap "Add Event" to create one.</Text>
+            </View>
+          )}
           {events.map((event) => (
             <View key={event.id} style={styles.eventCard}>
-              <View style={styles.eventHeader}>
-                <Text style={styles.eventTitle}>{event.title}</Text>
-                <View style={styles.eventActions}>
-                  <TouchableOpacity onPress={() => handleEdit(event)}>
-                    <Edit2 color={theme.colors.primary} size={20} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDelete(event.id)}>
-                    <Trash2 color={theme.colors.error} size={20} />
-                  </TouchableOpacity>
+              {event.image && (
+                <Image source={{ uri: event.image }} style={styles.eventImage} contentFit="cover" />
+              )}
+              <View style={styles.eventContent}>
+                <View style={styles.eventHeader}>
+                  <Text style={styles.eventTitle}>{event.title}</Text>
+                  <View style={styles.eventActions}>
+                    <TouchableOpacity onPress={() => handleEdit(event)} style={styles.actionButton}>
+                      <Edit2 color={theme.colors.primary} size={20} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleDelete(event.id)} style={styles.actionButton}>
+                      <Trash2 color={theme.colors.error} size={20} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-              <Text style={styles.eventDescription}>{event.description}</Text>
-              <View style={styles.eventDetails}>
-                <Text style={styles.eventDetail}>Date: {event.date}</Text>
-                <Text style={styles.eventDetail}>Time: {event.time}</Text>
-                <Text style={styles.eventDetail}>Duration: {event.duration}</Text>
-                <Text style={styles.eventDetail}>
-                  Capacity: {event.currentParticipants}/{event.maxParticipants}
-                </Text>
-                {event.instructor && (
-                  <Text style={styles.eventDetail}>Instructor: {event.instructor}</Text>
-                )}
+                <Text style={styles.eventDescription} numberOfLines={2}>{event.description}</Text>
+                <View style={styles.eventDetails}>
+                  <Text style={styles.eventDetail}>Date: {event.date}</Text>
+                  <Text style={styles.eventDetail}>Time: {event.time}</Text>
+                  <Text style={styles.eventDetail}>Duration: {event.duration}</Text>
+                  <Text style={styles.eventDetail}>
+                    Capacity: {event.currentParticipants}/{event.maxParticipants}
+                  </Text>
+                  {event.instructor && (
+                    <Text style={styles.eventDetail}>Instructor: {event.instructor}</Text>
+                  )}
+                </View>
               </View>
             </View>
           ))}
@@ -469,8 +474,15 @@ const styles = StyleSheet.create({
   eventCard: {
     backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
+    overflow: 'hidden',
     ...theme.shadows.sm,
+  },
+  eventImage: {
+    width: '100%',
+    height: 150,
+  },
+  eventContent: {
+    padding: theme.spacing.lg,
   },
   eventHeader: {
     flexDirection: 'row',
@@ -488,6 +500,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: theme.spacing.md,
   },
+  actionButton: {
+    padding: 4,
+  },
   eventDescription: {
     fontSize: 14,
     color: theme.colors.textLight,
@@ -500,14 +515,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text,
   },
-  loadingText: {
-    textAlign: 'center' as const,
-    color: theme.colors.primary,
-    fontSize: 14,
-    fontWeight: '600' as const,
+  emptyState: {
+    padding: theme.spacing.xxl,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: theme.colors.textLight,
+    textAlign: 'center',
   },
   imageUploadSection: {
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
   },
   uploadButton: {
     borderWidth: 2,

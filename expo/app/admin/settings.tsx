@@ -11,12 +11,12 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Save, Facebook, Instagram, Twitter, Music, Globe, Clock, Upload } from 'lucide-react-native';
+import { Save, Facebook, Instagram, Twitter, Music, Globe, Clock, Upload, Paintbrush, Trash2 } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
-import { SiteSettings } from '@/types';
-import { seedSettings } from '@/services/seedData';
+import { SiteSettings, ServiceItem } from '@/types';
+import { seedSettings, seedServices } from '@/services/seedData';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useData } from '@/contexts/DataContext';
 
@@ -77,6 +77,8 @@ export default function AdminSettings() {
       heroImage: settings.heroImage || '',
       heroImages: (settings.heroImages || []).filter((img): img is string => typeof img === 'string' && img !== ''),
       aboutImage: settings.aboutImage || '',
+      priceList: settings.priceList,
+      services: settings.services || currentServices,
     };
     console.log('[Settings] Clean settings to save:', JSON.stringify(cleanSettings, null, 2));
     updateSettingsMutation.mutate(cleanSettings);
@@ -141,6 +143,36 @@ export default function AdminSettings() {
       ...settings,
       heroImages: updatedHeroImages,
     });
+  };
+
+  const currentServices: ServiceItem[] = settings.services && settings.services.length > 0 ? settings.services : seedServices;
+
+  const pickServiceImage = async (serviceId: string) => {
+    try {
+      const { imageService } = await import('@/services/imageService');
+      const imageUrl = await imageService.pickAndUploadImage({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+        storagePath: `services/${serviceId}_${Date.now()}.jpg`,
+      });
+      if (imageUrl) {
+        const updatedServices = currentServices.map((s) =>
+          s.id === serviceId ? { ...s, image: imageUrl } : s
+        );
+        setSettings({ ...settings, services: updatedServices });
+      }
+    } catch (error: any) {
+      console.error('[Settings] Error picking service image:', error);
+      Alert.alert('Error', error?.message || 'Failed to upload image.');
+    }
+  };
+
+  const updateServiceField = (serviceId: string, field: 'title' | 'description', value: string) => {
+    const updatedServices = currentServices.map((s) =>
+      s.id === serviceId ? { ...s, [field]: value } : s
+    );
+    setSettings({ ...settings, services: updatedServices });
   };
 
   const updateField = (field: keyof SiteSettings, value: string) => {
@@ -410,6 +442,56 @@ export default function AdminSettings() {
           </View>
 
           <View style={styles.inputGroup}>
+            <Text style={styles.label}>Service Images</Text>
+            <Text style={styles.helpText}>
+              Upload custom images for each service displayed on the home page
+            </Text>
+            {currentServices.map((service) => (
+              <View key={service.id} style={styles.serviceItem}>
+                <Text style={styles.slideLabel}>{service.title}</Text>
+                <TextInput
+                  style={[styles.input, { marginBottom: theme.spacing.sm }]}
+                  value={service.title}
+                  onChangeText={(v) => updateServiceField(service.id, 'title', v)}
+                  placeholder="Service title"
+                />
+                <TextInput
+                  style={[styles.input, styles.textArea, { marginBottom: theme.spacing.sm }]}
+                  value={service.description}
+                  onChangeText={(v) => updateServiceField(service.id, 'description', v)}
+                  placeholder="Service description"
+                  multiline
+                  numberOfLines={2}
+                />
+                {service.image ? (
+                  <View style={styles.imageWithControls}>
+                    <Image
+                      source={{ uri: service.image }}
+                      style={styles.serviceImagePreview}
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      style={styles.changeButton}
+                      onPress={() => pickServiceImage(service.id)}
+                    >
+                      <Upload color={theme.colors.white} size={18} />
+                      <Text style={styles.changeButtonText}>Change Image</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={() => pickServiceImage(service.id)}
+                  >
+                    <Upload color={theme.colors.white} size={20} />
+                    <Text style={styles.uploadButtonText}>Upload Image</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.inputGroup}>
             <Text style={styles.label}>About Image</Text>
             {settings.aboutImage && (
               <Image
@@ -612,5 +694,17 @@ const styles = StyleSheet.create({
     color: theme.colors.white,
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  serviceItem: {
+    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+  },
+  serviceImagePreview: {
+    width: '100%',
+    height: 150,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.sm,
   },
 });
