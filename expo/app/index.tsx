@@ -47,7 +47,7 @@ export default function Home() {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [heroIndexA, setHeroIndexA] = useState(0);
   const [heroIndexB, setHeroIndexB] = useState(1);
-  const [_activeLayer, setActiveLayer] = useState<'A' | 'B'>('A');
+  const [activeLayer, setActiveLayer] = useState<'A' | 'B'>('A');
   const heroOpacityA = useRef(new Animated.Value(1)).current;
   const heroOpacityB = useRef(new Animated.Value(0)).current;
   const [instructorIndex, setInstructorIndex] = useState(0);
@@ -279,7 +279,8 @@ export default function Home() {
         status: 'pending',
         createdAt: new Date().toISOString(),
       };
-      console.log('[Home] Submitting review directly via database.create...');
+      console.log('[Home] Submitting review directly via database.create...', { name: reviewForm.name.trim(), rating: reviewForm.rating });
+      await database.ensureAnonymousAuth();
       await database.create('reviews', newReview);
       console.log('[Home] Review submitted successfully');
       setReviewModalVisible(false);
@@ -349,13 +350,17 @@ export default function Home() {
     </View>
   ), []);
 
-  const heroHeight = isLargeScreen ? 420 : 280;
+  const isMediumScreen = screenWidth > 480;
+  const isExtraLarge = screenWidth > 1200;
+  const currentHeroIndex = activeLayer === 'A' ? heroIndexA : heroIndexB;
+  const heroHeight = isExtraLarge ? 500 : isLargeScreen ? 420 : isMediumScreen ? 340 : 280;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="home-screen">
       <Header />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* HERO - larger on big screens */}
+        {/* testID for hero section */}
         <View style={[styles.hero, { height: heroHeight }]}>
           <View style={styles.heroImageContainer}>
             {heroImages.length > 0 ? (
@@ -388,7 +393,7 @@ export default function Home() {
             )}
           </View>
           <View style={styles.heroOverlay}>
-            <Text style={[styles.heroTitle, isLargeScreen && { fontSize: 40 }]}>{displaySettings.studioName}</Text>
+            <Text style={[styles.heroTitle, isLargeScreen && { fontSize: 40 }, isExtraLarge && { fontSize: 48 }]}>{displaySettings.studioName}</Text>
             <Text style={[styles.heroSubtitle, isLargeScreen && { fontSize: 18, maxWidth: 600 }]}>{displaySettings.tagline}</Text>
             <Button
               title="Book a Class"
@@ -396,31 +401,46 @@ export default function Home() {
               style={styles.heroButton}
             />
           </View>
+          {heroImages.length > 1 && (
+            <View style={styles.heroIndicators}>
+              {heroImages.map((_, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.heroDot,
+                    idx === currentHeroIndex && styles.heroDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
         </View>
 
         {/* STATS BANNER */}
         <View style={styles.statsBanner}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>20+</Text>
-            <Text style={styles.statLabel}>YEARS OF CRAFT</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>3+</Text>
-            <Text style={styles.statLabel}>AGES WELCOME</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>100</Text>
-            <Text style={styles.statLabel}>MAX GROUP SIZE</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <View style={styles.statRatingRow}>
-              <Text style={styles.statNumber}>4.8</Text>
-              <Star color="#F5A623" size={18} fill="#F5A623" />
+          <View style={[styles.statsInner, isExtraLarge && { maxWidth: 1000, alignSelf: 'center' as const, width: '100%' as any }]}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>20+</Text>
+              <Text style={styles.statLabel}>YEARS OF CRAFT</Text>
             </View>
-            <Text style={styles.statLabel}>GOOGLE RATING</Text>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>3+</Text>
+              <Text style={styles.statLabel}>AGES WELCOME</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>100</Text>
+              <Text style={styles.statLabel}>MAX GROUP SIZE</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <View style={styles.statRatingRow}>
+                <Text style={styles.statNumber}>4.8</Text>
+                <Star color="#FFFFFF" size={18} fill="#FFFFFF" />
+              </View>
+              <Text style={styles.statLabel}>GOOGLE RATING</Text>
+            </View>
           </View>
         </View>
 
@@ -444,74 +464,95 @@ export default function Home() {
 
         {/* SERVICES */}
         <View style={[styles.section, styles.servicesSection]}>
-          <Text style={styles.sectionTitle}>Our Services</Text>
-          <View style={styles.servicesGrid}>
-            {services.map((service) => (
-              <View key={service.id} style={[styles.serviceCard, isLargeScreen && { width: '31%' as any }]}>
-                <Image
-                  source={{ uri: service.image }}
-                  style={styles.serviceImage}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                  transition={200}
-                  placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
-                  recyclingKey={`service-${service.id}`}
-                />
-                <View style={styles.serviceCardContent}>
-                  <Text style={styles.serviceTitle}>{service.title}</Text>
-                  <Text style={styles.serviceDescription}>
-                    {service.description}
-                  </Text>
+          <View style={[isExtraLarge && styles.maxWidthContainer]}>
+            <Text style={styles.sectionTitle}>Our Services</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.servicesScrollContent}
+              style={styles.servicesScroll}
+            >
+              {services.map((service) => (
+                <View key={service.id} style={[styles.serviceCard, isLargeScreen && { width: 280 }]}>
+                  <Image
+                    source={{ uri: service.image }}
+                    style={styles.serviceImage}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={100}
+                    placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
+                    recyclingKey={`service-${service.id}`}
+                  />
+                  <View style={styles.serviceCardContent}>
+                    <Text style={styles.serviceTitle}>{service.title}</Text>
+                    <Text style={styles.serviceDescription}>
+                      {service.description}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))}
+              ))}
+            </ScrollView>
           </View>
         </View>
 
         {/* UPCOMING EVENTS */}
-        {upcomingEvents.length > 0 && (
-          <View style={[styles.section, styles.eventsSection]}>
+        <View style={[styles.section, styles.eventsSection]}>
+          <View style={[isExtraLarge && styles.maxWidthContainer]}>
             <Text style={styles.sectionTitle}>Upcoming Events</Text>
             <Text style={styles.sectionSubtitle}>
               Join us for special workshops and pottery experiences
             </Text>
-            <View style={[styles.eventsGrid, isLargeScreen && { flexDirection: 'row' as const }]}>
-              {upcomingEvents.map((event) => (
-                <View key={event.id} style={[styles.eventHomeCard, isLargeScreen && { flex: 1 }]}>
-                  <Image
-                    source={{ uri: event.image }}
-                    style={styles.eventHomeImage}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                    transition={200}
-                    placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
-                    recyclingKey={`event-home-${event.id}`}
-                  />
-                  <View style={styles.eventHomeContent}>
-                    <View style={styles.eventHomeDateBadge}>
-                      <Calendar color={theme.colors.white} size={14} />
-                      <Text style={styles.eventHomeDateText}>{formatDate(event.date)}</Text>
+            {upcomingEvents.length > 0 ? (
+              <>
+                <View style={[styles.eventsGrid, isLargeScreen && { flexDirection: 'row' as const }]}>
+                  {upcomingEvents.map((event) => (
+                    <View key={event.id} style={[styles.eventHomeCard, isLargeScreen && { flex: 1 }]}>
+                      <Image
+                        source={{ uri: event.image }}
+                        style={styles.eventHomeImage}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={100}
+                        placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
+                        recyclingKey={`event-home-${event.id}`}
+                      />
+                      <View style={styles.eventHomeContent}>
+                        <View style={styles.eventHomeDateBadge}>
+                          <Calendar color={theme.colors.white} size={14} />
+                          <Text style={styles.eventHomeDateText}>{formatDate(event.date)}</Text>
+                        </View>
+                        <Text style={styles.eventHomeTitle}>{event.title}</Text>
+                        <Text style={styles.eventHomeDesc} numberOfLines={2}>{event.description}</Text>
+                        <View style={styles.eventHomeDetailRow}>
+                          <Clock color={theme.colors.primary} size={14} />
+                          <Text style={styles.eventHomeDetailText}>{event.time}</Text>
+                          <Users color={theme.colors.primary} size={14} />
+                          <Text style={styles.eventHomeDetailText}>
+                            {event.currentParticipants}/{event.maxParticipants}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
-                    <Text style={styles.eventHomeTitle}>{event.title}</Text>
-                    <Text style={styles.eventHomeDesc} numberOfLines={2}>{event.description}</Text>
-                    <View style={styles.eventHomeDetailRow}>
-                      <Clock color={theme.colors.primary} size={14} />
-                      <Text style={styles.eventHomeDetailText}>{event.time}</Text>
-                      <Users color={theme.colors.primary} size={14} />
-                      <Text style={styles.eventHomeDetailText}>
-                        {event.currentParticipants}/{event.maxParticipants}
-                      </Text>
-                    </View>
-                  </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-            <TouchableOpacity style={styles.viewAllEventsButton} onPress={handleEventsPress} activeOpacity={0.8}>
-              <Text style={styles.viewAllEventsText}>View All Events</Text>
-              <ArrowRight color={theme.colors.primary} size={18} />
-            </TouchableOpacity>
+                <TouchableOpacity style={styles.viewAllEventsButton} onPress={handleEventsPress} activeOpacity={0.8}>
+                  <Text style={styles.viewAllEventsText}>View All Events</Text>
+                  <ArrowRight color={theme.colors.primary} size={18} />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={styles.noEventsContainer}>
+                <Calendar color={theme.colors.primary} size={40} />
+                <Text style={styles.noEventsTitle}>Stay Tuned!</Text>
+                <Text style={styles.noEventsText}>New workshops and events are coming soon. Check back for updates!</Text>
+                <TouchableOpacity style={styles.viewAllEventsButton} onPress={handleEventsPress} activeOpacity={0.8}>
+                  <Text style={styles.viewAllEventsText}>View Events Page</Text>
+                  <ArrowRight color={theme.colors.primary} size={18} />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-        )}
+        </View>
 
         {/* INSTRUCTORS */}
         {instructors.length > 0 && (
@@ -754,6 +795,7 @@ export default function Home() {
           <TouchableOpacity
             style={styles.leaveReviewButton}
             onPress={() => setReviewModalVisible(true)}
+            testID="leave-review-button"
             activeOpacity={0.8}
           >
             <Star color={theme.colors.white} size={20} fill={theme.colors.white} />
@@ -959,6 +1001,7 @@ export default function Home() {
               <TouchableOpacity
                 style={[styles.reviewSubmitButton, submittingReview && { opacity: 0.6 }]}
                 onPress={handleSubmitReview}
+                testID="submit-review-button"
                 disabled={submittingReview}
               >
                 <Send color={theme.colors.white} size={18} />
@@ -1022,13 +1065,36 @@ const styles = StyleSheet.create({
     minWidth: 200,
   },
 
+  heroIndicators: {
+    position: 'absolute',
+    bottom: 16,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    zIndex: 10,
+  },
+  heroDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  heroDotActive: {
+    backgroundColor: '#FFFFFF',
+    width: 24,
+    borderRadius: 4,
+  },
   statsBanner: {
-    backgroundColor: '#3B2314',
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 22,
+    paddingHorizontal: 12,
+  },
+  statsInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingVertical: 20,
-    paddingHorizontal: 12,
   },
   statItem: {
     alignItems: 'center',
@@ -1042,12 +1108,12 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 22,
     fontWeight: '700' as const,
-    color: '#D4A054',
+    color: '#FFFFFF',
   },
   statLabel: {
     fontSize: 10,
     fontWeight: '600' as const,
-    color: '#D4A054',
+    color: 'rgba(255, 255, 255, 0.85)',
     marginTop: 4,
     textAlign: 'center',
     letterSpacing: 0.5,
@@ -1055,7 +1121,7 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 36,
-    backgroundColor: 'rgba(212, 160, 84, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
 
   section: {
@@ -1063,6 +1129,18 @@ const styles = StyleSheet.create({
   },
   servicesSection: {
     backgroundColor: theme.colors.surface,
+  },
+  servicesScroll: {
+    marginHorizontal: -theme.spacing.md,
+  },
+  servicesScrollContent: {
+    paddingHorizontal: theme.spacing.md,
+    gap: theme.spacing.md,
+  },
+  maxWidthContainer: {
+    maxWidth: 1200,
+    alignSelf: 'center' as const,
+    width: '100%' as any,
   },
   contactSection: {
     backgroundColor: theme.colors.accent,
@@ -1110,16 +1188,10 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: theme.colors.text,
   },
-  servicesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.md,
-    justifyContent: 'space-between',
-  },
   serviceCard: {
     backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.lg,
-    width: '48%',
+    width: 240,
     overflow: 'hidden',
     ...theme.shadows.md,
   },
@@ -1145,6 +1217,25 @@ const styles = StyleSheet.create({
 
   eventsSection: {
     backgroundColor: theme.colors.accent,
+  },
+  noEventsContainer: {
+    alignItems: 'center',
+    padding: theme.spacing.xl,
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.lg,
+    gap: theme.spacing.md,
+    ...theme.shadows.sm,
+  },
+  noEventsTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: theme.colors.secondary,
+  },
+  noEventsText: {
+    fontSize: 15,
+    color: theme.colors.textLight,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   eventsGrid: {
     gap: theme.spacing.md,

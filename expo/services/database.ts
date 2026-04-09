@@ -16,6 +16,7 @@ import {
   CACHE_SIZE_UNLIMITED,
   memoryLocalCache,
 } from 'firebase/firestore';
+import { getAuth, signInAnonymously, Auth } from 'firebase/auth';
 import { Platform } from 'react-native';
 
 class Database {
@@ -24,6 +25,7 @@ class Database {
   private isInitialized = false;
   private persistenceEnabled = false;
   private activeListeners = new Map<string, () => void>();
+  private auth: Auth | null = null;
 
   constructor() {
     this.initFirebase();
@@ -86,6 +88,12 @@ class Database {
       }
 
       this.isInitialized = true;
+      try {
+        this.auth = getAuth(this.app!);
+        console.log('[DB] Auth initialized');
+      } catch (authError: any) {
+        console.log('[DB] Auth init skipped:', authError.message);
+      }
       console.log('[DB] Firestore database connected');
       console.log('[DB] Data will sync across all devices');
     } catch (error: any) {
@@ -113,6 +121,22 @@ class Database {
   private ensureInitialized() {
     if (!this.isInitialized || !this.db) {
       throw new Error('Database not initialized. Please check Firebase configuration.');
+    }
+  }
+
+  async ensureAnonymousAuth(): Promise<void> {
+    if (!this.app || !this.auth) return;
+    try {
+      if (!this.auth.currentUser) {
+        console.log('[DB] Signing in anonymously for public write...');
+        await signInAnonymously(this.auth);
+        console.log('[DB] ✓ Anonymous auth successful');
+      } else {
+        console.log('[DB] ✓ Already authenticated');
+      }
+    } catch (error: any) {
+      console.warn('[DB] Anonymous auth not available:', error.message);
+      console.warn('[DB] Review submission may fail if Firestore rules require auth');
     }
   }
 

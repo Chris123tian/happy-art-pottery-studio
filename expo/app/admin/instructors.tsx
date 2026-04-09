@@ -21,6 +21,7 @@ import { imageService } from '@/services/imageService';
 import { useData } from '@/contexts/DataContext';
 
 export default function AdminInstructors() {
+  console.log('[AdminInstructors] Screen rendered');
   const queryClient = useQueryClient();
   const { instructors } = useData();
   const [modalVisible, setModalVisible] = useState(false);
@@ -191,7 +192,7 @@ export default function AdminInstructors() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="admin-instructors-screen">
       <AdminHeader />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>

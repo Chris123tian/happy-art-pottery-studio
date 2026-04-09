@@ -30,6 +30,7 @@ const { width } = Dimensions.get('window');
 const cardWidth = width > 768 ? (width - theme.spacing.lg * 4) / 3 : (width - theme.spacing.lg * 3) / 2;
 
 export default function AdminDashboard() {
+  console.log('[AdminDashboard] Screen rendered');
   const router = useRouter();
   const { bookings, events, gallery, messages, classes, instructors, reviews } = useData();
 
@@ -145,7 +146,7 @@ export default function AdminDashboard() {
   ], [stats]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="admin-dashboard-screen">
       <AdminHeader />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>

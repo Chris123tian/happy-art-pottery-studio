@@ -18,6 +18,7 @@ import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
 
 export default function Contact() {
+  console.log('[Contact] Screen rendered');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -41,7 +42,7 @@ export default function Contact() {
     const whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodeURIComponent(whatsappMessage)}`;
 
     Linking.openURL(whatsappUrl).catch(() => {
-      console.log('[Contact] Failed to open WhatsApp');
+      console.log('[Contact] Failed to open WhatsApp - user may not have WhatsApp installed');
       if (Platform.OS === 'web') {
         alert('Could not open WhatsApp. Please try email instead.');
       } else {
@@ -66,7 +67,7 @@ export default function Contact() {
     const mailtoUrl = `mailto:happyartghana@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
 
     Linking.openURL(mailtoUrl).catch(() => {
-      console.log('[Contact] Failed to open email client');
+      console.log('[Contact] Failed to open email client - no default mail app configured');
       if (Platform.OS === 'web') {
         alert('Could not open email client. Please email happyartghana@gmail.com directly.');
       } else {
@@ -76,7 +77,7 @@ export default function Contact() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="contact-screen">
       <Header />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>

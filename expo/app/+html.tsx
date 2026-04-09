@@ -91,6 +91,8 @@ export default function Root({ children }: PropsWithChildren) {
 const responsiveBackground = `
 body {
   background-color: #fff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 @media (prefers-color-scheme: dark) {
   body {

@@ -10,6 +10,7 @@ import {
   Modal,
   Platform,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,7 +23,11 @@ import { useData } from '@/contexts/DataContext';
 import { Event } from '@/types';
 
 export default function Events() {
+  console.log('[Events] Screen rendered');
   const { events: rawEvents } = useData();
+  const { width: screenWidth } = useWindowDimensions();
+  const isLargeScreen = screenWidth > 768;
+  const isMediumScreen = screenWidth > 480;
   const [bookingModalVisible, setBookingModalVisible] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [bookingForm, setBookingForm] = useState({
@@ -60,6 +65,7 @@ export default function Events() {
   }, []);
 
   const handleBookEvent = () => {
+    console.log('[Events] Booking event:', selectedEvent?.title);
     if (!bookingForm.name || !bookingForm.phone || !bookingForm.numberOfPersons) {
       if (Platform.OS === 'web') {
         alert('Please fill in all fields');
@@ -105,7 +111,7 @@ Please confirm my booking. Thank you!`;
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="events-screen">
       <Header />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
@@ -115,7 +121,7 @@ Please confirm my booking. Thank you!`;
           </Text>
         </View>
 
-        <View style={styles.content}>
+        <View style={[styles.content, isLargeScreen && styles.contentLarge]}>
           {events.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>No Events Yet</Text>
@@ -125,7 +131,7 @@ Please confirm my booking. Thank you!`;
             </View>
           ) : (
             events.map((event) => (
-              <View key={event.id} style={styles.eventCard}>
+              <View key={event.id} style={[styles.eventCard, isMediumScreen && styles.eventCardMedium, isLargeScreen && styles.eventCardLarge]}>
                 <Image
                   source={{ uri: event.image }}
                   style={styles.eventImage}
@@ -300,11 +306,24 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
     gap: theme.spacing.md,
   },
+  contentLarge: {
+    maxWidth: 1200,
+    alignSelf: 'center',
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
   eventCard: {
     backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.lg,
     overflow: 'hidden',
     ...theme.shadows.lg,
+  },
+  eventCardMedium: {
+    width: '100%',
+  },
+  eventCardLarge: {
+    width: '48%',
   },
   eventImage: {
     width: '100%',

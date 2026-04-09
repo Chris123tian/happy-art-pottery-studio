@@ -26,6 +26,7 @@ const FULL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function Booking() {
+  console.log('[Booking] Screen rendered');
   const { settings } = useData();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -145,7 +146,7 @@ export default function Booking() {
       setSelectedDate(null);
       setTime('');
     } catch (error) {
-      console.error('Error submitting booking:', error);
+      console.error('[Booking] Error submitting booking:', error);
       if (Platform.OS === 'web') {
         alert('Failed to submit booking. Please try again.');
       } else {
@@ -157,7 +158,7 @@ export default function Booking() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="booking-screen">
       <Header />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>

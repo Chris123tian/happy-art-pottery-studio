@@ -36,6 +36,7 @@ const INITIAL_FORM = {
 };
 
 export default function AdminEvents() {
+  console.log('[AdminEvents] Screen rendered');
   const queryClient = useQueryClient();
   const { events } = useData();
   const [showForm, setShowForm] = useState(false);
@@ -216,7 +217,7 @@ export default function AdminEvents() {
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="admin-events-screen">
       <AdminHeader />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>

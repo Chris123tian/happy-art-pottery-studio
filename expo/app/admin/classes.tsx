@@ -1,3 +1,4 @@
+// Admin Classes Management
 import React, { useState } from 'react';
 import {
   View,
@@ -61,7 +62,7 @@ export default function AdminClasses() {
       if (context?.previousClasses) {
         queryClient.setQueryData(['classes'], context.previousClasses);
       }
-      console.error('Error creating class:', error);
+      console.error('[AdminClasses] Error creating class:', error);
       if (Platform.OS === 'web') {
         alert('Failed to create class. Please try again.');
       } else {
@@ -96,7 +97,7 @@ export default function AdminClasses() {
       if (context?.previousClasses) {
         queryClient.setQueryData(['classes'], context.previousClasses);
       }
-      console.error('Error updating class:', error);
+      console.error('[AdminClasses] Error updating class:', error);
       if (Platform.OS === 'web') {
         alert('Failed to update class. Please try again.');
       } else {
@@ -111,7 +112,7 @@ export default function AdminClasses() {
       queryClient.invalidateQueries({ queryKey: ['classes'] });
     },
     onError: (error) => {
-      console.error('Error deleting class:', error);
+      console.error('[AdminClasses] Error deleting class:', error);
       Alert.alert('Error', 'Failed to delete class');
     },
   });
@@ -159,7 +160,7 @@ export default function AdminClasses() {
         }
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('[AdminClasses] Error uploading image:', error);
       if (Platform.OS === 'web') {
         alert('Failed to upload image. Please try again.');
       } else {
@@ -212,7 +213,7 @@ export default function AdminClasses() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="admin-classes-screen">
       <AdminHeader />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>

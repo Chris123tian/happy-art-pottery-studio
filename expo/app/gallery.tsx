@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,7 +18,10 @@ import { useData } from '@/contexts/DataContext';
 import { GalleryImage } from '@/types';
 
 export default function Gallery() {
+  console.log('[Gallery] Screen rendered');
   const { gallery: images } = useData();
+  const { width: screenWidth } = useWindowDimensions();
+  const isLargeScreen = screenWidth > 768;
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
 
   const handleImagePress = useCallback((image: GalleryImage) => {
@@ -29,7 +33,7 @@ export default function Gallery() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="gallery-screen">
       <Header />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
@@ -37,11 +41,11 @@ export default function Gallery() {
           <Text style={styles.subtitle}>View our beautiful pottery creations</Text>
         </View>
 
-        <View style={styles.gallery}>
+        <View style={[styles.gallery, isLargeScreen && styles.galleryLarge]}>
           {images.map((image) => (
             <TouchableOpacity
               key={image.id}
-              style={styles.imageItem}
+              style={[styles.imageItem, isLargeScreen && styles.imageItemLarge]}
               onPress={() => handleImagePress(image)}
             >
               <Image
@@ -118,11 +122,21 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     justifyContent: 'space-between',
   },
+  galleryLarge: {
+    maxWidth: 1200,
+    alignSelf: 'center',
+    width: '100%',
+    padding: theme.spacing.md,
+    gap: theme.spacing.md,
+  },
   imageItem: {
     width: '48%',
     aspectRatio: 1,
     borderRadius: theme.borderRadius.md,
     overflow: 'hidden',
+  },
+  imageItemLarge: {
+    width: '31%',
   },
   image: {
     width: '100%',

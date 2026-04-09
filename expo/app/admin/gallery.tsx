@@ -25,6 +25,7 @@ const { width } = Dimensions.get('window');
 const imageSize = width > 768 ? 300 : Math.min((width - theme.spacing.lg * 3) / 2, 250);
 
 export default function AdminGallery() {
+  console.log('[AdminGallery] Screen rendered');
   const queryClient = useQueryClient();
   const { gallery: images } = useData();
 
@@ -128,7 +129,7 @@ export default function AdminGallery() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="admin-gallery-screen">
       <AdminHeader />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>

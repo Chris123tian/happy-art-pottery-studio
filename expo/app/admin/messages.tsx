@@ -17,6 +17,7 @@ import { database } from '@/services/database';
 import { Message } from '@/types';
 
 export default function AdminMessages() {
+  console.log('[AdminMessages] Screen rendered');
   const queryClient = useQueryClient();
   const { messages: rawMessages } = useData();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -86,7 +87,7 @@ export default function AdminMessages() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="admin-messages-screen">
       <AdminHeader />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>

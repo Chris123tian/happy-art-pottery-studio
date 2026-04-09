@@ -16,6 +16,7 @@ import { theme } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AdminLogin() {
+  console.log('[AdminLogin] Screen rendered');
   const router = useRouter();
   const { login, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
@@ -50,7 +51,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="admin-login-screen">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.content}

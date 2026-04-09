@@ -18,6 +18,7 @@ import { theme } from '@/constants/theme';
 const BLOG_URL = 'https://happyartacademy702.blogspot.com';
 
 export default function Blog() {
+  console.log('[Blog] Screen rendered');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -27,7 +28,7 @@ export default function Blog() {
 
   if (Platform.OS === 'web') {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['top']} testID="blog-screen">
         <Header />
         <View style={styles.webFallback}>
           <View style={styles.hero}>
@@ -63,7 +64,7 @@ export default function Blog() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="blog-screen">
       <Header />
       <View style={styles.content}>
         {loading && (

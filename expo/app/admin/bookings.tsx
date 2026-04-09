@@ -16,6 +16,7 @@ import { database } from '@/services/database';
 import { Booking } from '@/types';
 
 export default function AdminBookings() {
+  console.log('[AdminBookings] Screen rendered');
   const queryClient = useQueryClient();
   const { bookings: rawBookings } = useData();
   const [newBookingsCount, setNewBookingsCount] = useState(0);
@@ -81,7 +82,7 @@ export default function AdminBookings() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="admin-bookings-screen">
       <AdminHeader />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>

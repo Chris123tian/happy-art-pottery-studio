@@ -21,6 +21,7 @@ import { PriceList } from '@/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function AdminPrices() {
+  console.log('[AdminPrices] Screen rendered');
   const queryClient = useQueryClient();
   const { settings } = useData();
   const [priceList, setPriceList] = useState<PriceList>(seedPriceList);
@@ -134,7 +135,7 @@ export default function AdminPrices() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="admin-prices-screen">
       <AdminHeader />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>

@@ -21,6 +21,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useData } from '@/contexts/DataContext';
 
 export default function AdminSettings() {
+  console.log('[AdminSettings] Screen rendered');
   const queryClient = useQueryClient();
   const { settings: contextSettings, isLoading } = useData();
   const [settings, setSettings] = useState<SiteSettings>(seedSettings);
@@ -198,7 +199,7 @@ export default function AdminSettings() {
 
   if (isLoading && !contextSettings) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['top']} testID="admin-settings-screen">
         <AdminHeader />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -209,7 +210,7 @@ export default function AdminSettings() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="admin-settings-screen">
       <AdminHeader />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>

@@ -23,6 +23,7 @@ import { useData } from '@/contexts/DataContext';
 type FilterType = 'all' | 'pending' | 'approved' | 'rejected';
 
 export default function AdminReviews() {
+  console.log('[AdminReviews] Screen rendered');
   const queryClient = useQueryClient();
   const { reviews } = useData();
   const [filter, setFilter] = useState<FilterType>('all');
@@ -139,7 +140,7 @@ export default function AdminReviews() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="admin-reviews-screen">
       <AdminHeader />
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>

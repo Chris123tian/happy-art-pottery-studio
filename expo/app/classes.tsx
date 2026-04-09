@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -11,8 +11,12 @@ import { useData } from '@/contexts/DataContext';
 import { Class } from '@/types';
 
 export default function Classes() {
+  console.log('[Classes] Screen rendered');
   const router = useRouter();
   const { classes } = useData();
+  const { width: screenWidth } = useWindowDimensions();
+  const isLargeScreen = screenWidth > 768;
+  const isMediumScreen = screenWidth > 480;
   const [filter, setFilter] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
 
   const filteredClasses = useMemo(
@@ -24,10 +28,16 @@ export default function Classes() {
     router.push('/booking' as any);
   }, [router]);
 
+  const cardWidth = isLargeScreen
+    ? '31%'
+    : isMediumScreen
+      ? '48%'
+      : '100%';
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} testID="classes-screen">
       <Header />
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Our Classes</Text>
           <Text style={styles.subtitle}>
@@ -36,76 +46,36 @@ export default function Classes() {
         </View>
 
         <View style={styles.filters}>
-          <TouchableOpacity
-            style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]}
-            onPress={() => setFilter('all')}
-          >
-            <Text
-              style={[styles.filterText, filter === 'all' && styles.filterTextActive]}
+          {(['all', 'beginner', 'intermediate', 'advanced'] as const).map((level) => (
+            <TouchableOpacity
+              key={level}
+              style={[styles.filterButton, filter === level && styles.filterButtonActive]}
+              onPress={() => setFilter(level)}
             >
-              All Classes
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filter === 'beginner' && styles.filterButtonActive,
-            ]}
-            onPress={() => setFilter('beginner')}
-          >
-            <Text
-              style={[
-                styles.filterText,
-                filter === 'beginner' && styles.filterTextActive,
-              ]}
-            >
-              Beginner
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filter === 'intermediate' && styles.filterButtonActive,
-            ]}
-            onPress={() => setFilter('intermediate')}
-          >
-            <Text
-              style={[
-                styles.filterText,
-                filter === 'intermediate' && styles.filterTextActive,
-              ]}
-            >
-              Intermediate
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filter === 'advanced' && styles.filterButtonActive,
-            ]}
-            onPress={() => setFilter('advanced')}
-          >
-            <Text
-              style={[
-                styles.filterText,
-                filter === 'advanced' && styles.filterTextActive,
-              ]}
-            >
-              Advanced
-            </Text>
-          </TouchableOpacity>
+              <Text style={[styles.filterText, filter === level && styles.filterTextActive]}>
+                {level === 'all' ? 'All Classes' : level.charAt(0).toUpperCase() + level.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        <View style={styles.classList}>
+        <View style={[styles.classList, isLargeScreen && styles.classListLarge]}>
           {filteredClasses.map((classItem: Class) => (
-            <View key={classItem.id} style={styles.classCard}>
+            <View
+              key={classItem.id}
+              style={[
+                styles.classCard,
+                { width: cardWidth as any },
+              ]}
+            >
               {classItem.image && (
                 <Image
                   source={{ uri: classItem.image }}
-                  style={styles.classImage}
+                  style={[styles.classImage, !isMediumScreen && { height: 180 }]}
                   contentFit="cover"
                   cachePolicy="memory-disk"
-                  transition={200}
+                  transition={100}
+                  placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                   recyclingKey={`class-${classItem.id}`}
                 />
               )}
@@ -116,7 +86,9 @@ export default function Classes() {
                   </Text>
                 </View>
                 <Text style={styles.classTitle}>{classItem.title}</Text>
-                <Text style={styles.classDescription}>{classItem.description}</Text>
+                <Text style={styles.classDescription} numberOfLines={isMediumScreen ? 3 : 4}>
+                  {classItem.description}
+                </Text>
                 <Button
                   title="Book Now"
                   onPress={handleBookingPress}
@@ -147,7 +119,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: theme.spacing.md,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.accent,
     alignItems: 'center',
   },
@@ -161,6 +133,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textLight,
     textAlign: 'center',
+    maxWidth: 600,
   },
   filters: {
     flexDirection: 'row',
@@ -188,7 +161,15 @@ const styles = StyleSheet.create({
   },
   classList: {
     padding: theme.spacing.md,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: theme.spacing.md,
+  },
+  classListLarge: {
+    maxWidth: 1200,
+    alignSelf: 'center',
+    width: '100%',
+    justifyContent: 'flex-start',
   },
   classCard: {
     backgroundColor: theme.colors.white,
@@ -198,10 +179,11 @@ const styles = StyleSheet.create({
   },
   classImage: {
     width: '100%',
-    height: 200,
+    height: 160,
+    backgroundColor: theme.colors.surface,
   },
   classContent: {
-    padding: theme.spacing.lg,
+    padding: theme.spacing.md,
   },
   levelBadge: {
     backgroundColor: theme.colors.primary,
@@ -217,19 +199,19 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   classTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700' as const,
     color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
   },
   classDescription: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
     color: theme.colors.textLight,
     marginBottom: theme.spacing.md,
   },
   bookButton: {
-    marginTop: theme.spacing.sm,
+    marginTop: theme.spacing.xs,
   },
   emptyState: {
     padding: theme.spacing.xxl,
