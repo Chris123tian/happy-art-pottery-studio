@@ -12,21 +12,21 @@ import {
   TextInput,
   Alert,
   Dimensions,
+  useWindowDimensions,
+  FlatList,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles, BookOpen, ArrowRight, X, Send } from 'lucide-react-native';
+import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles, BookOpen, ArrowRight, X, Send, Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
 import { seedSettings, seedServices } from '@/services/seedData';
 import { useData } from '@/contexts/DataContext';
-import { dataService } from '@/services/dataService';
+import { database } from '@/services/database';
 import { Review, ServiceItem } from '@/types';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface BlogPost {
   id: string;
@@ -36,17 +36,14 @@ interface BlogPost {
   url: string;
 }
 
+const REVIEW_CARD_WIDTH = 300;
+
 export default function Home() {
   const router = useRouter();
-  const { settings, instructors, gallery, testimonials, reviews } = useData();
-  
-  useEffect(() => {
-    console.log('[Home] Instructors count:', instructors.length);
-    if (instructors.length > 0) {
-      console.log('[Home] First instructor:', instructors[0]);
-      console.log('[Home] First instructor image URL:', instructors[0].image);
-    }
-  }, [instructors]);
+  const { width: screenWidth } = useWindowDimensions();
+  const isLargeScreen = screenWidth > 768;
+  const { settings, instructors, gallery, testimonials, reviews, events } = useData();
+
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [heroIndexA, setHeroIndexA] = useState(0);
   const [heroIndexB, setHeroIndexB] = useState(1);
@@ -60,10 +57,29 @@ export default function Home() {
   const [reviewForm, setReviewForm] = useState({ name: '', text: '', rating: 5 });
   const [submittingReview, setSubmittingReview] = useState(false);
 
+  const reviewScrollRef = useRef<FlatList>(null);
+  const [reviewScrollIndex, setReviewScrollIndex] = useState(0);
+
   const approvedReviews = useMemo(
     () => reviews.filter((r) => r.status === 'approved'),
     [reviews]
   );
+
+  const allReviewItems = useMemo(() => {
+    const items = [
+      ...testimonials.map((t) => ({ ...t, source: 'testimonial' as const })),
+      ...approvedReviews.map((r) => ({ ...r, source: 'review' as const })),
+    ];
+    return items;
+  }, [testimonials, approvedReviews]);
+
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+    return events
+      .filter((e) => new Date(e.date) >= now)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 3);
+  }, [events]);
 
   const displayGallery = useMemo(
     () => gallery.slice(0, 6),
@@ -191,6 +207,18 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [instructors.length, instructorOpacity]);
 
+  useEffect(() => {
+    if (allReviewItems.length <= 1) return;
+    const interval = setInterval(() => {
+      setReviewScrollIndex((prev) => {
+        const next = (prev + 1) % allReviewItems.length;
+        reviewScrollRef.current?.scrollToIndex({ index: next, animated: true });
+        return next;
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [allReviewItems.length]);
+
   const openSocialMedia = useCallback((url: string) => {
     if (url) {
       Linking.openURL(url);
@@ -211,6 +239,10 @@ export default function Home() {
 
   const handleBlogPress = useCallback(() => {
     router.push('/blog' as any);
+  }, [router]);
+
+  const handleEventsPress = useCallback(() => {
+    router.push('/events' as any);
   }, [router]);
 
   const formatDate = useCallback((dateString: string) => {
@@ -237,7 +269,9 @@ export default function Home() {
     }
     setSubmittingReview(true);
     try {
-      const newReview: Omit<Review, 'id'> = {
+      const id = Date.now().toString();
+      const newReview = {
+        id,
         name: reviewForm.name.trim(),
         text: reviewForm.text.trim(),
         rating: reviewForm.rating,
@@ -245,7 +279,9 @@ export default function Home() {
         status: 'pending',
         createdAt: new Date().toISOString(),
       };
-      await dataService.createReview(newReview);
+      console.log('[Home] Submitting review directly via database.create...');
+      await database.create('reviews', newReview);
+      console.log('[Home] Review submitted successfully');
       setReviewModalVisible(false);
       setReviewForm({ name: '', text: '', rating: 5 });
       if (Platform.OS === 'web') {
@@ -253,8 +289,10 @@ export default function Home() {
       } else {
         Alert.alert('Thank You!', 'Your review has been submitted and will appear after approval.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Home] Error submitting review:', error);
+      console.error('[Home] Error code:', error?.code);
+      console.error('[Home] Error message:', error?.message);
       if (Platform.OS === 'web') {
         alert('Failed to submit review. Please try again.');
       } else {
@@ -285,11 +323,40 @@ export default function Home() {
     );
   }, [reviewForm.rating]);
 
+  const scrollReviewLeft = useCallback(() => {
+    if (allReviewItems.length === 0) return;
+    const newIdx = reviewScrollIndex > 0 ? reviewScrollIndex - 1 : allReviewItems.length - 1;
+    setReviewScrollIndex(newIdx);
+    reviewScrollRef.current?.scrollToIndex({ index: newIdx, animated: true });
+  }, [reviewScrollIndex, allReviewItems.length]);
+
+  const scrollReviewRight = useCallback(() => {
+    if (allReviewItems.length === 0) return;
+    const newIdx = (reviewScrollIndex + 1) % allReviewItems.length;
+    setReviewScrollIndex(newIdx);
+    reviewScrollRef.current?.scrollToIndex({ index: newIdx, animated: true });
+  }, [reviewScrollIndex, allReviewItems.length]);
+
+  const renderReviewItem = useCallback(({ item }: { item: typeof allReviewItems[0] }) => (
+    <View style={[styles.reviewSlideCard, { width: REVIEW_CARD_WIDTH }]}>
+      <View style={styles.starsRow}>
+        {[...Array(item.rating)].map((_, i) => (
+          <Star key={i} color="#F5A623" size={16} fill="#F5A623" />
+        ))}
+      </View>
+      <Text style={styles.testimonialText} numberOfLines={4}>&ldquo;{item.text}&rdquo;</Text>
+      <Text style={styles.testimonialAuthor}>- {item.name}</Text>
+    </View>
+  ), []);
+
+  const heroHeight = isLargeScreen ? 420 : 280;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Header />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
+        {/* HERO - larger on big screens */}
+        <View style={[styles.hero, { height: heroHeight }]}>
           <View style={styles.heroImageContainer}>
             {heroImages.length > 0 ? (
               <>
@@ -321,8 +388,8 @@ export default function Home() {
             )}
           </View>
           <View style={styles.heroOverlay}>
-            <Text style={styles.heroTitle}>{displaySettings.studioName}</Text>
-            <Text style={styles.heroSubtitle}>{displaySettings.tagline}</Text>
+            <Text style={[styles.heroTitle, isLargeScreen && { fontSize: 40 }]}>{displaySettings.studioName}</Text>
+            <Text style={[styles.heroSubtitle, isLargeScreen && { fontSize: 18, maxWidth: 600 }]}>{displaySettings.tagline}</Text>
             <Button
               title="Book a Class"
               onPress={handleBookingPress}
@@ -331,28 +398,56 @@ export default function Home() {
           </View>
         </View>
 
+        {/* STATS BANNER */}
+        <View style={styles.statsBanner}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>20+</Text>
+            <Text style={styles.statLabel}>YEARS OF CRAFT</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>3+</Text>
+            <Text style={styles.statLabel}>AGES WELCOME</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>100</Text>
+            <Text style={styles.statLabel}>MAX GROUP SIZE</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <View style={styles.statRatingRow}>
+              <Text style={styles.statNumber}>4.8</Text>
+              <Star color="#F5A623" size={18} fill="#F5A623" />
+            </View>
+            <Text style={styles.statLabel}>GOOGLE RATING</Text>
+          </View>
+        </View>
+
+        {/* ABOUT - side by side on large screens */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About {displaySettings.studioName}</Text>
-          <View style={styles.aboutContent}>
+          <View style={[styles.aboutContent, isLargeScreen && styles.aboutContentLarge]}>
             <Image
               source={{ uri: displaySettings.aboutImage }}
-              style={styles.aboutImage}
+              style={[styles.aboutImage, isLargeScreen && styles.aboutImageLarge]}
               contentFit="cover"
               cachePolicy="memory-disk"
               transition={200}
               placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
             />
-            <View style={styles.aboutText}>
+            <View style={[styles.aboutText, isLargeScreen && styles.aboutTextLarge]}>
               <Text style={styles.paragraph}>{displaySettings.description}</Text>
             </View>
           </View>
         </View>
 
+        {/* SERVICES */}
         <View style={[styles.section, styles.servicesSection]}>
           <Text style={styles.sectionTitle}>Our Services</Text>
           <View style={styles.servicesGrid}>
             {services.map((service) => (
-              <View key={service.id} style={styles.serviceCard}>
+              <View key={service.id} style={[styles.serviceCard, isLargeScreen && { width: '31%' as any }]}>
                 <Image
                   source={{ uri: service.image }}
                   style={styles.serviceImage}
@@ -373,6 +468,52 @@ export default function Home() {
           </View>
         </View>
 
+        {/* UPCOMING EVENTS */}
+        {upcomingEvents.length > 0 && (
+          <View style={[styles.section, styles.eventsSection]}>
+            <Text style={styles.sectionTitle}>Upcoming Events</Text>
+            <Text style={styles.sectionSubtitle}>
+              Join us for special workshops and pottery experiences
+            </Text>
+            <View style={[styles.eventsGrid, isLargeScreen && { flexDirection: 'row' as const }]}>
+              {upcomingEvents.map((event) => (
+                <View key={event.id} style={[styles.eventHomeCard, isLargeScreen && { flex: 1 }]}>
+                  <Image
+                    source={{ uri: event.image }}
+                    style={styles.eventHomeImage}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
+                    placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
+                    recyclingKey={`event-home-${event.id}`}
+                  />
+                  <View style={styles.eventHomeContent}>
+                    <View style={styles.eventHomeDateBadge}>
+                      <Calendar color={theme.colors.white} size={14} />
+                      <Text style={styles.eventHomeDateText}>{formatDate(event.date)}</Text>
+                    </View>
+                    <Text style={styles.eventHomeTitle}>{event.title}</Text>
+                    <Text style={styles.eventHomeDesc} numberOfLines={2}>{event.description}</Text>
+                    <View style={styles.eventHomeDetailRow}>
+                      <Clock color={theme.colors.primary} size={14} />
+                      <Text style={styles.eventHomeDetailText}>{event.time}</Text>
+                      <Users color={theme.colors.primary} size={14} />
+                      <Text style={styles.eventHomeDetailText}>
+                        {event.currentParticipants}/{event.maxParticipants}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity style={styles.viewAllEventsButton} onPress={handleEventsPress} activeOpacity={0.8}>
+              <Text style={styles.viewAllEventsText}>View All Events</Text>
+              <ArrowRight color={theme.colors.primary} size={18} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* INSTRUCTORS */}
         {instructors.length > 0 && (
           <View style={[styles.section, styles.instructorSection]}>
             <View style={styles.instructorHeader}>
@@ -389,7 +530,7 @@ export default function Home() {
                     <View style={styles.instructorImageContainer}>
                       <View style={styles.instructorImageBorder}>
                         <Image
-                          source={{ uri: instructors[instructorIndex].image }}
+                          source={{ uri: instructors[instructorIndex]?.image }}
                           style={styles.instructorImage}
                           contentFit="cover"
                           cachePolicy="memory-disk"
@@ -403,17 +544,17 @@ export default function Home() {
                       </View>
                     </View>
                     <View style={styles.instructorContent}>
-                      <Text style={styles.instructorName}>{instructors[instructorIndex].name}</Text>
+                      <Text style={styles.instructorName}>{instructors[instructorIndex]?.name}</Text>
                       <View style={styles.instructorTitleContainer}>
                         <View style={styles.titleDivider} />
-                        <Text style={styles.instructorTitle}>{instructors[instructorIndex].title}</Text>
+                        <Text style={styles.instructorTitle}>{instructors[instructorIndex]?.title}</Text>
                         <View style={styles.titleDivider} />
                       </View>
-                      <Text style={styles.instructorExperience}>{instructors[instructorIndex].experience}</Text>
-                      <Text style={styles.instructorBio}>{instructors[instructorIndex].bio}</Text>
-                      {instructors[instructorIndex].specialties?.length > 0 && (
+                      <Text style={styles.instructorExperience}>{instructors[instructorIndex]?.experience}</Text>
+                      <Text style={styles.instructorBio}>{instructors[instructorIndex]?.bio}</Text>
+                      {(instructors[instructorIndex]?.specialties?.length ?? 0) > 0 && (
                         <View style={styles.specialtiesContainer}>
-                          {instructors[instructorIndex].specialties.map((specialty, idx) => (
+                          {instructors[instructorIndex].specialties.map((specialty: string, idx: number) => (
                             <View key={idx} style={styles.specialtyTag}>
                               <Text style={styles.specialtyText}>{specialty}</Text>
                             </View>
@@ -445,6 +586,7 @@ export default function Home() {
           </View>
         )}
 
+        {/* GALLERY */}
         {displayGallery.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Our Gallery</Text>
@@ -456,7 +598,7 @@ export default function Home() {
                 <TouchableOpacity
                   key={image.id}
                   onPress={handleGalleryPress}
-                  style={styles.galleryGridItem}
+                  style={[styles.galleryGridItem, isLargeScreen && { width: '31%' as any, height: 200 }]}
                 >
                   <Image
                     source={{ uri: image.source }}
@@ -479,6 +621,7 @@ export default function Home() {
           </View>
         )}
 
+        {/* BLOG */}
         {blogPosts.length > 0 && (
           <View style={[styles.section, styles.blogSection]}>
             <Text style={styles.sectionTitle}>Latest from Our Blog</Text>
@@ -504,6 +647,7 @@ export default function Home() {
           </View>
         )}
 
+        {/* CLASSES CTA */}
         <View style={[styles.section, styles.classesCtaSection]}>
           <View style={styles.classesCtaInner}>
             <BookOpen color={theme.colors.primary} size={36} />
@@ -518,14 +662,11 @@ export default function Home() {
           </View>
         </View>
 
+        {/* HOW IT WORKS */}
         <View style={[styles.section, styles.processSection]}>
           <Text style={styles.sectionTitle}>How It Works</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.processSteps}
-          >
-            <View style={styles.processStep}>
+          <View style={[styles.processStepsRow, isLargeScreen && { justifyContent: 'center' as const }]}>
+            <View style={[styles.processStep, isLargeScreen && { width: '30%' as any }]}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>1</Text>
               </View>
@@ -537,7 +678,7 @@ export default function Home() {
                 Select from Wheel Throwing or Pot Painting classes
               </Text>
             </View>
-            <View style={styles.processStep}>
+            <View style={[styles.processStep, isLargeScreen && { width: '30%' as any }]}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>2</Text>
               </View>
@@ -549,7 +690,7 @@ export default function Home() {
                 Reserve your spot for individuals, groups, or parties
               </Text>
             </View>
-            <View style={styles.processStep}>
+            <View style={[styles.processStep, isLargeScreen && { width: '30%' as any }]}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>3</Text>
               </View>
@@ -561,44 +702,52 @@ export default function Home() {
                 Learn pottery techniques and take home your masterpiece
               </Text>
             </View>
-          </ScrollView>
+          </View>
         </View>
 
+        {/* REVIEWS - Horizontal Slideshow */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>What Our Students Say</Text>
-          {(testimonials.length > 0 || approvedReviews.length > 0) && (
-            <View style={styles.testimonialsGrid}>
-              {testimonials.map((testimonial) => (
-                <View key={testimonial.id} style={styles.testimonialCard}>
-                  <View style={styles.starsRow}>
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star
-                        key={i}
-                        color="#F5A623"
-                        size={16}
-                        fill="#F5A623"
-                      />
-                    ))}
-                  </View>
-                  <Text style={styles.testimonialText}>&ldquo;{testimonial.text}&rdquo;</Text>
-                  <Text style={styles.testimonialAuthor}>- {testimonial.name}</Text>
-                </View>
-              ))}
-              {approvedReviews.map((review) => (
-                <View key={review.id} style={styles.testimonialCard}>
-                  <View style={styles.starsRow}>
-                    {[...Array(review.rating)].map((_, i) => (
-                      <Star
-                        key={i}
-                        color="#F5A623"
-                        size={16}
-                        fill="#F5A623"
-                      />
-                    ))}
-                  </View>
-                  <Text style={styles.testimonialText}>&ldquo;{review.text}&rdquo;</Text>
-                  <Text style={styles.testimonialAuthor}>- {review.name}</Text>
-                </View>
+          {allReviewItems.length > 0 && (
+            <View style={styles.reviewSliderContainer}>
+              {allReviewItems.length > 1 && (
+                <TouchableOpacity style={styles.reviewArrow} onPress={scrollReviewLeft} activeOpacity={0.7}>
+                  <ChevronLeft color={theme.colors.secondary} size={24} />
+                </TouchableOpacity>
+              )}
+              <FlatList
+                ref={reviewScrollRef}
+                data={allReviewItems}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={REVIEW_CARD_WIDTH + 16}
+                decelerationRate="fast"
+                keyExtractor={(item, index) => `${item.source}-${item.id}-${index}`}
+                renderItem={renderReviewItem}
+                contentContainerStyle={styles.reviewListContent}
+                getItemLayout={(_data, index) => ({
+                  length: REVIEW_CARD_WIDTH + 16,
+                  offset: (REVIEW_CARD_WIDTH + 16) * index,
+                  index,
+                })}
+                onScrollToIndexFailed={(info) => {
+                  console.log('[Home] Review scroll failed:', info);
+                }}
+              />
+              {allReviewItems.length > 1 && (
+                <TouchableOpacity style={styles.reviewArrow} onPress={scrollReviewRight} activeOpacity={0.7}>
+                  <ChevronRight color={theme.colors.secondary} size={24} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          {allReviewItems.length > 1 && (
+            <View style={styles.reviewDots}>
+              {allReviewItems.map((_, idx) => (
+                <View
+                  key={idx}
+                  style={[styles.reviewDot, idx === reviewScrollIndex && styles.reviewDotActive]}
+                />
               ))}
             </View>
           )}
@@ -612,10 +761,11 @@ export default function Home() {
           </TouchableOpacity>
         </View>
 
+        {/* FAQ */}
         <View style={[styles.section, styles.faqSection]}>
           <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-          <View style={styles.faqList}>
-            <View style={styles.faqItem}>
+          <View style={[styles.faqList, isLargeScreen && { flexDirection: 'row' as const, flexWrap: 'wrap' as const }]}>
+            <View style={[styles.faqItem, isLargeScreen && { width: '48%' as any }]}>
               <View style={styles.faqQuestion}>
                 <HelpCircle color={theme.colors.primary} size={20} />
                 <Text style={styles.faqQuestionText}>What should I wear to class?</Text>
@@ -624,7 +774,7 @@ export default function Home() {
                 Wear comfortable clothes that you don&apos;t mind getting a little dirty. We provide aprons, but clay can be messy!
               </Text>
             </View>
-            <View style={styles.faqItem}>
+            <View style={[styles.faqItem, isLargeScreen && { width: '48%' as any }]}>
               <View style={styles.faqQuestion}>
                 <HelpCircle color={theme.colors.primary} size={20} />
                 <Text style={styles.faqQuestionText}>Do I need prior experience?</Text>
@@ -633,7 +783,7 @@ export default function Home() {
                 Not at all! Our classes welcome beginners and experienced potters alike. Our instructors guide you every step of the way.
               </Text>
             </View>
-            <View style={styles.faqItem}>
+            <View style={[styles.faqItem, isLargeScreen && { width: '48%' as any }]}>
               <View style={styles.faqQuestion}>
                 <HelpCircle color={theme.colors.primary} size={20} />
                 <Text style={styles.faqQuestionText}>How many people can attend?</Text>
@@ -642,7 +792,7 @@ export default function Home() {
                 We can accommodate 1 to 100 people! Perfect for individuals, couples, groups, parties, schools, and corporate events.
               </Text>
             </View>
-            <View style={styles.faqItem}>
+            <View style={[styles.faqItem, isLargeScreen && { width: '48%' as any }]}>
               <View style={styles.faqQuestion}>
                 <HelpCircle color={theme.colors.primary} size={20} />
                 <Text style={styles.faqQuestionText}>Can I purchase pottery pieces?</Text>
@@ -654,28 +804,29 @@ export default function Home() {
           </View>
         </View>
 
+        {/* CONTACT */}
         <View style={[styles.section, styles.contactSection]}>
           <Text style={styles.sectionTitle}>Contact Us</Text>
-          <View style={styles.contactInfo}>
+          <View style={[styles.contactInfo, isLargeScreen && { flexDirection: 'row' as const, flexWrap: 'wrap' as const }]}>
             <TouchableOpacity
-              style={styles.contactItem}
+              style={[styles.contactItem, isLargeScreen && { width: '48%' as any }]}
               onPress={() => Linking.openURL(`tel:${displaySettings.phone}`)}
             >
               <Phone color={theme.colors.primary} size={24} />
               <Text style={styles.contactText}>{displaySettings.phone}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.contactItem}
+              style={[styles.contactItem, isLargeScreen && { width: '48%' as any }]}
               onPress={() => Linking.openURL(`mailto:${displaySettings.email}`)}
             >
               <Mail color={theme.colors.primary} size={24} />
               <Text style={styles.contactText}>{displaySettings.email}</Text>
             </TouchableOpacity>
-            <View style={styles.contactItem}>
+            <View style={[styles.contactItem, isLargeScreen && { width: '48%' as any }]}>
               <MapPin color={theme.colors.primary} size={24} />
               <Text style={styles.contactText}>{displaySettings.address}</Text>
             </View>
-            <View style={styles.contactItem}>
+            <View style={[styles.contactItem, isLargeScreen && { width: '48%' as any }]}>
               <Clock color={theme.colors.primary} size={24} />
               <View>
                 <Text style={styles.contactText}>
@@ -748,13 +899,13 @@ export default function Home() {
                   <Twitter color={theme.colors.white} size={24} />
                 </TouchableOpacity>
               )}
-
             </View>
           </View>
         </View>
       </ScrollView>
       <FloatingWhatsApp />
 
+      {/* Review Modal */}
       <Modal
         visible={reviewModalVisible}
         animationType="slide"
@@ -870,6 +1021,43 @@ const styles = StyleSheet.create({
   heroButton: {
     minWidth: 200,
   },
+
+  statsBanner: {
+    backgroundColor: '#3B2314',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statNumber: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    color: '#D4A054',
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    color: '#D4A054',
+    marginTop: 4,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  statDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: 'rgba(212, 160, 84, 0.3)',
+  },
+
   section: {
     padding: theme.spacing.md,
   },
@@ -891,15 +1079,31 @@ const styles = StyleSheet.create({
     gap: theme.spacing.lg,
     alignItems: 'center',
   },
+  aboutContentLarge: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 32,
+    maxWidth: 1000,
+    alignSelf: 'center',
+    width: '100%',
+  },
   aboutImage: {
     width: '100%',
     height: 220,
     borderRadius: theme.borderRadius.lg,
     backgroundColor: theme.colors.surface,
   },
+  aboutImageLarge: {
+    width: '45%',
+    height: 320,
+  },
   aboutText: {
     flex: 1,
     gap: theme.spacing.md,
+  },
+  aboutTextLarge: {
+    flex: 1,
+    paddingTop: 8,
   },
   paragraph: {
     fontSize: 15,
@@ -915,7 +1119,7 @@ const styles = StyleSheet.create({
   serviceCard: {
     backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.lg,
-    width: SCREEN_WIDTH > 500 ? '48%' : '100%',
+    width: '48%',
     overflow: 'hidden',
     ...theme.shadows.md,
   },
@@ -938,6 +1142,82 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: theme.colors.textLight,
   },
+
+  eventsSection: {
+    backgroundColor: theme.colors.accent,
+  },
+  eventsGrid: {
+    gap: theme.spacing.md,
+  },
+  eventHomeCard: {
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
+    ...theme.shadows.md,
+  },
+  eventHomeImage: {
+    width: '100%',
+    height: 160,
+    backgroundColor: theme.colors.surface,
+  },
+  eventHomeContent: {
+    padding: theme.spacing.md,
+  },
+  eventHomeDateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.borderRadius.full,
+    alignSelf: 'flex-start',
+    marginBottom: theme.spacing.sm,
+  },
+  eventHomeDateText: {
+    color: theme.colors.white,
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  eventHomeTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: theme.colors.secondary,
+    marginBottom: 4,
+  },
+  eventHomeDesc: {
+    fontSize: 13,
+    color: theme.colors.textLight,
+    lineHeight: 18,
+    marginBottom: theme.spacing.sm,
+  },
+  eventHomeDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  eventHomeDetailText: {
+    fontSize: 13,
+    color: theme.colors.text,
+    marginRight: 12,
+  },
+  viewAllEventsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.full,
+  },
+  viewAllEventsText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: theme.colors.primary,
+  },
+
   instructorSection: {
     backgroundColor: theme.colors.surface,
     paddingVertical: theme.spacing.xl,
@@ -1198,15 +1478,16 @@ const styles = StyleSheet.create({
   processSection: {
     backgroundColor: theme.colors.surface,
   },
-  processSteps: {
+  processStepsRow: {
     flexDirection: 'row',
     gap: theme.spacing.md,
-    paddingHorizontal: theme.spacing.sm,
     paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.md,
+    flexWrap: 'wrap',
   },
   processStep: {
-    width: SCREEN_WIDTH > 500 ? (SCREEN_WIDTH - 96) / 3 : SCREEN_WIDTH * 0.7,
+    flex: 1,
+    minWidth: 200,
     alignItems: 'center',
     padding: theme.spacing.md,
     backgroundColor: theme.colors.white,
@@ -1247,16 +1528,45 @@ const styles = StyleSheet.create({
     color: theme.colors.textLight,
     textAlign: 'center',
   },
-  testimonialsGrid: {
-    flexDirection: 'column',
-    gap: theme.spacing.md,
+
+  reviewSliderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  testimonialCard: {
-    flex: 1,
+  reviewArrow: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    ...theme.shadows.sm,
+  },
+  reviewListContent: {
+    paddingHorizontal: 8,
+    gap: 16,
+  },
+  reviewSlideCard: {
     backgroundColor: theme.colors.white,
     padding: theme.spacing.lg,
     borderRadius: theme.borderRadius.lg,
     ...theme.shadows.md,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.primary,
+  },
+  reviewDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: theme.spacing.md,
+  },
+  reviewDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.border,
+  },
+  reviewDotActive: {
+    backgroundColor: theme.colors.primary,
+    width: 20,
+    borderRadius: 4,
   },
   starsRow: {
     flexDirection: 'row',
@@ -1264,8 +1574,8 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   testimonialText: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 22,
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
     fontStyle: 'italic',
