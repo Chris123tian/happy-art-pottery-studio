@@ -74,9 +74,7 @@ export default function Home() {
   }, [testimonials, approvedReviews]);
 
   const upcomingEvents = useMemo(() => {
-    const now = new Date();
-    return events
-      .filter((e) => new Date(e.date) >= now)
+    return [...events]
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(0, 3);
   }, [events]);
@@ -437,7 +435,7 @@ export default function Home() {
             <View style={styles.statItem}>
               <View style={styles.statRatingRow}>
                 <Text style={styles.statNumber}>4.8</Text>
-                <Star color="#FFFFFF" size={18} fill="#FFFFFF" />
+                <Star color="#FFFFFF" size={16} fill="#FFFFFF" />
               </View>
               <Text style={styles.statLabel}>GOOGLE RATING</Text>
             </View>
@@ -466,14 +464,9 @@ export default function Home() {
         <View style={[styles.section, styles.servicesSection]}>
           <View style={[isExtraLarge && styles.maxWidthContainer]}>
             <Text style={styles.sectionTitle}>Our Services</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.servicesScrollContent}
-              style={styles.servicesScroll}
-            >
+            <View style={[styles.servicesGrid, isLargeScreen && styles.servicesGridLarge]}>
               {services.map((service) => (
-                <View key={service.id} style={[styles.serviceCard, isLargeScreen && { width: 280 }]}>
+                <View key={service.id} style={[styles.serviceCard, styles.serviceCardGrid, isLargeScreen && styles.serviceCardGridLarge]}>
                   <Image
                     source={{ uri: service.image }}
                     style={styles.serviceImage}
@@ -491,7 +484,7 @@ export default function Home() {
                   </View>
                 </View>
               ))}
-            </ScrollView>
+            </View>
           </View>
         </View>
 
@@ -541,15 +534,10 @@ export default function Home() {
                 </TouchableOpacity>
               </>
             ) : (
-              <View style={styles.noEventsContainer}>
-                <Calendar color={theme.colors.primary} size={40} />
-                <Text style={styles.noEventsTitle}>Stay Tuned!</Text>
-                <Text style={styles.noEventsText}>New workshops and events are coming soon. Check back for updates!</Text>
-                <TouchableOpacity style={styles.viewAllEventsButton} onPress={handleEventsPress} activeOpacity={0.8}>
-                  <Text style={styles.viewAllEventsText}>View Events Page</Text>
-                  <ArrowRight color={theme.colors.primary} size={18} />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity style={styles.viewAllEventsButton} onPress={handleEventsPress} activeOpacity={0.8}>
+                <Text style={styles.viewAllEventsText}>View All Events</Text>
+                <ArrowRight color={theme.colors.primary} size={18} />
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -575,9 +563,9 @@ export default function Home() {
                           style={styles.instructorImage}
                           contentFit="cover"
                           cachePolicy="memory-disk"
-                          transition={0}
+                          transition={300}
                           placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
-                          recyclingKey={`instructor-${instructorIndex}`}
+                          key={`instructor-img-${instructorIndex}-${instructors[instructorIndex]?.id}`}
                         />
                       </View>
                       <View style={styles.instructorBadge}>
@@ -1087,8 +1075,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statsBanner: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 22,
+    backgroundColor: '#6B3A2A',
+    paddingVertical: 14,
     paddingHorizontal: 12,
   },
   statsInner: {
@@ -1106,21 +1094,21 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statNumber: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700' as const,
     color: '#FFFFFF',
   },
   statLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600' as const,
     color: 'rgba(255, 255, 255, 0.85)',
-    marginTop: 4,
+    marginTop: 2,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
   statDivider: {
     width: 1,
-    height: 36,
+    height: 28,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
 
@@ -1130,11 +1118,13 @@ const styles = StyleSheet.create({
   servicesSection: {
     backgroundColor: theme.colors.surface,
   },
-  servicesScroll: {
-    marginHorizontal: -theme.spacing.md,
+  servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+    justifyContent: 'space-between',
   },
-  servicesScrollContent: {
-    paddingHorizontal: theme.spacing.md,
+  servicesGridLarge: {
     gap: theme.spacing.md,
   },
   maxWidthContainer: {
@@ -1191,13 +1181,19 @@ const styles = StyleSheet.create({
   serviceCard: {
     backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.lg,
-    width: 240,
     overflow: 'hidden',
     ...theme.shadows.md,
   },
+  serviceCardGrid: {
+    width: '48.5%' as any,
+    marginBottom: theme.spacing.xs,
+  },
+  serviceCardGridLarge: {
+    width: '23.5%' as any,
+  },
   serviceImage: {
     width: '100%',
-    height: 140,
+    height: 110,
     backgroundColor: theme.colors.surface,
   },
   serviceCardContent: {
