@@ -12,7 +12,6 @@ import {
   Alert,
   useWindowDimensions,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, Clock, Users, MapPin, X } from 'lucide-react-native';
@@ -29,6 +28,7 @@ export default function Events() {
   const { width: screenWidth } = useWindowDimensions();
   const isLargeScreen = screenWidth > 768;
   const isMediumScreen = screenWidth > 480;
+  const isSmallScreen = screenWidth <= 380;
   const [bookingModalVisible, setBookingModalVisible] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [bookingForm, setBookingForm] = useState({
@@ -152,9 +152,10 @@ Please confirm my booking. Thank you!`;
               <View key={event.id} style={[styles.eventCard, isMediumScreen && styles.eventCardMedium, isLargeScreen && styles.eventCardLarge]}>
                 <OptimizedImage
                   uri={event.image}
-                  style={styles.eventImage}
+                  style={[styles.eventImage, isSmallScreen && { height: 200 }, isLargeScreen && { height: 300 }]}
                   contentFit="cover"
                   priority="normal"
+                  targetWidth={isLargeScreen ? 600 : 480}
                   recyclingKey={`event-${event.id}`}
                 />
                 <View style={styles.eventContent}>

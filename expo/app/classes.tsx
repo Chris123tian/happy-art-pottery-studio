@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,6 +17,7 @@ export default function Classes() {
   const { width: screenWidth } = useWindowDimensions();
   const isLargeScreen = screenWidth > 768;
   const isMediumScreen = screenWidth > 480;
+  const isSmallScreen = screenWidth <= 380;
   const [filter, setFilter] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
 
   const filteredClasses = useMemo(
@@ -72,9 +72,10 @@ export default function Classes() {
               {classItem.image && (
                 <OptimizedImage
                   uri={classItem.image}
-                  style={[styles.classImage, !isMediumScreen && { height: 180 }]}
+                  style={[styles.classImage, !isMediumScreen && { height: 180 }, isSmallScreen && { height: 150 }, isLargeScreen && { height: 180 }]}
                   contentFit="cover"
                   priority="normal"
+                  targetWidth={isLargeScreen ? 400 : 320}
                   recyclingKey={`class-${classItem.id}`}
                 />
               )}

@@ -15,7 +15,7 @@ import {
   useWindowDimensions,
   FlatList,
 } from 'react-native';
-import { Image, ImageContentFit, ImagePrefetch } from 'expo-image';
+import { Image } from 'expo-image';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -129,7 +129,7 @@ export default function Home() {
 
   useEffect(() => {
     if (heroImages.length > 0) {
-      heroImages.forEach((url) => {
+      heroImages.slice(0, 3).forEach((url) => {
         if (url) {
           Image.prefetch(url).catch(() => {});
         }
@@ -138,7 +138,10 @@ export default function Home() {
     if (displaySettings.aboutImage) {
       Image.prefetch(displaySettings.aboutImage).catch(() => {});
     }
-  }, [heroImages, displaySettings.aboutImage]);
+    services.slice(0, 4).forEach((s) => {
+      if (s.image) Image.prefetch(s.image).catch(() => {});
+    });
+  }, [heroImages, displaySettings.aboutImage, services]);
 
   useEffect(() => {
     if (heroImages.length <= 1) return;
@@ -388,8 +391,10 @@ export default function Home() {
 
   const isMediumScreen = screenWidth > 480;
   const isExtraLarge = screenWidth > 1200;
+  const isSmallScreen = screenWidth <= 380;
   const currentHeroIndex = activeLayer === 'A' ? heroIndexA : heroIndexB;
-  const heroHeight = isExtraLarge ? 500 : isLargeScreen ? 420 : isMediumScreen ? 340 : 280;
+  const heroHeight = isExtraLarge ? 520 : isLargeScreen ? 440 : isMediumScreen ? 360 : isSmallScreen ? 240 : 300;
+  const heroTargetWidth = isExtraLarge ? 1920 : isLargeScreen ? 1280 : isMediumScreen ? 960 : 640;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']} testID="home-screen">
@@ -407,6 +412,7 @@ export default function Home() {
                     style={styles.heroImage}
                     contentFit="cover"
                     priority="high"
+                    targetWidth={heroTargetWidth}
                     recyclingKey={`hero-a-${heroIndexA}`}
                   />
                 </Animated.View>
@@ -416,6 +422,7 @@ export default function Home() {
                     style={styles.heroImage}
                     contentFit="cover"
                     priority="high"
+                    targetWidth={heroTargetWidth}
                     recyclingKey={`hero-b-${heroIndexB}`}
                   />
                 </Animated.View>
@@ -482,9 +489,10 @@ export default function Home() {
           <View style={[styles.aboutContent, isLargeScreen && styles.aboutContentLarge]}>
             <OptimizedImage
               uri={displaySettings.aboutImage}
-              style={[styles.aboutImage, isLargeScreen && styles.aboutImageLarge]}
+              style={[styles.aboutImage, isLargeScreen && styles.aboutImageLarge, isExtraLarge && styles.aboutImageExtraLarge]}
               contentFit="cover"
               priority="high"
+              targetWidth={isLargeScreen ? 640 : 480}
             />
             <View style={[styles.aboutText, isLargeScreen && styles.aboutTextLarge]}>
               <Text style={styles.paragraph}>{displaySettings.description}</Text>
@@ -498,12 +506,13 @@ export default function Home() {
             <Text style={styles.sectionTitle}>Our Services</Text>
             <View style={[styles.servicesGrid, isLargeScreen && styles.servicesGridLarge]}>
               {services.map((service) => (
-                <View key={service.id} style={[styles.serviceCard, styles.serviceCardGrid, isLargeScreen && styles.serviceCardGridLarge]}>
+                <View key={service.id} style={[styles.serviceCard, styles.serviceCardGrid, isMediumScreen && !isLargeScreen && styles.serviceCardGridMedium, isLargeScreen && styles.serviceCardGridLarge]}>
                   <OptimizedImage
                     uri={service.image}
-                    style={styles.serviceImage}
+                    style={[styles.serviceImage, isLargeScreen && styles.serviceImageLarge]}
                     contentFit="cover"
                     priority="normal"
+                    targetWidth={isLargeScreen ? 400 : 300}
                     recyclingKey={`service-${service.id}`}
                   />
                   <View style={styles.serviceCardContent}>
@@ -532,9 +541,10 @@ export default function Home() {
                     <View key={event.id} style={[styles.eventHomeCard, isLargeScreen && { flex: 1 }]}>
                       <OptimizedImage
                         uri={event.image}
-                        style={styles.eventHomeImage}
+                        style={[styles.eventHomeImage, isSmallScreen && { height: 160 }]}
                         contentFit="cover"
                         priority="normal"
+                        targetWidth={isLargeScreen ? 500 : 400}
                         recyclingKey={`event-home-${event.id}`}
                       />
                       <View style={styles.eventHomeContent}>
@@ -591,6 +601,7 @@ export default function Home() {
                           style={styles.instructorImage}
                           contentFit="cover"
                           priority="normal"
+                          targetWidth={320}
                           recyclingKey={`instructor-img-${instructorIndex}-${instructors[instructorIndex]?.id}`}
                         />
                       </View>
@@ -660,6 +671,7 @@ export default function Home() {
                     style={styles.galleryGridImage}
                     contentFit="cover"
                     priority="low"
+                    targetWidth={isLargeScreen ? 400 : 300}
                     recyclingKey={`gallery-${image.id}`}
                   />
                 </TouchableOpacity>
@@ -1229,13 +1241,16 @@ const styles = StyleSheet.create({
   },
   aboutImage: {
     width: '100%',
-    height: 220,
+    height: 240,
     borderRadius: theme.borderRadius.lg,
     backgroundColor: theme.colors.surface,
   },
   aboutImageLarge: {
     width: '45%',
-    height: 320,
+    height: 340,
+  },
+  aboutImageExtraLarge: {
+    height: 400,
   },
   aboutText: {
     flex: 1,
@@ -1257,16 +1272,22 @@ const styles = StyleSheet.create({
     ...theme.shadows.md,
   },
   serviceCardGrid: {
-    width: '48.5%' as any,
-    marginBottom: theme.spacing.xs,
+    width: '48%' as any,
+    marginBottom: theme.spacing.sm,
+  },
+  serviceCardGridMedium: {
+    width: '48%' as any,
   },
   serviceCardGridLarge: {
     width: '23.5%' as any,
   },
   serviceImage: {
     width: '100%',
-    height: 120,
+    height: 130,
     backgroundColor: theme.colors.surface,
+  },
+  serviceImageLarge: {
+    height: 160,
   },
   serviceCardContent: {
     padding: theme.spacing.md,
@@ -1316,7 +1337,7 @@ const styles = StyleSheet.create({
   },
   eventHomeImage: {
     width: '100%',
-    height: 220,
+    height: 200,
     backgroundColor: theme.colors.surface,
   },
   eventHomeContent: {

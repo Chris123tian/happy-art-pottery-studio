@@ -54,6 +54,7 @@ export default function Gallery() {
                 style={styles.image}
                 contentFit="cover"
                 priority="normal"
+                targetWidth={isLargeScreen ? 400 : 300}
                 recyclingKey={`gallery-${image.id}`}
               />
             </TouchableOpacity>
