@@ -18,7 +18,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles, BookOpen, ArrowRight, X, Send, Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles, BookOpen, ArrowRight, X, Send, Calendar, ChevronLeft, ChevronRight, Store, PartyPopper, School } from 'lucide-react-native';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
@@ -26,7 +26,7 @@ import { theme } from '@/constants/theme';
 import { seedSettings, seedServices } from '@/services/seedData';
 import { useData } from '@/contexts/DataContext';
 import { database } from '@/services/database';
-import { Review, ServiceItem } from '@/types';
+import { ServiceItem } from '@/types';
 
 interface BlogPost {
   id: string;
@@ -244,12 +244,31 @@ export default function Home() {
   }, [router]);
 
   const formatDate = useCallback((dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    try {
+      if (!dateString) return 'Date TBD';
+      const parts = dateString.split('-');
+      if (parts.length === 3) {
+        const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          });
+        }
+      }
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+      }
+      return dateString;
+    } catch {
+      return dateString || 'Date TBD';
+    }
   }, []);
 
   const stripHTML = useCallback((html: string) => {
@@ -418,7 +437,7 @@ export default function Home() {
         <View style={styles.statsBanner}>
           <View style={[styles.statsInner, isExtraLarge && { maxWidth: 1000, alignSelf: 'center' as const, width: '100%' as any }]}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>20+</Text>
+              <Text style={styles.statNumber}>39+</Text>
               <Text style={styles.statLabel}>YEARS OF CRAFT</Text>
             </View>
             <View style={styles.statDivider} />
@@ -682,12 +701,60 @@ export default function Home() {
             <BookOpen color={theme.colors.primary} size={36} />
             <Text style={styles.classesCtaTitle}>Explore Our Classes</Text>
             <Text style={styles.classesCtaText}>
-              From beginner wheel throwing to advanced pot painting, find the perfect class for you.
+              From beginner wheel throwing and pot painting to advanced wheel throwing and pot painting, find the perfect class for you.
             </Text>
             <TouchableOpacity style={styles.classesCtaButton} onPress={handleClassesPress} activeOpacity={0.8}>
               <Text style={styles.classesCtaButtonText}>View All Classes</Text>
               <ArrowRight color={theme.colors.white} size={18} />
             </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* OFFERINGS - Ceramics Sales, Birthday Parties, Schools & Corporates */}
+        <View style={[styles.section, styles.offeringsSection]}>
+          <View style={[isExtraLarge && styles.maxWidthContainer]}>
+            <Text style={styles.sectionTitle}>More at Happy Art</Text>
+            <View style={[styles.offeringsGrid, isLargeScreen && styles.offeringsGridLarge]}>
+              <View style={styles.offeringCard}>
+                <View style={[styles.offeringIconWrap, { backgroundColor: '#FFF5EE' }]}>
+                  <Store color="#C4704B" size={36} />
+                </View>
+                <Text style={styles.offeringLabel}>SHOP</Text>
+                <Text style={styles.offeringTitle}>Ceramics Sales</Text>
+                <Text style={styles.offeringDesc}>
+                  Browse our collection of beautiful handmade pots and ceramic pieces — perfect gifts or home décor.
+                </Text>
+                <TouchableOpacity onPress={handleBookingPress}>
+                  <Text style={styles.offeringLink}>Visit the studio</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.offeringCard}>
+                <View style={[styles.offeringIconWrap, { backgroundColor: '#FFF0F5' }]}>
+                  <PartyPopper color="#C4704B" size={36} />
+                </View>
+                <Text style={styles.offeringLabel}>PRIVATE HIRE</Text>
+                <Text style={styles.offeringTitle}>Birthday Parties</Text>
+                <Text style={styles.offeringDesc}>
+                  Host your birthday at Happy Art! Every guest makes a piece to take home as a unique souvenir. 1–100 guests.
+                </Text>
+                <TouchableOpacity onPress={handleBookingPress}>
+                  <Text style={styles.offeringLink}>Group rates apply</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.offeringCard}>
+                <View style={[styles.offeringIconWrap, { backgroundColor: '#F0F8FF' }]}>
+                  <School color="#C4704B" size={36} />
+                </View>
+                <Text style={styles.offeringLabel}>GROUPS</Text>
+                <Text style={styles.offeringTitle}>Schools & Corporates</Text>
+                <Text style={styles.offeringDesc}>
+                  Team-building, school trips, and organisation visits. We accommodate groups of any size with advance booking.
+                </Text>
+                <TouchableOpacity onPress={handleBookingPress}>
+                  <Text style={styles.offeringLink}>Quote on request</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -1193,7 +1260,7 @@ const styles = StyleSheet.create({
   },
   serviceImage: {
     width: '100%',
-    height: 110,
+    height: 140,
     backgroundColor: theme.colors.surface,
   },
   serviceCardContent: {
@@ -1244,7 +1311,7 @@ const styles = StyleSheet.create({
   },
   eventHomeImage: {
     width: '100%',
-    height: 160,
+    height: 200,
     backgroundColor: theme.colors.surface,
   },
   eventHomeContent: {
@@ -1879,5 +1946,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700' as const,
     color: theme.colors.white,
+  },
+  offeringsSection: {
+    backgroundColor: '#FBF8F5',
+  },
+  offeringsGrid: {
+    flexDirection: 'column' as const,
+    gap: theme.spacing.md,
+  },
+  offeringsGridLarge: {
+    flexDirection: 'row' as const,
+  },
+  offeringCard: {
+    flex: 1,
+    backgroundColor: theme.colors.white,
+    borderRadius: 16,
+    padding: theme.spacing.lg,
+    alignItems: 'center' as const,
+    ...theme.shadows.md,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+  },
+  offeringIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginBottom: theme.spacing.md,
+  },
+  offeringLabel: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#C4704B',
+    letterSpacing: 1.5,
+    marginBottom: 4,
+  },
+  offeringTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: theme.colors.secondary,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center' as const,
+  },
+  offeringDesc: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: theme.colors.textLight,
+    textAlign: 'center' as const,
+    marginBottom: theme.spacing.md,
+  },
+  offeringLink: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#C4704B',
+    textDecorationLine: 'underline' as const,
   },
 });

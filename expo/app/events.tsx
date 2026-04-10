@@ -44,13 +44,33 @@ export default function Events() {
   );
 
   const formatDate = useCallback((dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    try {
+      if (!dateString) return 'Date TBD';
+      const parts = dateString.split('-');
+      if (parts.length === 3) {
+        const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+        }
+      }
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+      }
+      return dateString;
+    } catch {
+      return dateString || 'Date TBD';
+    }
   }, []);
 
   const openBookingModal = useCallback((event: Event) => {
@@ -327,7 +347,7 @@ const styles = StyleSheet.create({
   },
   eventImage: {
     width: '100%',
-    height: 200,
+    height: 250,
   },
   eventContent: {
     padding: theme.spacing.md,

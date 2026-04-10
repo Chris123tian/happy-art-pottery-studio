@@ -136,7 +136,9 @@ export default function Booking() {
         formattedNumber = '233' + formattedNumber.substring(1);
       }
 
-      const whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`;
+      const whatsappUrl = Platform.OS === 'web'
+        ? `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`
+        : `whatsapp://send?phone=${formattedNumber}&text=${encodeURIComponent(message)}`;
 
       await Linking.openURL(whatsappUrl);
 
