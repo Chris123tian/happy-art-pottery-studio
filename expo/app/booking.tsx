@@ -131,14 +131,9 @@ export default function Booking() {
     try {
       const message = `Hello! I would like to book a pottery class at Happy Art.\n\nName: ${name}\nPhone: ${phone}\nNumber of Persons: ${numberOfPersons}\nDate: ${formattedDate}\nDay: ${formattedDay}\nTime: ${time}\nClass Type: ${classType}\n\nPlease confirm my booking. Thank you!`;
 
-      let formattedNumber = '0244311110'.replace(/[^0-9]/g, '');
-      if (formattedNumber.startsWith('0')) {
-        formattedNumber = '233' + formattedNumber.substring(1);
-      }
+      const formattedNumber = '233244311110';
 
-      const whatsappUrl = Platform.OS === 'web'
-        ? `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`
-        : `whatsapp://send?phone=${formattedNumber}&text=${encodeURIComponent(message)}`;
+      const whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`;
 
       await Linking.openURL(whatsappUrl);
 

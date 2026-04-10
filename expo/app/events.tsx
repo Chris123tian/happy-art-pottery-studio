@@ -43,33 +43,36 @@ export default function Events() {
     [rawEvents]
   );
 
-  const formatDate = useCallback((dateString: string) => {
+  const formatDate = useCallback((dateString: string | any) => {
     try {
       if (!dateString) return 'Date TBD';
-      const parts = dateString.split('-');
+      if (typeof dateString === 'object' && dateString.seconds) {
+        const d = new Date(dateString.seconds * 1000);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+      }
+      if (typeof dateString === 'object' && dateString.toDate) {
+        const d = dateString.toDate();
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+      }
+      const str = String(dateString);
+      const parts = str.split('-');
       if (parts.length === 3) {
         const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         if (!isNaN(date.getTime())) {
-          return date.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          });
+          return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         }
       }
-      const date = new Date(dateString);
+      const date = new Date(str);
       if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
+        return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       }
-      return dateString;
+      return str;
     } catch {
-      return dateString || 'Date TBD';
+      return String(dateString) || 'Date TBD';
     }
   }, []);
 
@@ -109,15 +112,9 @@ Number of Persons: ${bookingForm.numberOfPersons}
 
 Please confirm my booking. Thank you!`;
 
-    let formattedNumber = '0244311110'.replace(/[^0-9]/g, '');
-    if (formattedNumber.startsWith('0')) {
-      formattedNumber = '233' + formattedNumber.substring(1);
-    }
+    const formattedNumber = '233244311110';
 
-    const whatsappUrl =
-      Platform.OS === 'web'
-        ? `https://web.whatsapp.com/send?phone=${formattedNumber}&text=${encodeURIComponent(message)}`
-        : `whatsapp://send?phone=${formattedNumber}&text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodeURIComponent(message)}`;
 
     Linking.openURL(whatsappUrl).catch(() => {
       if (Platform.OS === 'web') {
@@ -347,7 +344,7 @@ const styles = StyleSheet.create({
   },
   eventImage: {
     width: '100%',
-    height: 250,
+    height: 280,
   },
   eventContent: {
     padding: theme.spacing.md,

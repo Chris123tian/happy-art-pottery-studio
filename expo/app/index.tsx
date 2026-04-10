@@ -15,7 +15,7 @@ import {
   useWindowDimensions,
   FlatList,
 } from 'react-native';
-import { Image } from 'expo-image';
+import { Image, ImageContentFit } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles, BookOpen, ArrowRight, X, Send, Calendar, ChevronLeft, ChevronRight, Store, PartyPopper, School } from 'lucide-react-native';
@@ -243,31 +243,36 @@ export default function Home() {
     router.push('/events' as any);
   }, [router]);
 
-  const formatDate = useCallback((dateString: string) => {
+  const formatDate = useCallback((dateString: string | any) => {
     try {
       if (!dateString) return 'Date TBD';
-      const parts = dateString.split('-');
+      if (typeof dateString === 'object' && dateString.seconds) {
+        const d = new Date(dateString.seconds * 1000);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+      }
+      if (typeof dateString === 'object' && dateString.toDate) {
+        const d = dateString.toDate();
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+      }
+      const str = String(dateString);
+      const parts = str.split('-');
       if (parts.length === 3) {
         const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         if (!isNaN(date.getTime())) {
-          return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-          });
+          return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
         }
       }
-      const date = new Date(dateString);
+      const date = new Date(str);
       if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        });
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
       }
-      return dateString;
+      return str;
     } catch {
-      return dateString || 'Date TBD';
+      return String(dateString) || 'Date TBD';
     }
   }, []);
 
@@ -388,6 +393,7 @@ export default function Home() {
                     style={styles.heroImage}
                     contentFit="cover"
                     cachePolicy="memory-disk"
+                    priority="high"
                     transition={0}
                     placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                     recyclingKey={`hero-a-${heroIndexA}`}
@@ -399,6 +405,7 @@ export default function Home() {
                     style={styles.heroImage}
                     contentFit="cover"
                     cachePolicy="memory-disk"
+                    priority="high"
                     transition={0}
                     placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                     recyclingKey={`hero-b-${heroIndexB}`}
@@ -470,7 +477,8 @@ export default function Home() {
               style={[styles.aboutImage, isLargeScreen && styles.aboutImageLarge]}
               contentFit="cover"
               cachePolicy="memory-disk"
-              transition={200}
+              priority="high"
+              transition={100}
               placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
             />
             <View style={[styles.aboutText, isLargeScreen && styles.aboutTextLarge]}>
@@ -491,7 +499,8 @@ export default function Home() {
                     style={styles.serviceImage}
                     contentFit="cover"
                     cachePolicy="memory-disk"
-                    transition={100}
+                    priority="normal"
+                    transition={50}
                     placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                     recyclingKey={`service-${service.id}`}
                   />
@@ -524,7 +533,8 @@ export default function Home() {
                         style={styles.eventHomeImage}
                         contentFit="cover"
                         cachePolicy="memory-disk"
-                        transition={100}
+                        priority="normal"
+                        transition={50}
                         placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                         recyclingKey={`event-home-${event.id}`}
                       />
@@ -582,7 +592,8 @@ export default function Home() {
                           style={styles.instructorImage}
                           contentFit="cover"
                           cachePolicy="memory-disk"
-                          transition={300}
+                          priority="normal"
+                          transition={150}
                           placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                           key={`instructor-img-${instructorIndex}-${instructors[instructorIndex]?.id}`}
                         />
@@ -653,7 +664,8 @@ export default function Home() {
                     style={styles.galleryGridImage}
                     contentFit="cover"
                     cachePolicy="memory-disk"
-                    transition={200}
+                    priority="low"
+                    transition={50}
                     placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                     recyclingKey={`gallery-${image.id}`}
                   />
@@ -1260,7 +1272,7 @@ const styles = StyleSheet.create({
   },
   serviceImage: {
     width: '100%',
-    height: 140,
+    height: 120,
     backgroundColor: theme.colors.surface,
   },
   serviceCardContent: {
@@ -1311,7 +1323,7 @@ const styles = StyleSheet.create({
   },
   eventHomeImage: {
     width: '100%',
-    height: 200,
+    height: 220,
     backgroundColor: theme.colors.surface,
   },
   eventHomeContent: {
