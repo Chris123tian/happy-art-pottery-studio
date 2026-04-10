@@ -15,7 +15,8 @@ import {
   useWindowDimensions,
   FlatList,
 } from 'react-native';
-import { Image, ImageContentFit } from 'expo-image';
+import { Image, ImageContentFit, ImagePrefetch } from 'expo-image';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles, BookOpen, ArrowRight, X, Send, Calendar, ChevronLeft, ChevronRight, Store, PartyPopper, School } from 'lucide-react-native';
@@ -125,6 +126,19 @@ export default function Home() {
   const activeLayerRef = useRef<'A' | 'B'>('A');
   const heroIndexARef = useRef(0);
   const heroIndexBRef = useRef(1);
+
+  useEffect(() => {
+    if (heroImages.length > 0) {
+      heroImages.forEach((url) => {
+        if (url) {
+          Image.prefetch(url).catch(() => {});
+        }
+      });
+    }
+    if (displaySettings.aboutImage) {
+      Image.prefetch(displaySettings.aboutImage).catch(() => {});
+    }
+  }, [heroImages, displaySettings.aboutImage]);
 
   useEffect(() => {
     if (heroImages.length <= 1) return;
@@ -388,26 +402,20 @@ export default function Home() {
             {heroImages.length > 0 ? (
               <>
                 <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityA }]}>
-                  <Image
-                    source={{ uri: heroImages[heroIndexA] }}
+                  <OptimizedImage
+                    uri={heroImages[heroIndexA]}
                     style={styles.heroImage}
                     contentFit="cover"
-                    cachePolicy="memory-disk"
                     priority="high"
-                    transition={0}
-                    placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                     recyclingKey={`hero-a-${heroIndexA}`}
                   />
                 </Animated.View>
                 <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityB }]}>
-                  <Image
-                    source={{ uri: heroImages[heroIndexB] }}
+                  <OptimizedImage
+                    uri={heroImages[heroIndexB]}
                     style={styles.heroImage}
                     contentFit="cover"
-                    cachePolicy="memory-disk"
                     priority="high"
-                    transition={0}
-                    placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                     recyclingKey={`hero-b-${heroIndexB}`}
                   />
                 </Animated.View>
@@ -472,14 +480,11 @@ export default function Home() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About {displaySettings.studioName}</Text>
           <View style={[styles.aboutContent, isLargeScreen && styles.aboutContentLarge]}>
-            <Image
-              source={{ uri: displaySettings.aboutImage }}
+            <OptimizedImage
+              uri={displaySettings.aboutImage}
               style={[styles.aboutImage, isLargeScreen && styles.aboutImageLarge]}
               contentFit="cover"
-              cachePolicy="memory-disk"
               priority="high"
-              transition={100}
-              placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
             />
             <View style={[styles.aboutText, isLargeScreen && styles.aboutTextLarge]}>
               <Text style={styles.paragraph}>{displaySettings.description}</Text>
@@ -494,14 +499,11 @@ export default function Home() {
             <View style={[styles.servicesGrid, isLargeScreen && styles.servicesGridLarge]}>
               {services.map((service) => (
                 <View key={service.id} style={[styles.serviceCard, styles.serviceCardGrid, isLargeScreen && styles.serviceCardGridLarge]}>
-                  <Image
-                    source={{ uri: service.image }}
+                  <OptimizedImage
+                    uri={service.image}
                     style={styles.serviceImage}
                     contentFit="cover"
-                    cachePolicy="memory-disk"
                     priority="normal"
-                    transition={50}
-                    placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                     recyclingKey={`service-${service.id}`}
                   />
                   <View style={styles.serviceCardContent}>
@@ -528,14 +530,11 @@ export default function Home() {
                 <View style={[styles.eventsGrid, isLargeScreen && { flexDirection: 'row' as const }]}>
                   {upcomingEvents.map((event) => (
                     <View key={event.id} style={[styles.eventHomeCard, isLargeScreen && { flex: 1 }]}>
-                      <Image
-                        source={{ uri: event.image }}
+                      <OptimizedImage
+                        uri={event.image}
                         style={styles.eventHomeImage}
                         contentFit="cover"
-                        cachePolicy="memory-disk"
                         priority="normal"
-                        transition={50}
-                        placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                         recyclingKey={`event-home-${event.id}`}
                       />
                       <View style={styles.eventHomeContent}>
@@ -587,15 +586,12 @@ export default function Home() {
                 <Animated.View style={{ opacity: instructorOpacity }}>
                     <View style={styles.instructorImageContainer}>
                       <View style={styles.instructorImageBorder}>
-                        <Image
-                          source={{ uri: instructors[instructorIndex]?.image }}
+                        <OptimizedImage
+                          uri={instructors[instructorIndex]?.image}
                           style={styles.instructorImage}
                           contentFit="cover"
-                          cachePolicy="memory-disk"
                           priority="normal"
-                          transition={150}
-                          placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
-                          key={`instructor-img-${instructorIndex}-${instructors[instructorIndex]?.id}`}
+                          recyclingKey={`instructor-img-${instructorIndex}-${instructors[instructorIndex]?.id}`}
                         />
                       </View>
                       <View style={styles.instructorBadge}>
@@ -659,14 +655,11 @@ export default function Home() {
                   onPress={handleGalleryPress}
                   style={[styles.galleryGridItem, isLargeScreen && { width: '31%' as any, height: 200 }]}
                 >
-                  <Image
-                    source={{ uri: image.source }}
+                  <OptimizedImage
+                    uri={image.source}
                     style={styles.galleryGridImage}
                     contentFit="cover"
-                    cachePolicy="memory-disk"
                     priority="low"
-                    transition={50}
-                    placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
                     recyclingKey={`gallery-${image.id}`}
                   />
                 </TouchableOpacity>

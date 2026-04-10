@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { Header } from '@/components/Header';
@@ -48,12 +49,11 @@ export default function Gallery() {
               style={[styles.imageItem, isLargeScreen && styles.imageItemLarge]}
               onPress={() => handleImagePress(image)}
             >
-              <Image
-                source={{ uri: image.source }}
+              <OptimizedImage
+                uri={image.source}
                 style={styles.image}
                 contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={200}
+                priority="normal"
                 recyclingKey={`gallery-${image.id}`}
               />
             </TouchableOpacity>
@@ -80,7 +80,8 @@ export default function Gallery() {
               style={styles.modalImage}
               contentFit="contain"
               cachePolicy="memory-disk"
-              transition={200}
+              transition={150}
+              placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
             />
           )}
         </View>

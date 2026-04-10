@@ -98,4 +98,12 @@ body {
   body {
     background-color: #fff;
   }
-}`;
+}
+img {
+  content-visibility: auto;
+  decoding: async;
+}
+img[loading="lazy"] {
+  loading: lazy;
+}
+`;

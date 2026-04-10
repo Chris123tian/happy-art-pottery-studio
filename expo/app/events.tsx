@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, Clock, Users, MapPin, X } from 'lucide-react-native';
 import { Header } from '@/components/Header';
@@ -149,12 +150,11 @@ Please confirm my booking. Thank you!`;
           ) : (
             events.map((event) => (
               <View key={event.id} style={[styles.eventCard, isMediumScreen && styles.eventCardMedium, isLargeScreen && styles.eventCardLarge]}>
-                <Image
-                  source={{ uri: event.image }}
+                <OptimizedImage
+                  uri={event.image}
                   style={styles.eventImage}
                   contentFit="cover"
-                  cachePolicy="memory-disk"
-                  transition={200}
+                  priority="normal"
                   recyclingKey={`event-${event.id}`}
                 />
                 <View style={styles.eventContent}>

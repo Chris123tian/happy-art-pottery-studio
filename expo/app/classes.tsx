@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Header } from '@/components/Header';
@@ -69,13 +70,11 @@ export default function Classes() {
               ]}
             >
               {classItem.image && (
-                <Image
-                  source={{ uri: classItem.image }}
+                <OptimizedImage
+                  uri={classItem.image}
                   style={[styles.classImage, !isMediumScreen && { height: 180 }]}
                   contentFit="cover"
-                  cachePolicy="memory-disk"
-                  transition={100}
-                  placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
+                  priority="normal"
                   recyclingKey={`class-${classItem.id}`}
                 />
               )}
