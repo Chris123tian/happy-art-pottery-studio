@@ -128,19 +128,25 @@ export default function Home() {
   const heroIndexBRef = useRef(1);
 
   useEffect(() => {
-    if (heroImages.length > 0) {
-      heroImages.slice(0, 3).forEach((url) => {
-        if (url) {
-          Image.prefetch(url).catch(() => {});
-        }
+    const prefetchAll = async () => {
+      const urls: string[] = [];
+      if (heroImages.length > 0) {
+        heroImages.forEach((url) => {
+          if (url) urls.push(url);
+        });
+      }
+      if (displaySettings.aboutImage) {
+        urls.push(displaySettings.aboutImage);
+      }
+      services.forEach((s) => {
+        if (s.image) urls.push(s.image);
       });
-    }
-    if (displaySettings.aboutImage) {
-      Image.prefetch(displaySettings.aboutImage).catch(() => {});
-    }
-    services.slice(0, 4).forEach((s) => {
-      if (s.image) Image.prefetch(s.image).catch(() => {});
-    });
+      if (urls.length > 0) {
+        await Promise.allSettled(urls.map((url) => Image.prefetch(url)));
+        console.log('[Home] Prefetched', urls.length, 'images');
+      }
+    };
+    prefetchAll();
   }, [heroImages, displaySettings.aboutImage, services]);
 
   useEffect(() => {

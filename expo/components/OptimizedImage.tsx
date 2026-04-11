@@ -62,6 +62,8 @@ function OptimizedImageComponent({
   const pixelRatio = Platform.OS === 'web' ? 1 : 2;
   const optimizedUri = getOptimizedFirebaseUrl(uri, displayWidth ? Math.round(displayWidth * pixelRatio) : undefined);
 
+  const isHighPriority = priority === 'high';
+
   return (
     <View style={[style, { backgroundColor: placeholderColor, overflow: 'hidden' as const }, aspectRatio ? { aspectRatio } : undefined]}>
       <Image
@@ -70,8 +72,8 @@ function OptimizedImageComponent({
         contentFit={contentFit}
         cachePolicy="memory-disk"
         priority={priority}
-        transition={200}
-        placeholder={{ blurhash }}
+        transition={isHighPriority ? 0 : 150}
+        placeholder={isHighPriority ? undefined : { blurhash }}
         recyclingKey={recyclingKey}
         onError={handleError}
       />
