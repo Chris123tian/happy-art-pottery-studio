@@ -8,7 +8,6 @@ import {
   Modal,
   useWindowDimensions,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
@@ -76,13 +75,11 @@ export default function Gallery() {
             <X color={theme.colors.white} size={32} />
           </TouchableOpacity>
           {selectedImage && (
-            <Image
-              source={{ uri: selectedImage.source }}
+            <OptimizedImage
+              uri={selectedImage.source}
               style={styles.modalImage}
               contentFit="contain"
-              cachePolicy="memory-disk"
-              transition={150}
-              placeholder={{ blurhash: 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH' }}
+              priority="high"
             />
           )}
         </View>

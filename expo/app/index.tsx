@@ -128,6 +128,7 @@ export default function Home() {
   const heroIndexBRef = useRef(1);
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     const prefetchAll = async () => {
       const urls: string[] = [];
       if (heroImages.length > 0) {
@@ -142,8 +143,12 @@ export default function Home() {
         if (s.image) urls.push(s.image);
       });
       if (urls.length > 0) {
-        await Promise.allSettled(urls.map((url) => Image.prefetch(url)));
-        console.log('[Home] Prefetched', urls.length, 'images');
+        try {
+          await Promise.allSettled(urls.map((url) => Image.prefetch(url)));
+          console.log('[Home] Prefetched', urls.length, 'images');
+        } catch (e) {
+          console.log('[Home] Prefetch skipped:', e);
+        }
       }
     };
     prefetchAll();

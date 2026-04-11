@@ -1,5 +1,5 @@
 import React, { useState, useCallback, memo } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, Image as RNImage } from 'react-native';
 import { Image, ImageContentFit } from 'expo-image';
 
 interface OptimizedImageProps {
@@ -16,17 +16,6 @@ interface OptimizedImageProps {
 
 const DEFAULT_BLURHASH = 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH';
 
-function getOptimizedFirebaseUrl(uri: string, width?: number): string {
-  if (!uri) return '';
-
-  if (uri.includes('firebasestorage.googleapis.com') && width && width > 0) {
-    const separator = uri.includes('?') ? '&' : '?';
-    return `${uri}${separator}w=${width}&q=75`;
-  }
-
-  return uri;
-}
-
 function OptimizedImageComponent({
   uri,
   style,
@@ -38,14 +27,20 @@ function OptimizedImageComponent({
   aspectRatio,
   targetWidth,
 }: OptimizedImageProps) {
-  const [hasError, setHasError] = useState(false);
+  const [expoImageFailed, setExpoImageFailed] = useState(false);
+  const [webImageFailed, setWebImageFailed] = useState(false);
 
-  const handleError = useCallback(() => {
-    console.log('[OptimizedImage] Failed to load:', uri?.substring(0, 80));
-    setHasError(true);
+  const handleExpoError = useCallback(() => {
+    console.log('[OptimizedImage] expo-image failed, trying web fallback:', uri?.substring(0, 80));
+    setExpoImageFailed(true);
   }, [uri]);
 
-  if (!uri || hasError) {
+  const handleWebError = useCallback(() => {
+    console.log('[OptimizedImage] Web fallback also failed:', uri?.substring(0, 80));
+    setWebImageFailed(true);
+  }, [uri]);
+
+  if (!uri || (expoImageFailed && webImageFailed)) {
     return (
       <View
         style={[
@@ -57,25 +52,40 @@ function OptimizedImageComponent({
     );
   }
 
-  const flatStyle = StyleSheet.flatten(style);
-  const displayWidth = targetWidth || (typeof flatStyle?.width === 'number' ? flatStyle.width : undefined);
-  const pixelRatio = Platform.OS === 'web' ? 1 : 2;
-  const optimizedUri = getOptimizedFirebaseUrl(uri, displayWidth ? Math.round(displayWidth * pixelRatio) : undefined);
+  const containerStyle = [
+    style,
+    { backgroundColor: placeholderColor, overflow: 'hidden' as const },
+    aspectRatio ? { aspectRatio } : undefined,
+  ];
+
+  if (Platform.OS === 'web' && expoImageFailed) {
+    const flatStyle = StyleSheet.flatten(style);
+    const resizeMode = contentFit === 'cover' ? 'cover' : contentFit === 'contain' ? 'contain' : 'cover';
+    return (
+      <View style={containerStyle}>
+        <RNImage
+          source={{ uri }}
+          style={[innerStyles.fill, { resizeMode }] as any}
+          onError={handleWebError}
+        />
+      </View>
+    );
+  }
 
   const isHighPriority = priority === 'high';
 
   return (
-    <View style={[style, { backgroundColor: placeholderColor, overflow: 'hidden' as const }, aspectRatio ? { aspectRatio } : undefined]}>
+    <View style={containerStyle}>
       <Image
-        source={{ uri: optimizedUri }}
+        source={{ uri }}
         style={innerStyles.fill}
         contentFit={contentFit}
-        cachePolicy="memory-disk"
+        cachePolicy={Platform.OS === 'web' ? 'memory' : 'memory-disk'}
         priority={priority}
-        transition={isHighPriority ? 0 : 150}
+        transition={isHighPriority ? 0 : 200}
         placeholder={isHighPriority ? undefined : { blurhash }}
         recyclingKey={recyclingKey}
-        onError={handleError}
+        onError={handleExpoError}
       />
     </View>
   );
