@@ -206,8 +206,13 @@ class Database {
       
       const listenerKey = table;
       if (this.activeListeners.has(listenerKey)) {
-        console.log(`[DB Subscribe] ${table} - Listener already exists, returning existing cleanup`);
-        return this.activeListeners.get(listenerKey)!;
+        console.log(`[DB Subscribe] ${table} - Removing existing listener before re-subscribing`);
+        try {
+          this.activeListeners.get(listenerKey)!();
+        } catch (e) {
+          console.log(`[DB Subscribe] ${table} - Old listener cleanup skipped`);
+        }
+        this.activeListeners.delete(listenerKey);
       }
       
       console.log(`[DB Subscribe] ${table}`);

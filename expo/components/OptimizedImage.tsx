@@ -27,20 +27,14 @@ function OptimizedImageComponent({
   aspectRatio,
   targetWidth,
 }: OptimizedImageProps) {
-  const [expoImageFailed, setExpoImageFailed] = useState(false);
-  const [webImageFailed, setWebImageFailed] = useState(false);
+  const [nativeFailed, setNativeFailed] = useState(false);
 
-  const handleExpoError = useCallback(() => {
-    console.log('[OptimizedImage] expo-image failed, trying web fallback:', uri?.substring(0, 80));
-    setExpoImageFailed(true);
+  const handleNativeError = useCallback(() => {
+    console.log('[OptimizedImage] Native image failed:', uri?.substring(0, 80));
+    setNativeFailed(true);
   }, [uri]);
 
-  const handleWebError = useCallback(() => {
-    console.log('[OptimizedImage] Web fallback also failed:', uri?.substring(0, 80));
-    setWebImageFailed(true);
-  }, [uri]);
-
-  if (!uri || (expoImageFailed && webImageFailed)) {
+  if (!uri) {
     return (
       <View
         style={[
@@ -58,15 +52,41 @@ function OptimizedImageComponent({
     aspectRatio ? { aspectRatio } : undefined,
   ];
 
-  if (Platform.OS === 'web' && expoImageFailed) {
-    const flatStyle = StyleSheet.flatten(style);
-    const resizeMode = contentFit === 'cover' ? 'cover' : contentFit === 'contain' ? 'contain' : 'cover';
+  if (Platform.OS === 'web') {
+    const flatStyle = StyleSheet.flatten([style, aspectRatio ? { aspectRatio } : undefined]);
+    const imgStyle: React.CSSProperties = {
+      width: '100%',
+      height: '100%',
+      objectFit: contentFit === 'contain' ? 'contain' : 'cover',
+      display: 'block',
+    };
+
+    return (
+      <View style={containerStyle}>
+        <img
+          src={uri}
+          style={imgStyle}
+          loading={priority === 'high' ? 'eager' : 'lazy'}
+          decoding="async"
+          onError={(e) => {
+            console.log('[OptimizedImage] Web img failed:', uri?.substring(0, 80));
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      </View>
+    );
+  }
+
+  if (nativeFailed) {
     return (
       <View style={containerStyle}>
         <RNImage
           source={{ uri }}
-          style={[innerStyles.fill, { resizeMode }] as any}
-          onError={handleWebError}
+          style={innerStyles.fill}
+          resizeMode={contentFit === 'contain' ? 'contain' : 'cover'}
+          onError={() => {
+            console.log('[OptimizedImage] RNImage fallback also failed:', uri?.substring(0, 80));
+          }}
         />
       </View>
     );
@@ -80,12 +100,12 @@ function OptimizedImageComponent({
         source={{ uri }}
         style={innerStyles.fill}
         contentFit={contentFit}
-        cachePolicy={Platform.OS === 'web' ? 'memory' : 'memory-disk'}
+        cachePolicy="memory-disk"
         priority={priority}
         transition={isHighPriority ? 0 : 200}
         placeholder={isHighPriority ? undefined : { blurhash }}
         recyclingKey={recyclingKey}
-        onError={handleExpoError}
+        onError={handleNativeError}
       />
     </View>
   );
