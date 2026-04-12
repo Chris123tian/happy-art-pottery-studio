@@ -40,6 +40,7 @@ const HeaderComponent: React.FC = () => {
   const navItems = useMemo(() => [
     { label: 'Home', path: '/' },
     { label: 'Classes', path: '/classes' },
+    { label: 'Shop', path: '/shop' },
     { label: 'Events', path: '/events' },
     { label: 'Gallery', path: '/gallery' },
     { label: 'Blog', path: '/blog' },

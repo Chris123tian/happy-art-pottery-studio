@@ -735,8 +735,8 @@ export default function Home() {
                 <Text style={styles.offeringDesc}>
                   Browse our collection of beautiful handmade pots and ceramic pieces — perfect gifts or home décor.
                 </Text>
-                <TouchableOpacity onPress={handleBookingPress}>
-                  <Text style={styles.offeringLink}>Visit the studio</Text>
+                <TouchableOpacity onPress={() => router.push('/shop' as any)}>
+                  <Text style={styles.offeringLink}>Browse our shop</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.offeringCard}>

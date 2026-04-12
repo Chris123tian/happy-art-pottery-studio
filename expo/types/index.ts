@@ -145,3 +145,16 @@ export interface Testimonial {
   date: string;
   image?: string;
 }
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  category: string;
+  inStock: boolean;
+  featured: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}

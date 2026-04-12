@@ -32,6 +32,8 @@ function RootLayoutNav() {
       <Stack.Screen name="admin/settings" />
       <Stack.Screen name="admin/reviews" />
       <Stack.Screen name="admin/prices" />
+      <Stack.Screen name="shop" />
+      <Stack.Screen name="admin/shop" />
     </Stack>
   );
 }

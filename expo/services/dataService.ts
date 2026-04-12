@@ -8,6 +8,7 @@ import {
   SiteSettings,
   Testimonial,
   Review,
+  ShopItem,
 } from '@/types';
 import { database } from './database';
 import { seedClasses, seedInstructors, seedGallery, seedEvents, seedSettings, seedTestimonials } from './seedData';
@@ -301,5 +302,27 @@ export const dataService = {
 
   async deleteReview(id: string): Promise<void> {
     await database.delete(`reviews:${id}`);
+  },
+
+  async getShopItems(): Promise<ShopItem[]> {
+    try {
+      return await database.select<ShopItem>('shop');
+    } catch (error) {
+      console.error('[DataService] Error getting shop items:', error);
+      return [];
+    }
+  },
+
+  async createShopItem(item: Omit<ShopItem, 'id'>): Promise<ShopItem> {
+    const id = Date.now().toString();
+    return await database.create('shop', { ...item, id });
+  },
+
+  async updateShopItem(id: string, item: Partial<ShopItem>): Promise<ShopItem> {
+    return await database.update(`shop:${id}`, item);
+  },
+
+  async deleteShopItem(id: string): Promise<void> {
+    await database.delete(`shop:${id}`);
   },
 };

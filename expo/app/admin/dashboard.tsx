@@ -21,6 +21,7 @@ import {
   Star,
   DollarSign,
   MessageSquare,
+  ShoppingBag,
 } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
 import { theme } from '@/constants/theme';
@@ -32,7 +33,7 @@ const cardWidth = width > 768 ? (width - theme.spacing.lg * 4) / 3 : (width - th
 export default function AdminDashboard() {
   console.log('[AdminDashboard] Screen rendered');
   const router = useRouter();
-  const { bookings, events, gallery, messages, classes, instructors, reviews } = useData();
+  const { bookings, events, gallery, messages, classes, instructors, reviews, shopItems } = useData();
 
   const stats = useMemo(() => ({
     bookings: bookings.length,
@@ -45,7 +46,8 @@ export default function AdminDashboard() {
     instructors: instructors.length,
     reviews: reviews.length,
     pendingReviews: reviews.filter((r) => r.status === 'pending').length,
-  }), [bookings, events, gallery, messages, classes, instructors, reviews]);
+    shopItems: shopItems.length,
+  }), [bookings, events, gallery, messages, classes, instructors, reviews, shopItems]);
 
   const handleNavigate = useCallback((route: string) => {
     router.push(route as any);
@@ -135,6 +137,13 @@ export default function AdminDashboard() {
       icon: MessageSquare,
       color: '#FF9800',
       route: '/admin/reviews',
+    },
+    {
+      title: 'Shop',
+      count: stats.shopItems,
+      icon: ShoppingBag,
+      color: '#795548',
+      route: '/admin/shop',
     },
     {
       title: 'Prices',
@@ -257,6 +266,13 @@ export default function AdminDashboard() {
               <Text style={styles.actionText}>
                 Reviews{stats.pendingReviews > 0 ? ` (${stats.pendingReviews})` : ''}
               </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#795548' }]}
+              onPress={() => handleNavigate('/admin/shop')}
+            >
+              <ShoppingBag color={theme.colors.white} size={20} />
+              <Text style={styles.actionText}>Shop</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: '#009688' }]}
