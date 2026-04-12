@@ -15,7 +15,6 @@ import {
   useWindowDimensions,
   FlatList,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -24,7 +23,7 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/Button';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { theme } from '@/constants/theme';
-import { seedSettings, seedServices } from '@/services/seedData';
+
 import { useData } from '@/contexts/DataContext';
 import { database } from '@/services/database';
 import { ServiceItem } from '@/types';
@@ -85,16 +84,23 @@ export default function Home() {
     [gallery]
   );
 
-  const displaySettings = settings || seedSettings;
-  const settingsReady = settings !== null;
+  const displaySettings = settings;
   const heroImages = useMemo(
-    () => settingsReady ? (displaySettings.heroImages || [displaySettings.heroImage]) : [],
-    [settingsReady, displaySettings.heroImages, displaySettings.heroImage]
+    () => {
+      if (!settings) return [];
+      const imgs = settings.heroImages && settings.heroImages.length > 0
+        ? settings.heroImages
+        : settings.heroImage
+          ? [settings.heroImage]
+          : [];
+      return imgs.filter((url): url is string => typeof url === 'string' && url.length > 0);
+    },
+    [settings]
   );
 
   const services: ServiceItem[] = useMemo(
-    () => displaySettings.services && displaySettings.services.length > 0 ? displaySettings.services : seedServices,
-    [displaySettings.services]
+    () => settings?.services && settings.services.length > 0 ? settings.services : [],
+    [settings?.services]
   );
 
   useEffect(() => {
@@ -127,32 +133,7 @@ export default function Home() {
   const heroIndexARef = useRef(0);
   const heroIndexBRef = useRef(1);
 
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    const prefetchAll = async () => {
-      const urls: string[] = [];
-      if (heroImages.length > 0) {
-        heroImages.forEach((url) => {
-          if (url) urls.push(url);
-        });
-      }
-      if (displaySettings.aboutImage) {
-        urls.push(displaySettings.aboutImage);
-      }
-      services.forEach((s) => {
-        if (s.image) urls.push(s.image);
-      });
-      if (urls.length > 0) {
-        try {
-          await Promise.allSettled(urls.map((url) => Image.prefetch(url)));
-          console.log('[Home] Prefetched', urls.length, 'images');
-        } catch (e) {
-          console.log('[Home] Prefetch skipped:', e);
-        }
-      }
-    };
-    prefetchAll();
-  }, [heroImages, displaySettings.aboutImage, services]);
+
 
   useEffect(() => {
     if (heroImages.length <= 1) return;
@@ -443,8 +424,8 @@ export default function Home() {
             )}
           </View>
           <View style={styles.heroOverlay}>
-            <Text style={[styles.heroTitle, isLargeScreen && { fontSize: 40 }, isExtraLarge && { fontSize: 48 }]}>{displaySettings.studioName}</Text>
-            <Text style={[styles.heroSubtitle, isLargeScreen && { fontSize: 18, maxWidth: 600 }]}>{displaySettings.tagline}</Text>
+            <Text style={[styles.heroTitle, isLargeScreen && { fontSize: 40 }, isExtraLarge && { fontSize: 48 }]}>{displaySettings?.studioName || 'Happy Art Pottery Studio'}</Text>
+            <Text style={[styles.heroSubtitle, isLargeScreen && { fontSize: 18, maxWidth: 600 }]}>{displaySettings?.tagline || 'Creating Beautiful Pottery Together'}</Text>
             <Button
               title="Book a Class"
               onPress={handleBookingPress}
@@ -496,22 +477,23 @@ export default function Home() {
 
         {/* ABOUT - side by side on large screens */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About {displaySettings.studioName}</Text>
+          <Text style={styles.sectionTitle}>About {displaySettings?.studioName || 'Happy Art Pottery Studio'}</Text>
           <View style={[styles.aboutContent, isLargeScreen && styles.aboutContentLarge]}>
             <OptimizedImage
-              uri={displaySettings.aboutImage}
+              uri={displaySettings?.aboutImage}
               style={[styles.aboutImage, isLargeScreen && styles.aboutImageLarge, isExtraLarge && styles.aboutImageExtraLarge]}
               contentFit="cover"
               priority="high"
               targetWidth={isLargeScreen ? 640 : 480}
             />
             <View style={[styles.aboutText, isLargeScreen && styles.aboutTextLarge]}>
-              <Text style={styles.paragraph}>{displaySettings.description}</Text>
+              <Text style={styles.paragraph}>{displaySettings?.description || ''}</Text>
             </View>
           </View>
         </View>
 
         {/* SERVICES */}
+        {services.length > 0 && (
         <View style={[styles.section, styles.servicesSection]}>
           <View style={[isExtraLarge && styles.maxWidthContainer]}>
             <Text style={styles.sectionTitle}>Our Services</Text>
@@ -537,6 +519,7 @@ export default function Home() {
             </View>
           </View>
         </View>
+        )}
 
         {/* UPCOMING EVENTS */}
         <View style={[styles.section, styles.eventsSection]}>
@@ -935,36 +918,36 @@ export default function Home() {
           <View style={[styles.contactInfo, isLargeScreen && { flexDirection: 'row' as const, flexWrap: 'wrap' as const }]}>
             <TouchableOpacity
               style={[styles.contactItem, isLargeScreen && { width: '48%' as any }]}
-              onPress={() => Linking.openURL(`tel:${displaySettings.phone}`)}
+              onPress={() => Linking.openURL(`tel:${displaySettings?.phone || ''}`)}
             >
               <Phone color={theme.colors.primary} size={24} />
-              <Text style={styles.contactText}>{displaySettings.phone}</Text>
+              <Text style={styles.contactText}>{displaySettings?.phone || ''}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.contactItem, isLargeScreen && { width: '48%' as any }]}
-              onPress={() => Linking.openURL(`mailto:${displaySettings.email}`)}
+              onPress={() => Linking.openURL(`mailto:${displaySettings?.email || ''}`)}
             >
               <Mail color={theme.colors.primary} size={24} />
-              <Text style={styles.contactText}>{displaySettings.email}</Text>
+              <Text style={styles.contactText}>{displaySettings?.email || ''}</Text>
             </TouchableOpacity>
             <View style={[styles.contactItem, isLargeScreen && { width: '48%' as any }]}>
               <MapPin color={theme.colors.primary} size={24} />
-              <Text style={styles.contactText}>{displaySettings.address}</Text>
+              <Text style={styles.contactText}>{displaySettings?.address || ''}</Text>
             </View>
             <View style={[styles.contactItem, isLargeScreen && { width: '48%' as any }]}>
               <Clock color={theme.colors.primary} size={24} />
               <View>
                 <Text style={styles.contactText}>
-                  Mon-Tue: {displaySettings.openingHours.monday}
+                  Mon-Tue: {displaySettings?.openingHours?.monday || ''}
                 </Text>
                 <Text style={styles.contactText}>
-                  Wed: {displaySettings.openingHours.wednesday}
+                  Wed: {displaySettings?.openingHours?.wednesday || ''}
                 </Text>
                 <Text style={styles.contactText}>
-                  Thu-Sat: {displaySettings.openingHours.thursday}
+                  Thu-Sat: {displaySettings?.openingHours?.thursday || ''}
                 </Text>
                 <Text style={styles.contactText}>
-                  Sun: {displaySettings.openingHours.sunday}
+                  Sun: {displaySettings?.openingHours?.sunday || ''}
                 </Text>
               </View>
             </View>
@@ -1000,30 +983,30 @@ export default function Home() {
           <View style={styles.socialMediaContainer}>
             <Text style={styles.socialTitle}>Follow Us</Text>
             <View style={styles.socialIcons}>
-              {displaySettings.socialMedia.facebook && (
+              {displaySettings?.socialMedia?.facebook ? (
                 <TouchableOpacity
                   style={[styles.socialButton, { backgroundColor: '#1877F2' }]}
                   onPress={() => openSocialMedia(displaySettings.socialMedia.facebook)}
                 >
                   <Facebook color={theme.colors.white} size={24} />
                 </TouchableOpacity>
-              )}
-              {displaySettings.socialMedia.instagram && (
+              ) : null}
+              {displaySettings?.socialMedia?.instagram ? (
                 <TouchableOpacity
                   style={[styles.socialButton, { backgroundColor: '#E4405F' }]}
                   onPress={() => openSocialMedia(displaySettings.socialMedia.instagram)}
                 >
                   <Instagram color={theme.colors.white} size={24} />
                 </TouchableOpacity>
-              )}
-              {displaySettings.socialMedia.twitter && (
+              ) : null}
+              {displaySettings?.socialMedia?.twitter ? (
                 <TouchableOpacity
                   style={[styles.socialButton, { backgroundColor: '#1DA1F2' }]}
                   onPress={() => openSocialMedia(displaySettings.socialMedia.twitter)}
                 >
                   <Twitter color={theme.colors.white} size={24} />
                 </TouchableOpacity>
-              )}
+              ) : null}
             </View>
           </View>
         </View>

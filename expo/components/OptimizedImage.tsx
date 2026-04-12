@@ -1,11 +1,11 @@
 import React, { useState, useCallback, memo } from 'react';
 import { View, StyleSheet, Platform, Image as RNImage } from 'react-native';
-import { Image, ImageContentFit } from 'expo-image';
+import { Palette } from 'lucide-react-native';
 
 interface OptimizedImageProps {
   uri: string | undefined;
   style: any;
-  contentFit?: ImageContentFit;
+  contentFit?: 'cover' | 'contain';
   priority?: 'low' | 'normal' | 'high';
   recyclingKey?: string;
   placeholderColor?: string;
@@ -14,37 +14,24 @@ interface OptimizedImageProps {
   targetWidth?: number;
 }
 
-const DEFAULT_BLURHASH = 'LKO2?U%2Tw=w]~RBVZRi};RPxuwH';
-
 function OptimizedImageComponent({
   uri,
   style,
   contentFit = 'cover',
-  priority = 'normal',
-  recyclingKey,
   placeholderColor = '#E8E0D8',
-  blurhash = DEFAULT_BLURHASH,
   aspectRatio,
-  targetWidth,
 }: OptimizedImageProps) {
-  const [nativeFailed, setNativeFailed] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  const handleNativeError = useCallback(() => {
-    console.log('[OptimizedImage] Native image failed:', uri?.substring(0, 80));
-    setNativeFailed(true);
+  const handleError = useCallback(() => {
+    console.log('[OptimizedImage] Image failed to load:', uri?.substring(0, 100));
+    setHasError(true);
   }, [uri]);
 
-  if (!uri) {
-    return (
-      <View
-        style={[
-          style,
-          { backgroundColor: placeholderColor },
-          aspectRatio ? { aspectRatio } : undefined,
-        ]}
-      />
-    );
-  }
+  const handleLoad = useCallback(() => {
+    setIsLoaded(true);
+  }, []);
 
   const containerStyle = [
     style,
@@ -52,60 +39,47 @@ function OptimizedImageComponent({
     aspectRatio ? { aspectRatio } : undefined,
   ];
 
-  if (Platform.OS === 'web') {
-    const flatStyle = StyleSheet.flatten([style, aspectRatio ? { aspectRatio } : undefined]);
-    const imgStyle: React.CSSProperties = {
-      width: '100%',
-      height: '100%',
-      objectFit: contentFit === 'contain' ? 'contain' : 'cover',
-      display: 'block',
-    };
+  if (!uri || hasError) {
+    return (
+      <View style={containerStyle}>
+        <View style={innerStyles.placeholder}>
+          <Palette color="#C4A882" size={32} />
+        </View>
+      </View>
+    );
+  }
 
+  if (Platform.OS === 'web') {
     return (
       <View style={containerStyle}>
         <img
           src={uri}
-          style={imgStyle}
-          loading={priority === 'high' ? 'eager' : 'lazy'}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: contentFit === 'contain' ? 'contain' : 'cover',
+            display: 'block',
+            opacity: isLoaded ? 1 : 0,
+            transition: 'opacity 0.3s ease-in-out',
+          }}
+          loading="eager"
           decoding="async"
-          onError={(e) => {
-            console.log('[OptimizedImage] Web img failed:', uri?.substring(0, 80));
-            (e.target as HTMLImageElement).style.display = 'none';
-          }}
+          crossOrigin="anonymous"
+          onLoad={handleLoad}
+          onError={handleError}
         />
       </View>
     );
   }
-
-  if (nativeFailed) {
-    return (
-      <View style={containerStyle}>
-        <RNImage
-          source={{ uri }}
-          style={innerStyles.fill}
-          resizeMode={contentFit === 'contain' ? 'contain' : 'cover'}
-          onError={() => {
-            console.log('[OptimizedImage] RNImage fallback also failed:', uri?.substring(0, 80));
-          }}
-        />
-      </View>
-    );
-  }
-
-  const isHighPriority = priority === 'high';
 
   return (
     <View style={containerStyle}>
-      <Image
+      <RNImage
         source={{ uri }}
         style={innerStyles.fill}
-        contentFit={contentFit}
-        cachePolicy="memory-disk"
-        priority={priority}
-        transition={isHighPriority ? 0 : 200}
-        placeholder={isHighPriority ? undefined : { blurhash }}
-        recyclingKey={recyclingKey}
-        onError={handleNativeError}
+        resizeMode={contentFit === 'contain' ? 'contain' : 'cover'}
+        onLoad={handleLoad}
+        onError={handleError}
       />
     </View>
   );
@@ -115,6 +89,12 @@ const innerStyles = StyleSheet.create({
   fill: {
     width: '100%',
     height: '100%',
+  },
+  placeholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.4,
   },
 });
 
