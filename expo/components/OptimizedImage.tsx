@@ -22,16 +22,11 @@ function OptimizedImageComponent({
   aspectRatio,
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
 
   const handleError = useCallback(() => {
     console.log('[OptimizedImage] Image failed to load:', uri?.substring(0, 100));
     setHasError(true);
   }, [uri]);
-
-  const handleLoad = useCallback(() => {
-    setIsLoaded(true);
-  }, []);
 
   const containerStyle = [
     style,
@@ -59,13 +54,9 @@ function OptimizedImageComponent({
             height: '100%',
             objectFit: contentFit === 'contain' ? 'contain' : 'cover',
             display: 'block',
-            opacity: isLoaded ? 1 : 0,
-            transition: 'opacity 0.3s ease-in-out',
           }}
           loading="eager"
           decoding="async"
-          crossOrigin="anonymous"
-          onLoad={handleLoad}
           onError={handleError}
         />
       </View>
@@ -78,7 +69,6 @@ function OptimizedImageComponent({
         source={{ uri }}
         style={innerStyles.fill}
         resizeMode={contentFit === 'contain' ? 'contain' : 'cover'}
-        onLoad={handleLoad}
         onError={handleError}
       />
     </View>
