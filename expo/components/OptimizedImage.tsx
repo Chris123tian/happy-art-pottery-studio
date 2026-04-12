@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, memo } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { View, StyleSheet, Platform, Image as RNImage } from 'react-native';
 import { Palette } from 'lucide-react-native';
 
@@ -16,21 +16,15 @@ interface OptimizedImageProps {
 
 function fixFirebaseStorageUrl(url: string): string {
   if (!url || typeof url !== 'string') return '';
-
   const trimmed = url.trim();
   if (!trimmed) return '';
 
-  const isFirebaseStorage =
-    trimmed.includes('firebasestorage.googleapis.com') ||
-    trimmed.includes('firebasestorage.app');
-
-  if (isFirebaseStorage && !trimmed.includes('alt=media')) {
-    const separator = trimmed.includes('?') ? '&' : '?';
-    const fixed = `${trimmed}${separator}alt=media`;
-    console.log('[OptimizedImage] Fixed Firebase URL - added alt=media');
-    return fixed;
+  if (trimmed.includes('firebasestorage.googleapis.com') || trimmed.includes('firebasestorage.app')) {
+    if (!trimmed.includes('alt=media')) {
+      const separator = trimmed.includes('?') ? '&' : '?';
+      return `${trimmed}${separator}alt=media`;
+    }
   }
-
   return trimmed;
 }
 
@@ -38,39 +32,26 @@ function OptimizedImageComponent({
   uri,
   style,
   contentFit = 'cover',
-  placeholderColor = '#E8E0D8',
   aspectRatio,
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
 
   const fixedUri = fixFirebaseStorageUrl(uri || '');
 
-  useEffect(() => {
-    setHasError(false);
-    setIsLoaded(false);
-  }, [uri]);
-
   const handleError = useCallback(() => {
-    console.log('[OptimizedImage] FAILED to load image.');
-    console.log('[OptimizedImage] Original URI:', uri);
-    console.log('[OptimizedImage] Fixed URI:', fixedUri);
+    console.log('[OptimizedImage] Image failed to load:', uri);
     setHasError(true);
-  }, [uri, fixedUri]);
-
-  const handleLoad = useCallback(() => {
-    setIsLoaded(true);
-  }, []);
+  }, [uri]);
 
   const containerStyle = [
     style,
-    { backgroundColor: isLoaded ? 'transparent' : placeholderColor, overflow: 'hidden' as const },
+    { overflow: 'hidden' as const },
     aspectRatio ? { aspectRatio } : undefined,
   ];
 
   if (!fixedUri || hasError) {
     return (
-      <View style={containerStyle}>
+      <View style={[...containerStyle, { backgroundColor: '#E8E0D8' }]}>
         <View style={innerStyles.placeholder}>
           <Palette color="#C4A882" size={32} />
         </View>
@@ -93,7 +74,6 @@ function OptimizedImageComponent({
           loading="eager"
           referrerPolicy="no-referrer"
           onError={handleError}
-          onLoad={handleLoad}
         />
       </View>
     );
@@ -106,7 +86,6 @@ function OptimizedImageComponent({
         style={innerStyles.fill}
         resizeMode={contentFit === 'contain' ? 'contain' : 'cover'}
         onError={handleError}
-        onLoad={handleLoad}
       />
     </View>
   );
