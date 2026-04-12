@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, useEffect, memo } from 'react';
 import { View, StyleSheet, Platform, Image as RNImage } from 'react-native';
 import { Palette } from 'lucide-react-native';
 
@@ -23,6 +23,10 @@ function OptimizedImageComponent({
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
 
+  useEffect(() => {
+    setHasError(false);
+  }, [uri]);
+
   const handleError = useCallback(() => {
     console.log('[OptimizedImage] Image failed to load:', uri?.substring(0, 100));
     setHasError(true);
@@ -34,7 +38,9 @@ function OptimizedImageComponent({
     aspectRatio ? { aspectRatio } : undefined,
   ];
 
-  if (!uri || hasError) {
+  const validUri = uri && typeof uri === 'string' && uri.trim().length > 0 ? uri.trim() : null;
+
+  if (!validUri || hasError) {
     return (
       <View style={containerStyle}>
         <View style={innerStyles.placeholder}>
@@ -48,7 +54,8 @@ function OptimizedImageComponent({
     return (
       <View style={containerStyle}>
         <img
-          src={uri}
+          src={validUri}
+          alt=""
           style={{
             width: '100%',
             height: '100%',
@@ -57,6 +64,7 @@ function OptimizedImageComponent({
           }}
           loading="eager"
           decoding="async"
+          referrerPolicy="no-referrer"
           onError={handleError}
         />
       </View>
@@ -66,7 +74,7 @@ function OptimizedImageComponent({
   return (
     <View style={containerStyle}>
       <RNImage
-        source={{ uri }}
+        source={{ uri: validUri }}
         style={innerStyles.fill}
         resizeMode={contentFit === 'contain' ? 'contain' : 'cover'}
         onError={handleError}

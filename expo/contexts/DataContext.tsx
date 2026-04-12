@@ -49,7 +49,17 @@ export const [DataProvider, useData] = createContextHook(() => {
       'settings',
       (data) => {
         if (data.length > 0) {
-          setSettings(data[0]);
+          const s = data[0];
+          console.log('[DataContext] Settings loaded - heroImage:', s.heroImage ? s.heroImage.substring(0, 80) + '...' : 'EMPTY');
+          console.log('[DataContext] Settings loaded - heroImages count:', s.heroImages?.length || 0);
+          console.log('[DataContext] Settings loaded - aboutImage:', s.aboutImage ? s.aboutImage.substring(0, 80) + '...' : 'EMPTY');
+          console.log('[DataContext] Settings loaded - services count:', s.services?.length || 0);
+          if (s.services?.length) {
+            s.services.forEach((svc, i) => {
+              console.log(`[DataContext] Service[${i}] "${svc.title}" image:`, svc.image ? svc.image.substring(0, 80) + '...' : 'EMPTY');
+            });
+          }
+          setSettings(s);
         }
         markLoaded();
       },
