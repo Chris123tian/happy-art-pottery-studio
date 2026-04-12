@@ -20,13 +20,15 @@ function fixFirebaseStorageUrl(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return '';
 
-  if (trimmed.includes('firebasestorage.googleapis.com')) {
-    if (!trimmed.includes('alt=media')) {
-      const separator = trimmed.includes('?') ? '&' : '?';
-      const fixed = `${trimmed}${separator}alt=media`;
-      console.log('[OptimizedImage] Fixed Firebase URL - added alt=media');
-      return fixed;
-    }
+  const isFirebaseStorage =
+    trimmed.includes('firebasestorage.googleapis.com') ||
+    trimmed.includes('firebasestorage.app');
+
+  if (isFirebaseStorage && !trimmed.includes('alt=media')) {
+    const separator = trimmed.includes('?') ? '&' : '?';
+    const fixed = `${trimmed}${separator}alt=media`;
+    console.log('[OptimizedImage] Fixed Firebase URL - added alt=media');
+    return fixed;
   }
 
   return trimmed;
@@ -62,7 +64,7 @@ function OptimizedImageComponent({
 
   const containerStyle = [
     style,
-    { backgroundColor: placeholderColor, overflow: 'hidden' as const },
+    { backgroundColor: isLoaded ? 'transparent' : placeholderColor, overflow: 'hidden' as const },
     aspectRatio ? { aspectRatio } : undefined,
   ];
 
