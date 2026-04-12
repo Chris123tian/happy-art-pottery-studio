@@ -14,6 +14,24 @@ interface OptimizedImageProps {
   targetWidth?: number;
 }
 
+function fixFirebaseStorageUrl(url: string): string {
+  if (!url || typeof url !== 'string') return '';
+
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.includes('firebasestorage.googleapis.com')) {
+    if (!trimmed.includes('alt=media')) {
+      const separator = trimmed.includes('?') ? '&' : '?';
+      const fixed = `${trimmed}${separator}alt=media`;
+      console.log('[OptimizedImage] Fixed Firebase URL - added alt=media');
+      return fixed;
+    }
+  }
+
+  return trimmed;
+}
+
 function OptimizedImageComponent({
   uri,
   style,
@@ -22,15 +40,25 @@ function OptimizedImageComponent({
   aspectRatio,
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const fixedUri = fixFirebaseStorageUrl(uri || '');
 
   useEffect(() => {
     setHasError(false);
+    setIsLoaded(false);
   }, [uri]);
 
   const handleError = useCallback(() => {
-    console.log('[OptimizedImage] Image failed to load:', uri?.substring(0, 100));
+    console.log('[OptimizedImage] FAILED to load image.');
+    console.log('[OptimizedImage] Original URI:', uri);
+    console.log('[OptimizedImage] Fixed URI:', fixedUri);
     setHasError(true);
-  }, [uri]);
+  }, [uri, fixedUri]);
+
+  const handleLoad = useCallback(() => {
+    setIsLoaded(true);
+  }, []);
 
   const containerStyle = [
     style,
@@ -38,9 +66,7 @@ function OptimizedImageComponent({
     aspectRatio ? { aspectRatio } : undefined,
   ];
 
-  const validUri = uri && typeof uri === 'string' && uri.trim().length > 0 ? uri.trim() : null;
-
-  if (!validUri || hasError) {
+  if (!fixedUri || hasError) {
     return (
       <View style={containerStyle}>
         <View style={innerStyles.placeholder}>
@@ -54,7 +80,7 @@ function OptimizedImageComponent({
     return (
       <View style={containerStyle}>
         <img
-          src={validUri}
+          src={fixedUri}
           alt=""
           style={{
             width: '100%',
@@ -63,9 +89,9 @@ function OptimizedImageComponent({
             display: 'block',
           }}
           loading="eager"
-          decoding="async"
           referrerPolicy="no-referrer"
           onError={handleError}
+          onLoad={handleLoad}
         />
       </View>
     );
@@ -74,10 +100,11 @@ function OptimizedImageComponent({
   return (
     <View style={containerStyle}>
       <RNImage
-        source={{ uri: validUri }}
+        source={{ uri: fixedUri }}
         style={innerStyles.fill}
         resizeMode={contentFit === 'contain' ? 'contain' : 'cover'}
         onError={handleError}
+        onLoad={handleLoad}
       />
     </View>
   );

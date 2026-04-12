@@ -50,13 +50,20 @@ export const [DataProvider, useData] = createContextHook(() => {
       (data) => {
         if (data.length > 0) {
           const s = data[0];
-          console.log('[DataContext] Settings loaded - heroImage:', s.heroImage ? s.heroImage.substring(0, 80) + '...' : 'EMPTY');
+          console.log('[DataContext] Settings loaded - heroImage (FULL):', s.heroImage || 'EMPTY');
+          console.log('[DataContext] Settings loaded - heroImage has alt=media:', s.heroImage?.includes('alt=media') || false);
           console.log('[DataContext] Settings loaded - heroImages count:', s.heroImages?.length || 0);
-          console.log('[DataContext] Settings loaded - aboutImage:', s.aboutImage ? s.aboutImage.substring(0, 80) + '...' : 'EMPTY');
+          if (s.heroImages?.length) {
+            s.heroImages.forEach((img, i) => {
+              console.log(`[DataContext] heroImages[${i}] (FULL):`, img);
+              console.log(`[DataContext] heroImages[${i}] has alt=media:`, img?.includes('alt=media') || false);
+            });
+          }
+          console.log('[DataContext] Settings loaded - aboutImage (FULL):', s.aboutImage || 'EMPTY');
           console.log('[DataContext] Settings loaded - services count:', s.services?.length || 0);
           if (s.services?.length) {
             s.services.forEach((svc, i) => {
-              console.log(`[DataContext] Service[${i}] "${svc.title}" image:`, svc.image ? svc.image.substring(0, 80) + '...' : 'EMPTY');
+              console.log(`[DataContext] Service[${i}] "${svc.title}" image (FULL):`, svc.image || 'EMPTY');
             });
           }
           setSettings(s);
