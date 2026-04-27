@@ -81,9 +81,9 @@ function OptimizedImageComponent({
       )}
       <Image
         source={{ uri: fixedUri }}
-        style={StyleSheet.absoluteFill}
+        style={{ width: '100%', height: '100%' }}
         contentFit={contentFit}
-        placeholder={blurhash || undefined}
+        {...(blurhash ? { placeholder: blurhash } : {})}
         cachePolicy="memory-disk"
         transition={transitionDuration !== undefined ? transitionDuration : 0}
         onLoad={handleLoad}
