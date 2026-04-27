@@ -427,8 +427,6 @@ export default function Home() {
                     priority="high"
                     targetWidth={heroTargetWidth}
                     recyclingKey={`hero-a-${heroIndexA}`}
-                    showSkeleton={false}
-                    transitionDuration={0}
                   />
                 </Animated.View>
                 <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityB }]}>
@@ -439,8 +437,6 @@ export default function Home() {
                     priority="high"
                     targetWidth={heroTargetWidth}
                     recyclingKey={`hero-b-${heroIndexB}`}
-                    showSkeleton={false}
-                    transitionDuration={0}
                   />
                 </Animated.View>
               </>
@@ -510,8 +506,6 @@ export default function Home() {
               contentFit="cover"
               priority="high"
               targetWidth={isLargeScreen ? 640 : 480}
-              transitionDuration={0}
-              showSkeleton={false}
             />
             <View style={[styles.aboutText, isLargeScreen && styles.aboutTextLarge]}>
               <Text style={styles.paragraph}>{displaySettings?.description || ''}</Text>
