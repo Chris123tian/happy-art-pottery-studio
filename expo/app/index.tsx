@@ -227,7 +227,7 @@ export default function Home() {
       }
     }, 4500);
     return () => clearInterval(interval);
-  }, [heroImages.length, heroOpacityA, heroOpacityB]);
+  }, [heroImages.length, heroImagesLoaded, heroOpacityA, heroOpacityB]);
 
   useEffect(() => {
     if (instructors.length <= 1) return;
