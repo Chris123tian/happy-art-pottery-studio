@@ -1,6 +1,8 @@
 import React, { useState, useCallback, memo } from 'react';
-import { View, StyleSheet, Platform, Image as RNImage } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { Palette } from 'lucide-react-native';
+import { Skeleton } from './Skeleton';
+import { Image } from 'expo-image';
 
 interface OptimizedImageProps {
   uri: string | undefined;
@@ -12,6 +14,8 @@ interface OptimizedImageProps {
   blurhash?: string;
   aspectRatio?: number;
   targetWidth?: number;
+  showSkeleton?: boolean;
+  transitionDuration?: number;
 }
 
 function fixFirebaseStorageUrl(url: string): string {
@@ -33,15 +37,22 @@ function OptimizedImageComponent({
   style,
   contentFit = 'cover',
   aspectRatio,
+  blurhash,
+  showSkeleton = true,
+  transitionDuration,
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
-
+  const [isLoaded, setIsLoaded] = useState(false);
   const fixedUri = fixFirebaseStorageUrl(uri || '');
 
   const handleError = useCallback(() => {
     console.log('[OptimizedImage] Image failed to load:', uri);
     setHasError(true);
   }, [uri]);
+
+  const handleLoad = useCallback(() => {
+    setIsLoaded(true);
+  }, []);
 
   const containerStyle = [
     style,
@@ -59,32 +70,23 @@ function OptimizedImageComponent({
     );
   }
 
-  if (Platform.OS === 'web') {
-    return (
-      <View style={containerStyle}>
-        <img
-          src={fixedUri}
-          alt=""
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: contentFit === 'contain' ? 'contain' : 'cover',
-            display: 'block',
-          }}
-          loading="eager"
-          referrerPolicy="no-referrer"
-          onError={handleError}
-        />
-      </View>
-    );
-  }
-
   return (
     <View style={containerStyle}>
-      <RNImage
+      {!isLoaded && showSkeleton && (
+        <Skeleton 
+          width="100%" 
+          height="100%" 
+          style={StyleSheet.absoluteFillObject} 
+        />
+      )}
+      <Image
         source={{ uri: fixedUri }}
-        style={innerStyles.fill}
-        resizeMode={contentFit === 'contain' ? 'contain' : 'cover'}
+        style={StyleSheet.absoluteFill}
+        contentFit={contentFit}
+        placeholder={blurhash || undefined}
+        cachePolicy="memory-disk"
+        transition={transitionDuration !== undefined ? transitionDuration : 200}
+        onLoad={handleLoad}
         onError={handleError}
       />
     </View>
@@ -92,10 +94,6 @@ function OptimizedImageComponent({
 }
 
 const innerStyles = StyleSheet.create({
-  fill: {
-    width: '100%',
-    height: '100%',
-  },
   placeholder: {
     flex: 1,
     alignItems: 'center',

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -20,6 +20,8 @@ export default function Classes() {
   const isSmallScreen = screenWidth <= 380;
   const [filter, setFilter] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
 
+  const numColumns = isLargeScreen ? 3 : isMediumScreen ? 2 : 1;
+
   const filteredClasses = useMemo(
     () => filter === 'all' ? classes : classes.filter((c: Class) => c.level === filter),
     [classes, filter]
@@ -29,94 +31,106 @@ export default function Classes() {
     router.push('/booking' as any);
   }, [router]);
 
-  const cardWidth = isLargeScreen
-    ? '31%'
-    : isMediumScreen
-      ? '48%'
-      : '100%';
+  const containerWidth = Math.min(screenWidth, 1200);
+  const cardWidth = isMediumScreen ? (containerWidth - theme.spacing.md * 2 - theme.spacing.md * (numColumns - 1)) / numColumns : '100%';
+
+  const renderItem = useCallback(({ item: classItem }: { item: Class }) => (
+    <View
+      key={classItem.id}
+      style={[
+        styles.classCard,
+        { width: cardWidth },
+      ]}
+    >
+      {classItem.image && (
+        <OptimizedImage
+          uri={classItem.image}
+          style={[styles.classImage, !isMediumScreen && { height: 180 }, isSmallScreen && { height: 150 }, isLargeScreen && { height: 180 }]}
+          contentFit="cover"
+          priority="normal"
+          targetWidth={isLargeScreen ? 400 : 320}
+          recyclingKey={`class-${classItem.id}`}
+        />
+      )}
+      <View style={styles.classContent}>
+        <View style={styles.levelBadge}>
+          <Text style={styles.levelText}>
+            {classItem.level.toUpperCase()}
+          </Text>
+        </View>
+        <Text style={styles.classTitle}>{classItem.title}</Text>
+        <Text style={styles.classDescription} numberOfLines={isMediumScreen ? 3 : 4}>
+          {classItem.description}
+        </Text>
+        <Button
+          title="Book Now"
+          onPress={handleBookingPress}
+          style={styles.bookButton}
+        />
+      </View>
+    </View>
+  ), [isLargeScreen, isMediumScreen, isSmallScreen, numColumns, screenWidth, handleBookingPress]);
+
+  const HeaderComponent = useMemo(() => (
+    <>
+      <View style={styles.header}>
+        <Text style={styles.title}>Our Classes</Text>
+        <Text style={styles.subtitle}>
+          Perfect for individuals, groups, parties, schools, and organizations
+        </Text>
+      </View>
+
+      <View style={styles.filters}>
+        {(['all', 'beginner', 'intermediate', 'advanced'] as const).map((level) => (
+          <TouchableOpacity
+            key={level}
+            style={[styles.filterButton, filter === level && styles.filterButtonActive]}
+            onPress={() => setFilter(level)}
+          >
+            <Text style={[styles.filterText, filter === level && styles.filterTextActive]}>
+              {level === 'all' ? 'All Classes' : level.charAt(0).toUpperCase() + level.slice(1)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </>
+  ), [filter]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']} testID="classes-screen">
       <Header />
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Our Classes</Text>
-          <Text style={styles.subtitle}>
-            Perfect for individuals, groups, parties, schools, and organizations
-          </Text>
-        </View>
-
-        <View style={styles.filters}>
-          {(['all', 'beginner', 'intermediate', 'advanced'] as const).map((level) => (
-            <TouchableOpacity
-              key={level}
-              style={[styles.filterButton, filter === level && styles.filterButtonActive]}
-              onPress={() => setFilter(level)}
-            >
-              <Text style={[styles.filterText, filter === level && styles.filterTextActive]}>
-                {level === 'all' ? 'All Classes' : level.charAt(0).toUpperCase() + level.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={[styles.classList, isLargeScreen && styles.classListLarge]}>
-          {filteredClasses.map((classItem: Class) => (
-            <View
-              key={classItem.id}
-              style={[
-                styles.classCard,
-                { width: cardWidth as any },
-              ]}
-            >
-              {classItem.image && (
-                <OptimizedImage
-                  uri={classItem.image}
-                  style={[styles.classImage, !isMediumScreen && { height: 180 }, isSmallScreen && { height: 150 }, isLargeScreen && { height: 180 }]}
-                  contentFit="cover"
-                  priority="normal"
-                  targetWidth={isLargeScreen ? 400 : 320}
-                  recyclingKey={`class-${classItem.id}`}
-                />
-              )}
-              <View style={styles.classContent}>
-                <View style={styles.levelBadge}>
-                  <Text style={styles.levelText}>
-                    {classItem.level.toUpperCase()}
-                  </Text>
-                </View>
-                <Text style={styles.classTitle}>{classItem.title}</Text>
-                <Text style={styles.classDescription} numberOfLines={isMediumScreen ? 3 : 4}>
-                  {classItem.description}
-                </Text>
-                <Button
-                  title="Book Now"
-                  onPress={handleBookingPress}
-                  style={styles.bookButton}
-                />
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {filteredClasses.length === 0 && (
+      <FlatList
+        data={filteredClasses}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        numColumns={numColumns}
+        key={numColumns}
+        ListHeaderComponent={HeaderComponent}
+        contentContainerStyle={[styles.classList, isLargeScreen && styles.classListLarge]}
+        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
+        ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No classes found for this level</Text>
           </View>
-        )}
-      </ScrollView>
+        }
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={8}
+        removeClippedSubviews={Platform.OS !== 'web'}
+      />
       <FloatingWhatsApp />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  columnWrapper: {
+    gap: theme.spacing.md,
+  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.white,
-  },
-  scrollView: {
-    flex: 1,
   },
   header: {
     padding: theme.spacing.lg,
@@ -161,15 +175,13 @@ const styles = StyleSheet.create({
   },
   classList: {
     padding: theme.spacing.md,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    paddingBottom: theme.spacing.xxl,
     gap: theme.spacing.md,
   },
   classListLarge: {
     maxWidth: 1200,
     alignSelf: 'center',
     width: '100%',
-    justifyContent: 'flex-start',
   },
   classCard: {
     backgroundColor: theme.colors.white,

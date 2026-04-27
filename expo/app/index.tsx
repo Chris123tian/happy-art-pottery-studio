@@ -15,6 +15,7 @@ import {
   useWindowDimensions,
   FlatList,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -42,7 +43,19 @@ export default function Home() {
   const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
   const isLargeScreen = screenWidth > 768;
-  const { settings, instructors, gallery, testimonials, reviews, events } = useData();
+  const { settings, instructors, gallery, testimonials, reviews, events, shopItems } = useData();
+
+  // Prefetch images for other pages in the background
+  useEffect(() => {
+    if (gallery.length > 0 || shopItems.length > 0) {
+      console.log('[Home] Prefetching images for Gallery and Shop...');
+      const galleryUrls = gallery.slice(0, 30).map(img => img.source);
+      const shopUrls = shopItems.slice(0, 30).map(item => item.image).filter(Boolean) as string[];
+      
+      const allUrls = [...new Set([...galleryUrls, ...shopUrls])];
+      Image.prefetch(allUrls);
+    }
+  }, [gallery.length, shopItems.length]);
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [heroIndexA, setHeroIndexA] = useState(0);
@@ -99,7 +112,10 @@ export default function Home() {
   );
 
   const services: ServiceItem[] = useMemo(
-    () => settings?.services && settings.services.length > 0 ? settings.services : [],
+    () => {
+      const allServices = settings?.services && settings.services.length > 0 ? settings.services : [];
+      return allServices.filter(s => !['shop', 'parties', 'schools'].includes(s.id));
+    },
     [settings?.services]
   );
 
@@ -391,7 +407,12 @@ export default function Home() {
   return (
     <SafeAreaView style={styles.container} edges={['top']} testID="home-screen">
       <Header />
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* HERO - larger on big screens */}
         {/* testID for hero section */}
         <View style={[styles.hero, { height: heroHeight }]}>
@@ -406,6 +427,8 @@ export default function Home() {
                     priority="high"
                     targetWidth={heroTargetWidth}
                     recyclingKey={`hero-a-${heroIndexA}`}
+                    showSkeleton={false}
+                    transitionDuration={0}
                   />
                 </Animated.View>
                 <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityB }]}>
@@ -416,6 +439,8 @@ export default function Home() {
                     priority="high"
                     targetWidth={heroTargetWidth}
                     recyclingKey={`hero-b-${heroIndexB}`}
+                    showSkeleton={false}
+                    transitionDuration={0}
                   />
                 </Animated.View>
               </>
@@ -721,50 +746,103 @@ export default function Home() {
           </View>
         </View>
 
-        {/* OFFERINGS - Ceramics Sales, Birthday Parties, Schools & Corporates */}
+        {/* OFFERINGS - More at Happy Art */}
         <View style={[styles.section, styles.offeringsSection]}>
           <View style={[isExtraLarge && styles.maxWidthContainer]}>
             <Text style={styles.sectionTitle}>More at Happy Art</Text>
             <View style={[styles.offeringsGrid, isLargeScreen && styles.offeringsGridLarge]}>
-              <View style={styles.offeringCard}>
-                <View style={[styles.offeringIconWrap, { backgroundColor: '#FFF5EE' }]}>
-                  <Store color="#C4704B" size={36} />
+              {/* Shop / Ceramics Sales */}
+              <TouchableOpacity
+                style={styles.offeringCard}
+                onPress={() => router.push('/shop' as any)}
+                activeOpacity={0.88}
+              >
+                {displaySettings?.services?.find(s => s.id === 'shop')?.image ? (
+                  <OptimizedImage
+                    uri={displaySettings.services!.find(s => s.id === 'shop')!.image}
+                    style={styles.offeringImage}
+                    contentFit="cover"
+                    showSkeleton={true}
+                  />
+                ) : (
+                  <View style={[styles.offeringIconWrap, { backgroundColor: '#FFF5EE' }]}>
+                    <Store color="#C4704B" size={36} />
+                  </View>
+                )}
+                <View style={styles.offeringCardBody}>
+                  <Text style={styles.offeringLabel}>SHOP</Text>
+                  <Text style={styles.offeringTitle}>
+                    {displaySettings?.services?.find(s => s.id === 'shop')?.title || 'Ceramics Sales'}
+                  </Text>
+                  <Text style={styles.offeringDesc}>
+                    {displaySettings?.services?.find(s => s.id === 'shop')?.description ||
+                      'Browse our collection of beautiful handmade pots and ceramic pieces — perfect gifts or home décor.'}
+                  </Text>
+                  <Text style={styles.offeringLink}>Browse our shop →</Text>
                 </View>
-                <Text style={styles.offeringLabel}>SHOP</Text>
-                <Text style={styles.offeringTitle}>Ceramics Sales</Text>
-                <Text style={styles.offeringDesc}>
-                  Browse our collection of beautiful handmade pots and ceramic pieces — perfect gifts or home décor.
-                </Text>
-                <TouchableOpacity onPress={() => router.push('/shop' as any)}>
-                  <Text style={styles.offeringLink}>Browse our shop</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.offeringCard}>
-                <View style={[styles.offeringIconWrap, { backgroundColor: '#FFF0F5' }]}>
-                  <PartyPopper color="#C4704B" size={36} />
+              </TouchableOpacity>
+
+              {/* Birthday Parties */}
+              <TouchableOpacity
+                style={styles.offeringCard}
+                onPress={handleBookingPress}
+                activeOpacity={0.88}
+              >
+                {displaySettings?.services?.find(s => s.id === 'parties')?.image ? (
+                  <OptimizedImage
+                    uri={displaySettings.services!.find(s => s.id === 'parties')!.image}
+                    style={styles.offeringImage}
+                    contentFit="cover"
+                    showSkeleton={true}
+                  />
+                ) : (
+                  <View style={[styles.offeringIconWrap, { backgroundColor: '#FFF0F5' }]}>
+                    <PartyPopper color="#C4704B" size={36} />
+                  </View>
+                )}
+                <View style={styles.offeringCardBody}>
+                  <Text style={styles.offeringLabel}>PRIVATE HIRE</Text>
+                  <Text style={styles.offeringTitle}>
+                    {displaySettings?.services?.find(s => s.id === 'parties')?.title || 'Birthday Parties'}
+                  </Text>
+                  <Text style={styles.offeringDesc}>
+                    {displaySettings?.services?.find(s => s.id === 'parties')?.description ||
+                      'Host your birthday at Happy Art! Every guest makes a piece to take home as a unique souvenir. 1–100 guests.'}
+                  </Text>
+                  <Text style={styles.offeringLink}>Group rates apply →</Text>
                 </View>
-                <Text style={styles.offeringLabel}>PRIVATE HIRE</Text>
-                <Text style={styles.offeringTitle}>Birthday Parties</Text>
-                <Text style={styles.offeringDesc}>
-                  Host your birthday at Happy Art! Every guest makes a piece to take home as a unique souvenir. 1–100 guests.
-                </Text>
-                <TouchableOpacity onPress={handleBookingPress}>
-                  <Text style={styles.offeringLink}>Group rates apply</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.offeringCard}>
-                <View style={[styles.offeringIconWrap, { backgroundColor: '#F0F8FF' }]}>
-                  <School color="#C4704B" size={36} />
+              </TouchableOpacity>
+
+              {/* Schools & Corporates */}
+              <TouchableOpacity
+                style={styles.offeringCard}
+                onPress={handleBookingPress}
+                activeOpacity={0.88}
+              >
+                {displaySettings?.services?.find(s => s.id === 'schools')?.image ? (
+                  <OptimizedImage
+                    uri={displaySettings.services!.find(s => s.id === 'schools')!.image}
+                    style={styles.offeringImage}
+                    contentFit="cover"
+                    showSkeleton={true}
+                  />
+                ) : (
+                  <View style={[styles.offeringIconWrap, { backgroundColor: '#F0F8FF' }]}>
+                    <School color="#C4704B" size={36} />
+                  </View>
+                )}
+                <View style={styles.offeringCardBody}>
+                  <Text style={styles.offeringLabel}>GROUPS</Text>
+                  <Text style={styles.offeringTitle}>
+                    {displaySettings?.services?.find(s => s.id === 'schools')?.title || 'Schools & Corporates'}
+                  </Text>
+                  <Text style={styles.offeringDesc}>
+                    {displaySettings?.services?.find(s => s.id === 'schools')?.description ||
+                      'Team-building, school trips, and organisation visits. We accommodate groups of any size with advance booking.'}
+                  </Text>
+                  <Text style={styles.offeringLink}>Quote on request →</Text>
                 </View>
-                <Text style={styles.offeringLabel}>GROUPS</Text>
-                <Text style={styles.offeringTitle}>Schools & Corporates</Text>
-                <Text style={styles.offeringDesc}>
-                  Team-building, school trips, and organisation visits. We accommodate groups of any size with advance booking.
-                </Text>
-                <TouchableOpacity onPress={handleBookingPress}>
-                  <Text style={styles.offeringLink}>Quote on request</Text>
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -1090,6 +1168,10 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    backgroundColor: theme.colors.white,
+  },
+  scrollContent: {
+    backgroundColor: theme.colors.white,
   },
   hero: {
     height: 280,
@@ -1097,18 +1179,18 @@ const styles = StyleSheet.create({
   },
   heroImageContainer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#2c2c2c',
+    backgroundColor: 'transparent',
   },
   heroImage: {
     width: '100%',
     height: '100%',
   },
   heroPlaceholder: {
-    backgroundColor: '#2c2c2c',
+    backgroundColor: '#8B4513',
   },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.28)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: theme.spacing.lg,
@@ -1981,11 +2063,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.white,
     borderRadius: 16,
-    padding: theme.spacing.lg,
-    alignItems: 'center' as const,
+    overflow: 'hidden',
     ...theme.shadows.md,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.04)',
+  },
+  offeringImage: {
+    width: '100%',
+    height: 160,
+  },
+  offeringCardBody: {
+    padding: theme.spacing.lg,
+    alignItems: 'center' as const,
   },
   offeringIconWrap: {
     width: 72,

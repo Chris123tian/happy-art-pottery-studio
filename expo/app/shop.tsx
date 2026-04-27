@@ -3,11 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Linking,
   Dimensions,
   useWindowDimensions,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShoppingBag, Filter, MessageCircle, Tag, Check, X } from 'lucide-react-native';
@@ -27,6 +29,8 @@ export default function Shop() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [cart, setCart] = useState<ShopItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+
+  const numColumns = isLargeScreen ? 4 : isMediumScreen ? 2 : 1;
 
   const availableItems = useMemo(
     () => shopItems.filter((item) => item.inStock),
@@ -78,120 +82,130 @@ export default function Shop() {
     });
   }, [cart, cartTotal, settings?.whatsapp]);
 
-  const itemWidth = isLargeScreen
-    ? (screenWidth - theme.spacing.lg * 5) / 4
-    : isMediumScreen
-    ? (screenWidth - theme.spacing.lg * 3) / 2
-    : screenWidth - theme.spacing.lg * 2;
-
   const isInCart = useCallback(
     (itemId: string) => cart.some((c) => c.id === itemId),
     [cart]
   );
 
+  const renderItem = useCallback(({ item }: { item: ShopItem }) => {
+    const inCart = isInCart(item.id);
+    const itemWidth = isLargeScreen
+      ? (screenWidth - theme.spacing.lg * 5) / 4
+      : isMediumScreen
+      ? (screenWidth - theme.spacing.lg * 3) / 2
+      : screenWidth - theme.spacing.lg * 2;
+
+    return (
+      <View key={item.id} style={[styles.card, { width: itemWidth }]}>
+        <View style={styles.imageWrapper}>
+          <OptimizedImage
+            uri={item.image}
+            style={styles.itemImage}
+            contentFit="cover"
+            priority="normal"
+            targetWidth={isLargeScreen ? 400 : 300}
+            recyclingKey={`shop-${item.id}`}
+          />
+          {item.featured && (
+            <View style={styles.featuredBadge}>
+              <Tag color={theme.colors.white} size={12} />
+              <Text style={styles.featuredText}>Featured</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.cardContent}>
+          <Text style={styles.categoryTag}>{item.category}</Text>
+          <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
+          <Text style={styles.itemDescription} numberOfLines={2}>
+            {item.description}
+          </Text>
+          <View style={styles.cardFooter}>
+            <Text style={styles.price}>GH₵{item.price.toFixed(2)}</Text>
+            <TouchableOpacity
+              style={[styles.addButton, inCart && styles.addButtonInCart]}
+              onPress={() => {
+                if (!inCart) addToCart(item);
+              }}
+              activeOpacity={0.7}
+            >
+              {inCart ? (
+                <>
+                  <Check color={theme.colors.white} size={16} />
+                  <Text style={styles.addButtonText}>Added</Text>
+                </>
+              ) : (
+                <>
+                  <ShoppingBag color={theme.colors.white} size={16} />
+                  <Text style={styles.addButtonText}>Add</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }, [isLargeScreen, isMediumScreen, screenWidth, isInCart, addToCart]);
+
+  const HeaderComponent = useMemo(() => (
+    <>
+      <View style={styles.heroBanner}>
+        <ShoppingBag color={theme.colors.white} size={40} />
+        <Text style={styles.heroTitle}>Our Shop</Text>
+        <Text style={styles.heroSubtitle}>
+          Browse handmade pottery and ceramics — order via WhatsApp
+        </Text>
+      </View>
+
+      {categories.length > 2 && (
+        <View style={styles.filterSection}>
+          <View style={styles.filterHeader}>
+            <Filter color={theme.colors.textLight} size={16} />
+            <Text style={styles.filterLabel}>Categories</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterScroll}
+          >
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[
+                  styles.filterChip,
+                  selectedCategory === cat && styles.filterChipActive,
+                ]}
+                onPress={() => setSelectedCategory(cat)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    selectedCategory === cat && styles.filterChipTextActive,
+                  ]}
+                >
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </>
+  ), [categories, selectedCategory]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']} testID="shop-screen">
       <Header />
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.heroBanner}>
-          <ShoppingBag color={theme.colors.white} size={40} />
-          <Text style={styles.heroTitle}>Our Shop</Text>
-          <Text style={styles.heroSubtitle}>
-            Browse handmade pottery and ceramics — order via WhatsApp
-          </Text>
-        </View>
-
-        {categories.length > 2 && (
-          <View style={styles.filterSection}>
-            <View style={styles.filterHeader}>
-              <Filter color={theme.colors.textLight} size={16} />
-              <Text style={styles.filterLabel}>Categories</Text>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterScroll}
-            >
-              {categories.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[
-                    styles.filterChip,
-                    selectedCategory === cat && styles.filterChipActive,
-                  ]}
-                  onPress={() => setSelectedCategory(cat)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      selectedCategory === cat && styles.filterChipTextActive,
-                    ]}
-                  >
-                    {cat}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {filteredItems.length > 0 ? (
-          <View style={styles.grid}>
-            {filteredItems.map((item) => {
-              const inCart = isInCart(item.id);
-              return (
-                <View key={item.id} style={[styles.card, { width: itemWidth }]}>
-                  <View style={styles.imageWrapper}>
-                    <OptimizedImage
-                      uri={item.image}
-                      style={styles.itemImage}
-                      contentFit="cover"
-                      priority="normal"
-                      targetWidth={isLargeScreen ? 400 : 300}
-                      recyclingKey={`shop-${item.id}`}
-                    />
-                    {item.featured && (
-                      <View style={styles.featuredBadge}>
-                        <Tag color={theme.colors.white} size={12} />
-                        <Text style={styles.featuredText}>Featured</Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.cardContent}>
-                    <Text style={styles.categoryTag}>{item.category}</Text>
-                    <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
-                    <Text style={styles.itemDescription} numberOfLines={2}>
-                      {item.description}
-                    </Text>
-                    <View style={styles.cardFooter}>
-                      <Text style={styles.price}>GH₵{item.price.toFixed(2)}</Text>
-                      <TouchableOpacity
-                        style={[styles.addButton, inCart && styles.addButtonInCart]}
-                        onPress={() => {
-                          if (!inCart) addToCart(item);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        {inCart ? (
-                          <>
-                            <Check color={theme.colors.white} size={16} />
-                            <Text style={styles.addButtonText}>Added</Text>
-                          </>
-                        ) : (
-                          <>
-                            <ShoppingBag color={theme.colors.white} size={16} />
-                            <Text style={styles.addButtonText}>Add</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        ) : (
+      <FlatList
+        data={filteredItems}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        numColumns={numColumns}
+        key={numColumns}
+        ListHeaderComponent={HeaderComponent}
+        contentContainerStyle={styles.listContent}
+        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
+        ListEmptyComponent={
           <View style={styles.emptyState}>
             <ShoppingBag color={theme.colors.border} size={64} />
             <Text style={styles.emptyTitle}>No items available</Text>
@@ -199,10 +213,13 @@ export default function Shop() {
               Check back soon for new handmade pottery and ceramics!
             </Text>
           </View>
-        )}
-
-        <View style={{ height: 120 }} />
-      </ScrollView>
+        }
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={8}
+        removeClippedSubviews={Platform.OS !== 'web'}
+      />
 
       {cart.length > 0 && (
         <View style={styles.cartBar}>
@@ -256,12 +273,17 @@ export default function Shop() {
 }
 
 const styles = StyleSheet.create({
+  listContent: {
+    paddingBottom: 140,
+  },
+  columnWrapper: {
+    gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface,
-  },
-  scrollView: {
-    flex: 1,
   },
   heroBanner: {
     backgroundColor: theme.colors.secondary,

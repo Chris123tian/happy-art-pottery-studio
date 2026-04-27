@@ -6,10 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Image,
   Alert,
   Modal,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Edit, Trash2, X, Star, Upload } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
@@ -208,7 +208,13 @@ export default function AdminInstructors() {
         <View style={styles.content}>
           {instructors.map((instructor) => (
             <View key={instructor.id} style={styles.card}>
-              <Image source={{ uri: instructor.image }} style={styles.image} />
+              <Image 
+                source={{ uri: instructor.image }} 
+                style={styles.image} 
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
+              />
               <View style={styles.cardContent}>
                 <View style={styles.cardHeader}>
                   <View style={styles.cardTitleContainer}>
@@ -299,7 +305,13 @@ export default function AdminInstructors() {
                 <Text style={styles.label}>Instructor Photo</Text>
                 {formData.image ? (
                   <View style={styles.imagePreview}>
-                    <Image source={{ uri: formData.image }} style={styles.previewImage} />
+                    <Image 
+                      source={{ uri: formData.image }} 
+                      style={styles.previewImage} 
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={200}
+                    />
                     <TouchableOpacity
                       style={styles.changeImageButton}
                       onPress={pickImage}

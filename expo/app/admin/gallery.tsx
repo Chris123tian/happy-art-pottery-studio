@@ -4,12 +4,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
-  TouchableOpacity,
   Platform,
   Alert,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Plus, Trash2 } from 'lucide-react-native';
@@ -147,7 +146,9 @@ export default function AdminGallery() {
                 <Image
                   source={{ uri: image.source }}
                   style={styles.image}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
                   onError={(error) => {
                     console.error('Image load error for', image.id, error.nativeEvent?.error);
                   }}

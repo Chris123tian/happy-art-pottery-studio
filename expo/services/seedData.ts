@@ -61,7 +61,26 @@ export const seedPriceList: PriceList = {
   ],
 };
 
-export const seedServices: ServiceItem[] = [];
+export const seedServices: ServiceItem[] = [
+  {
+    id: 'shop',
+    title: 'Ceramics Sales',
+    description: 'Browse our collection of beautiful handmade pots and ceramic pieces — perfect gifts or home décor.',
+    image: '',
+  },
+  {
+    id: 'parties',
+    title: 'Birthday Parties',
+    description: 'Host your birthday at Happy Art! Every guest makes a piece to take home as a unique souvenir. 1–100 guests.',
+    image: '',
+  },
+  {
+    id: 'schools',
+    title: 'Schools & Corporates',
+    description: 'Team-building, school trips, and organisation visits. We accommodate groups of any size with advance booking.',
+    image: '',
+  },
+];
 
 export const seedSettings: SiteSettings = {
   studioName: 'Happy Art Pottery Studio',

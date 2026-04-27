@@ -61,10 +61,20 @@ class Database {
         this.app = initializeApp(firebaseConfig);
         
         if (Platform.OS === 'web') {
-          this.db = initializeFirestore(this.app, {
-            localCache: memoryLocalCache()
-          });
-          console.log('[DB] Firebase initialized with memory cache (web)');
+          try {
+            this.db = initializeFirestore(this.app, {
+              localCache: persistentLocalCache({
+                tabManager: persistentMultipleTabManager(),
+                cacheSizeBytes: CACHE_SIZE_UNLIMITED
+              })
+            });
+            console.log('[DB] Firebase initialized with persistent cache (web)');
+          } catch (error: any) {
+            console.log('[DB] Web persistent cache failed, using memory cache:', error.message);
+            this.db = initializeFirestore(this.app, {
+              localCache: memoryLocalCache()
+            });
+          }
         } else {
           try {
             this.db = initializeFirestore(this.app, {

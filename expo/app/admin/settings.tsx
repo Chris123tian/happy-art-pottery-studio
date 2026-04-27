@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Save, Facebook, Instagram, Twitter, Music, Globe, Clock, Upload, Paintbrush, Trash2 } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
@@ -146,7 +146,12 @@ export default function AdminSettings() {
     });
   };
 
-  const currentServices: ServiceItem[] = settings.services && settings.services.length > 0 ? settings.services : seedServices;
+  const currentServices = [...(settings.services || [])];
+  seedServices.forEach(seedService => {
+    if (!currentServices.find(s => s.id === seedService.id)) {
+      currentServices.push(seedService);
+    }
+  });
 
   const pickServiceImage = async (serviceId: string) => {
     try {
@@ -411,7 +416,9 @@ export default function AdminSettings() {
                     <Image
                       source={{ uri: settings.heroImages[index] }}
                       style={styles.imagePreview}
-                      resizeMode="cover"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={200}
                     />
                     <View style={styles.imageControls}>
                       <TouchableOpacity
@@ -449,12 +456,14 @@ export default function AdminSettings() {
             </Text>
             {currentServices.map((service) => (
               <View key={service.id} style={styles.serviceItem}>
-                <Text style={styles.slideLabel}>{service.title}</Text>
+                <Text style={styles.slideLabel}>
+                  {service.title || seedServices.find(s => s.id === service.id)?.title || 'Service'}
+                </Text>
                 <TextInput
                   style={[styles.input, { marginBottom: theme.spacing.sm }]}
                   value={service.title}
                   onChangeText={(v) => updateServiceField(service.id, 'title', v)}
-                  placeholder="Service title"
+                  placeholder={seedServices.find(s => s.id === service.id)?.title || "Service title"}
                 />
                 <TextInput
                   style={[styles.input, styles.textArea, { marginBottom: theme.spacing.sm }]}
@@ -469,7 +478,9 @@ export default function AdminSettings() {
                     <Image
                       source={{ uri: service.image }}
                       style={styles.serviceImagePreview}
-                      resizeMode="cover"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={200}
                     />
                     <TouchableOpacity
                       style={styles.changeButton}
@@ -498,7 +509,9 @@ export default function AdminSettings() {
               <Image
                 source={{ uri: settings.aboutImage }}
                 style={styles.imagePreview}
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
               />
             )}
             <TouchableOpacity
