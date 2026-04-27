@@ -85,7 +85,7 @@ function OptimizedImageComponent({
         contentFit={contentFit}
         placeholder={blurhash || undefined}
         cachePolicy="memory-disk"
-        transition={transitionDuration !== undefined ? transitionDuration : 200}
+        transition={transitionDuration !== undefined ? transitionDuration : 0}
         onLoad={handleLoad}
         onError={handleError}
       />

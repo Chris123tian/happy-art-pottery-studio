@@ -510,6 +510,8 @@ export default function Home() {
               contentFit="cover"
               priority="high"
               targetWidth={isLargeScreen ? 640 : 480}
+              transitionDuration={0}
+              showSkeleton={false}
             />
             <View style={[styles.aboutText, isLargeScreen && styles.aboutTextLarge]}>
               <Text style={styles.paragraph}>{displaySettings?.description || ''}</Text>
