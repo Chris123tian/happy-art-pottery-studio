@@ -58,6 +58,7 @@ export default function Home() {
   }, [gallery.length, shopItems.length]);
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [heroImagesLoaded, setHeroImagesLoaded] = useState(false);
   const [heroIndexA, setHeroIndexA] = useState(0);
   const [heroIndexB, setHeroIndexB] = useState(1);
   const [activeLayer, setActiveLayer] = useState<'A' | 'B'>('A');
@@ -144,6 +145,30 @@ export default function Home() {
     fetchBlogPosts();
   }, []);
 
+  // Preload Hero Images
+  useEffect(() => {
+    let isMounted = true;
+    const preloadHeroImages = async () => {
+      if (heroImages.length > 0) {
+        try {
+          // Preload all hero images
+          const prefetchPromises = heroImages.map(url => Image.prefetch(url));
+          await Promise.all(prefetchPromises);
+        } catch (error) {
+          console.log('[Home] Error prefetching hero images:', error);
+        } finally {
+          if (isMounted) {
+            setHeroImagesLoaded(true);
+          }
+        }
+      }
+    };
+    preloadHeroImages();
+    return () => {
+      isMounted = false;
+    };
+  }, [heroImages]);
+
   const transitioningRef = useRef(false);
   const activeLayerRef = useRef<'A' | 'B'>('A');
   const heroIndexARef = useRef(0);
@@ -165,7 +190,7 @@ export default function Home() {
   }, [heroImages.length]);
 
   useEffect(() => {
-    if (heroImages.length <= 1) return;
+    if (heroImages.length <= 1 || !heroImagesLoaded) return;
     const interval = setInterval(() => {
       if (transitioningRef.current) return;
       transitioningRef.current = true;
@@ -418,28 +443,43 @@ export default function Home() {
         <View style={[styles.hero, { height: heroHeight }]}>
           <View style={styles.heroImageContainer}>
             {heroImages.length > 0 ? (
-              <>
-                <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityA }]}>
+              heroImagesLoaded ? (
+                <>
+                  <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityA }]}>
+                    <OptimizedImage
+                      uri={heroImages[heroIndexA]}
+                      style={styles.heroImage}
+                      contentFit="cover"
+                      priority="high"
+                      targetWidth={heroTargetWidth}
+                      recyclingKey={`hero-a-${heroIndexA}`}
+                      showSkeleton={false}
+                      transitionDuration={0}
+                    />
+                  </Animated.View>
+                  <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityB }]}>
+                    <OptimizedImage
+                      uri={heroImages[heroIndexB]}
+                      style={styles.heroImage}
+                      contentFit="cover"
+                      priority="high"
+                      targetWidth={heroTargetWidth}
+                      recyclingKey={`hero-b-${heroIndexB}`}
+                      showSkeleton={false}
+                      transitionDuration={0}
+                    />
+                  </Animated.View>
+                </>
+              ) : (
+                <View style={StyleSheet.absoluteFill}>
                   <OptimizedImage
-                    uri={heroImages[heroIndexA]}
+                    uri={undefined}
                     style={styles.heroImage}
                     contentFit="cover"
-                    priority="high"
-                    targetWidth={heroTargetWidth}
-                    recyclingKey={`hero-a-${heroIndexA}`}
+                    showSkeleton={true}
                   />
-                </Animated.View>
-                <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityB }]}>
-                  <OptimizedImage
-                    uri={heroImages[heroIndexB]}
-                    style={styles.heroImage}
-                    contentFit="cover"
-                    priority="high"
-                    targetWidth={heroTargetWidth}
-                    recyclingKey={`hero-b-${heroIndexB}`}
-                  />
-                </Animated.View>
-              </>
+                </View>
+              )
             ) : (
               <View style={[StyleSheet.absoluteFill, styles.heroPlaceholder]} />
             )}
