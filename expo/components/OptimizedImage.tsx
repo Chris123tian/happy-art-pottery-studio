@@ -40,6 +40,7 @@ function OptimizedImageComponent({
   blurhash,
   showSkeleton = true,
   transitionDuration,
+  priority,
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
