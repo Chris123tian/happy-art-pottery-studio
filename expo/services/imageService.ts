@@ -22,7 +22,9 @@ export const imageService = {
       const storageRef = ref(storage, path);
       
       console.log('[ImageService] Uploading blob...');
-      await uploadBytes(storageRef, blob);
+      await uploadBytes(storageRef, blob, {
+        cacheControl: 'public, max-age=31536000',
+      });
       
       console.log('[ImageService] Getting download URL...');
       const downloadURL = await getDownloadURL(storageRef);

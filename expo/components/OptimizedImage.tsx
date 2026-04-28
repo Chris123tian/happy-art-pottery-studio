@@ -16,6 +16,7 @@ interface OptimizedImageProps {
   targetWidth?: number;
   showSkeleton?: boolean;
   transitionDuration?: number;
+  onLoad?: () => void;
 }
 
 function fixFirebaseStorageUrl(url: string): string {
@@ -41,6 +42,7 @@ function OptimizedImageComponent({
   showSkeleton = true,
   transitionDuration,
   priority,
+  onLoad,
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -53,7 +55,8 @@ function OptimizedImageComponent({
 
   const handleLoad = useCallback(() => {
     setIsLoaded(true);
-  }, []);
+    if (onLoad) onLoad();
+  }, [onLoad]);
 
   const containerStyle = [
     style,
@@ -63,7 +66,7 @@ function OptimizedImageComponent({
 
   if (!fixedUri || hasError) {
     return (
-      <View style={[...containerStyle, { backgroundColor: '#E8E0D8' }]}>
+      <View style={[...containerStyle, { backgroundColor: 'transparent' }]}>
         <View style={innerStyles.placeholder}>
           <Palette color="#C4A882" size={32} />
         </View>

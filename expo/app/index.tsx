@@ -59,6 +59,7 @@ export default function Home() {
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [heroImagesLoaded, setHeroImagesLoaded] = useState(false);
+  const [firstHeroReady, setFirstHeroReady] = useState(false);
   const [heroIndexA, setHeroIndexA] = useState(0);
   const [heroIndexB, setHeroIndexB] = useState(1);
   const [activeLayer, setActiveLayer] = useState<'A' | 'B'>('A');
@@ -443,60 +444,76 @@ export default function Home() {
         <View style={[styles.hero, { height: heroHeight }]}>
           <View style={styles.heroImageContainer}>
             {heroImages.length > 0 ? (
-              heroImagesLoaded ? (
-                <>
-                  <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityA }]}>
-                    <OptimizedImage
-                      uri={heroImages[heroIndexA]}
-                      style={styles.heroImage}
-                      contentFit="cover"
-                      priority="high"
-                      targetWidth={heroTargetWidth}
-                      recyclingKey={`hero-a-${heroIndexA}`}
-                      showSkeleton={false}
-                      transitionDuration={0}
-                    />
-                  </Animated.View>
-                  <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityB }]}>
-                    <OptimizedImage
-                      uri={heroImages[heroIndexB]}
-                      style={styles.heroImage}
-                      contentFit="cover"
-                      priority="high"
-                      targetWidth={heroTargetWidth}
-                      recyclingKey={`hero-b-${heroIndexB}`}
-                      showSkeleton={false}
-                      transitionDuration={0}
-                    />
-                  </Animated.View>
-                </>
-              ) : null
+              <>
+                {/* Hidden image to wait for actual load/decode of the first slide */}
+                {!firstHeroReady && (
+                  <Image
+                    source={{ uri: heroImages[0] }}
+                    style={{ width: 1, height: 1, opacity: 0, position: 'absolute' }}
+                    onLoad={() => setFirstHeroReady(true)}
+                    priority="high"
+                  />
+                )}
+                
+                {heroImagesLoaded && firstHeroReady ? (
+                  <>
+                    <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityA }]}>
+                      <OptimizedImage
+                        uri={heroImages[heroIndexA]}
+                        style={styles.heroImage}
+                        contentFit="cover"
+                        priority="high"
+                        targetWidth={heroTargetWidth}
+                        recyclingKey={`hero-a-${heroIndexA}`}
+                        showSkeleton={false}
+                        transitionDuration={0}
+                      />
+                    </Animated.View>
+                    <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityB }]}>
+                      <OptimizedImage
+                        uri={heroImages[heroIndexB]}
+                        style={styles.heroImage}
+                        contentFit="cover"
+                        priority="high"
+                        targetWidth={heroTargetWidth}
+                        recyclingKey={`hero-b-${heroIndexB}`}
+                        showSkeleton={false}
+                        transitionDuration={0}
+                      />
+                    </Animated.View>
+
+                    <View style={styles.heroOverlay}>
+                      <Text style={[styles.heroTitle, isLargeScreen && { fontSize: 40 }, isExtraLarge && { fontSize: 48 }]}>{displaySettings?.studioName || 'Happy Art Pottery Studio'}</Text>
+                      <Text style={[styles.heroSubtitle, isLargeScreen && { fontSize: 18, maxWidth: 600 }]}>{displaySettings?.tagline || 'Creating Beautiful Pottery Together'}</Text>
+                      <Button
+                        title="Book a Class"
+                        onPress={handleBookingPress}
+                        style={styles.heroButton}
+                      />
+                    </View>
+
+                    {heroImages.length > 1 && (
+                      <View style={styles.heroIndicators}>
+                        {heroImages.map((_, idx) => (
+                          <View
+                            key={idx}
+                            style={[
+                              styles.heroDot,
+                              idx === currentHeroIndex && styles.heroDotActive,
+                            ]}
+                          />
+                        ))}
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <View style={[StyleSheet.absoluteFill, styles.heroPlaceholder]} />
+                )}
+              </>
             ) : (
               <View style={[StyleSheet.absoluteFill, styles.heroPlaceholder]} />
             )}
           </View>
-          <View style={styles.heroOverlay}>
-            <Text style={[styles.heroTitle, isLargeScreen && { fontSize: 40 }, isExtraLarge && { fontSize: 48 }]}>{displaySettings?.studioName || 'Happy Art Pottery Studio'}</Text>
-            <Text style={[styles.heroSubtitle, isLargeScreen && { fontSize: 18, maxWidth: 600 }]}>{displaySettings?.tagline || 'Creating Beautiful Pottery Together'}</Text>
-            <Button
-              title="Book a Class"
-              onPress={handleBookingPress}
-              style={styles.heroButton}
-            />
-          </View>
-          {heroImages.length > 1 && (
-            <View style={styles.heroIndicators}>
-              {heroImages.map((_, idx) => (
-                <View
-                  key={idx}
-                  style={[
-                    styles.heroDot,
-                    idx === currentHeroIndex && styles.heroDotActive,
-                  ]}
-                />
-              ))}
-            </View>
-          )}
         </View>
 
         {/* STATS BANNER */}
@@ -535,7 +552,8 @@ export default function Home() {
               uri={displaySettings?.aboutImage}
               style={[styles.aboutImage, isLargeScreen && styles.aboutImageLarge, isExtraLarge && styles.aboutImageExtraLarge]}
               contentFit="cover"
-              priority="normal"
+              priority="high"
+              showSkeleton={false}
               targetWidth={isLargeScreen ? 640 : 480}
             />
             <View style={[styles.aboutText, isLargeScreen && styles.aboutTextLarge]}>
@@ -559,6 +577,7 @@ export default function Home() {
                     priority="normal"
                     targetWidth={isLargeScreen ? 400 : 300}
                     recyclingKey={`service-${service.id}`}
+                    showSkeleton={false}
                   />
                   <View style={styles.serviceCardContent}>
                     <Text style={styles.serviceTitle}>{service.title}</Text>
@@ -1346,7 +1365,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 240,
     borderRadius: theme.borderRadius.lg,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: 'transparent',
   },
   aboutImageLarge: {
     width: '45%',
@@ -1387,7 +1406,7 @@ const styles = StyleSheet.create({
   serviceImage: {
     width: '100%',
     height: 130,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: 'transparent',
   },
   serviceImageLarge: {
     height: 160,
@@ -1441,7 +1460,7 @@ const styles = StyleSheet.create({
   eventHomeImage: {
     width: '100%',
     height: 200,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: 'transparent',
   },
   eventHomeContent: {
     padding: theme.spacing.md,
