@@ -86,6 +86,7 @@ function OptimizedImageComponent({
         {...(blurhash ? { placeholder: blurhash } : {})}
         cachePolicy="memory-disk"
         transition={transitionDuration !== undefined ? transitionDuration : 0}
+        priority={priority}
         onLoad={handleLoad}
         onError={handleError}
       />

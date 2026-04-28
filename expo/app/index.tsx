@@ -470,16 +470,7 @@ export default function Home() {
                     />
                   </Animated.View>
                 </>
-              ) : (
-                <View style={StyleSheet.absoluteFill}>
-                  <OptimizedImage
-                    uri={undefined}
-                    style={styles.heroImage}
-                    contentFit="cover"
-                    showSkeleton={true}
-                  />
-                </View>
-              )
+              ) : null
             ) : (
               <View style={[StyleSheet.absoluteFill, styles.heroPlaceholder]} />
             )}
@@ -544,7 +535,7 @@ export default function Home() {
               uri={displaySettings?.aboutImage}
               style={[styles.aboutImage, isLargeScreen && styles.aboutImageLarge, isExtraLarge && styles.aboutImageExtraLarge]}
               contentFit="cover"
-              priority="high"
+              priority="normal"
               targetWidth={isLargeScreen ? 640 : 480}
             />
             <View style={[styles.aboutText, isLargeScreen && styles.aboutTextLarge]}>
@@ -1222,7 +1213,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   heroPlaceholder: {
-    backgroundColor: '#8B4513',
+    backgroundColor: 'transparent',
   },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
