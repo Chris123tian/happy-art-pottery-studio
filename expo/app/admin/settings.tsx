@@ -764,7 +764,7 @@ const styles = StyleSheet.create({
   },
   serviceImageCard: {
     width: 80,
-    height: 80,
+    aspectRatio: 1,
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: '#F1F5F9',

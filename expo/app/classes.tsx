@@ -45,8 +45,9 @@ export default function Classes() {
       {classItem.image && (
         <OptimizedImage
           uri={classItem.image}
-          style={[styles.classImage, !isMediumScreen && { height: 180 }, isSmallScreen && { height: 150 }, isLargeScreen && { height: 180 }]}
+          style={styles.classImage}
           contentFit="contain"
+          aspectRatio={1.33}
           priority="normal"
           targetWidth={isLargeScreen ? 400 : 320}
           recyclingKey={`class-${classItem.id}`}
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   },
   classImage: {
     width: '100%',
-    height: 160,
+    aspectRatio: 1.33,
     backgroundColor: theme.colors.surface,
   },
   classContent: {

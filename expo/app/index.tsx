@@ -569,6 +569,7 @@ export default function Home() {
                     uri={service.image}
                     style={[styles.serviceImage, isLargeScreen && styles.serviceImageLarge]}
                     contentFit="contain"
+                    aspectRatio={1.2}
                     priority="normal"
                     targetWidth={isLargeScreen ? 400 : 300}
                     recyclingKey={`service-${service.id}`}
@@ -802,6 +803,7 @@ export default function Home() {
                     uri={displaySettings.services!.find(s => s.id === 'shop')!.image}
                     style={styles.offeringImage}
                     contentFit="contain"
+                    aspectRatio={1.5}
                     targetWidth={400}
                   />
                 ) : (
@@ -833,6 +835,7 @@ export default function Home() {
                     uri={displaySettings.services!.find(s => s.id === 'parties')!.image}
                     style={styles.offeringImage}
                     contentFit="contain"
+                    aspectRatio={1.5}
                     targetWidth={400}
                   />
                 ) : (
@@ -864,6 +867,7 @@ export default function Home() {
                     uri={displaySettings.services!.find(s => s.id === 'schools')!.image}
                     style={styles.offeringImage}
                     contentFit="contain"
+                    aspectRatio={1.5}
                     targetWidth={400}
                   />
                 ) : (
@@ -1399,11 +1403,11 @@ const styles = StyleSheet.create({
   },
   serviceImage: {
     width: '100%',
-    height: 130,
+    aspectRatio: 1.2,
     backgroundColor: 'transparent',
   },
   serviceImageLarge: {
-    height: 160,
+    aspectRatio: 1.2,
   },
   serviceCardContent: {
     padding: theme.spacing.md,
@@ -2110,7 +2114,7 @@ const styles = StyleSheet.create({
   },
   offeringImage: {
     width: '100%',
-    height: 160,
+    aspectRatio: 1.5,
   },
   offeringCardBody: {
     padding: theme.spacing.lg,
