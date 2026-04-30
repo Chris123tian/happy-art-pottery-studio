@@ -16,7 +16,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { OptimizedImage } from '@/components/OptimizedImage';
+import { OptimizedImage, fixFirebaseStorageUrl } from '@/components/OptimizedImage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Star, HelpCircle, Palette, Users, Heart, Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Award, Sparkles, BookOpen, ArrowRight, X, Send, Calendar, ChevronLeft, ChevronRight, Store, PartyPopper, School } from 'lucide-react-native';
@@ -122,6 +122,7 @@ export default function Home() {
   );
 
   useEffect(() => {
+    let isMounted = true;
     const fetchBlogPosts = async () => {
       try {
         const blogId = '3200822550075316870';
@@ -137,13 +138,28 @@ export default function Home() {
             content: item.content,
             url: item.url,
           })) || [];
-          setBlogPosts(formattedPosts);
+          if (isMounted) {
+            setBlogPosts(formattedPosts);
+          }
         }
       } catch (error) {
         console.log('[Home] Blog fetch failed:', error);
       }
     };
     fetchBlogPosts();
+
+    // Safety timeout for hero images: if the first slide doesn't signal "ready" 
+    // within 3.5 seconds, show it anyway to avoid a blank hero section.
+    const heroTimeout = setTimeout(() => {
+      if (isMounted) {
+        setFirstHeroReady(true);
+      }
+    }, 3500);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(heroTimeout);
+    };
   }, []);
 
   // Preload Hero Images
@@ -152,8 +168,8 @@ export default function Home() {
     const preloadHeroImages = async () => {
       if (heroImages.length > 0) {
         try {
-          // Preload all hero images
-          const prefetchPromises = heroImages.map(url => Image.prefetch(url));
+          // Preload all hero images with fixed URLs
+          const prefetchPromises = heroImages.map(url => Image.prefetch(fixFirebaseStorageUrl(url)));
           await Promise.all(prefetchPromises);
         } catch (error) {
           console.log('[Home] Error prefetching hero images:', error);
@@ -448,7 +464,7 @@ export default function Home() {
                 {/* Hidden image to wait for actual load/decode of the first slide */}
                 {!firstHeroReady && (
                   <Image
-                    source={{ uri: heroImages[0] }}
+                    source={{ uri: fixFirebaseStorageUrl(heroImages[0]) }}
                     style={{ width: 1, height: 1, opacity: 0, position: 'absolute' }}
                     onLoad={() => setFirstHeroReady(true)}
                     priority="high"
@@ -465,8 +481,6 @@ export default function Home() {
                         priority="high"
                         targetWidth={heroTargetWidth}
                         recyclingKey={`hero-a-${heroIndexA}`}
-                        showSkeleton={false}
-                        transitionDuration={0}
                       />
                     </Animated.View>
                     <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityB }]}>
@@ -477,8 +491,6 @@ export default function Home() {
                         priority="high"
                         targetWidth={heroTargetWidth}
                         recyclingKey={`hero-b-${heroIndexB}`}
-                        showSkeleton={false}
-                        transitionDuration={0}
                       />
                     </Animated.View>
 
@@ -553,7 +565,6 @@ export default function Home() {
               style={[styles.aboutImage, isLargeScreen && styles.aboutImageLarge, isExtraLarge && styles.aboutImageExtraLarge]}
               contentFit="cover"
               priority="high"
-              showSkeleton={false}
               targetWidth={isLargeScreen ? 640 : 480}
             />
             <View style={[styles.aboutText, isLargeScreen && styles.aboutTextLarge]}>
@@ -577,7 +588,6 @@ export default function Home() {
                     priority="normal"
                     targetWidth={isLargeScreen ? 400 : 300}
                     recyclingKey={`service-${service.id}`}
-                    showSkeleton={false}
                   />
                   <View style={styles.serviceCardContent}>
                     <Text style={styles.serviceTitle}>{service.title}</Text>
@@ -808,7 +818,7 @@ export default function Home() {
                     uri={displaySettings.services!.find(s => s.id === 'shop')!.image}
                     style={styles.offeringImage}
                     contentFit="cover"
-                    showSkeleton={true}
+                    targetWidth={400}
                   />
                 ) : (
                   <View style={[styles.offeringIconWrap, { backgroundColor: '#FFF5EE' }]}>
@@ -839,7 +849,7 @@ export default function Home() {
                     uri={displaySettings.services!.find(s => s.id === 'parties')!.image}
                     style={styles.offeringImage}
                     contentFit="cover"
-                    showSkeleton={true}
+                    targetWidth={400}
                   />
                 ) : (
                   <View style={[styles.offeringIconWrap, { backgroundColor: '#FFF0F5' }]}>
@@ -870,7 +880,7 @@ export default function Home() {
                     uri={displaySettings.services!.find(s => s.id === 'schools')!.image}
                     style={styles.offeringImage}
                     contentFit="cover"
-                    showSkeleton={true}
+                    targetWidth={400}
                   />
                 ) : (
                   <View style={[styles.offeringIconWrap, { backgroundColor: '#F0F8FF' }]}>

@@ -47,6 +47,7 @@ export default function Gallery() {
         contentFit="cover"
         priority="normal"
         recyclingKey={`gallery-${item.id}`}
+        targetWidth={itemSize}
         showSkeleton={true}
       />
     </TouchableOpacity>
@@ -101,7 +102,7 @@ export default function Gallery() {
               style={styles.modalImage}
               contentFit="contain"
               priority="high"
-              showSkeleton={false}
+              targetWidth={screenWidth * 2} // Higher quality for modal
             />
           )}
         </View>

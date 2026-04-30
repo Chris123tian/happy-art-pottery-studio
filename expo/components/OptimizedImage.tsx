@@ -19,11 +19,29 @@ interface OptimizedImageProps {
   onLoad?: () => void;
 }
 
-function fixFirebaseStorageUrl(url: string): string {
+export function getProxyUrl(url: string, width?: number): string {
+  if (!url) return '';
+  // Only proxy external URLs, ignore local assets or already proxied URLs
+  if (!url.startsWith('http')) return url;
+  if (url.includes('wsrv.nl')) return url;
+
+  // Clean the URL for the proxy
+  const encodedUrl = encodeURIComponent(url);
+  let proxyUrl = `https://wsrv.nl/?url=${encodedUrl}&output=webp&q=80`;
+  
+  if (width) {
+    proxyUrl += `&w=${Math.round(width)}`;
+  }
+  
+  return proxyUrl;
+}
+
+export function fixFirebaseStorageUrl(url: string): string {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
   if (!trimmed) return '';
 
+  // Ensure Firebase URLs have the media parameter for direct access
   if (trimmed.includes('firebasestorage.googleapis.com') || trimmed.includes('firebasestorage.app')) {
     if (!trimmed.includes('alt=media')) {
       const separator = trimmed.includes('?') ? '&' : '?';
@@ -40,13 +58,16 @@ function OptimizedImageComponent({
   aspectRatio,
   blurhash,
   showSkeleton = true,
-  transitionDuration,
+  transitionDuration = 200, // Restore smooth transition by default
   priority,
+  targetWidth,
   onLoad,
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  
   const fixedUri = fixFirebaseStorageUrl(uri || '');
+  const finalUri = targetWidth ? getProxyUrl(fixedUri, targetWidth) : fixedUri;
 
   const handleError = useCallback(() => {
     console.log('[OptimizedImage] Image failed to load:', uri);
@@ -84,12 +105,12 @@ function OptimizedImageComponent({
         />
       )}
       <Image
-        source={{ uri: fixedUri }}
+        source={{ uri: finalUri }}
         style={{ width: '100%', height: '100%' }}
         contentFit={contentFit}
         {...(blurhash ? { placeholder: blurhash } : {})}
         cachePolicy="memory-disk"
-        transition={transitionDuration !== undefined ? transitionDuration : 0}
+        transition={transitionDuration}
         priority={priority}
         onLoad={handleLoad}
         onError={handleError}
