@@ -69,6 +69,7 @@ export default function Home() {
   const instructorOpacity = useRef(new Animated.Value(1)).current;
 
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [showInteractiveMap, setShowInteractiveMap] = useState(false);
   const [reviewForm, setReviewForm] = useState({ name: '', text: '', rating: 5 });
   const [submittingReview, setSubmittingReview] = useState(false);
 
@@ -1079,15 +1080,36 @@ export default function Home() {
             <Text style={styles.mapTitle}>Visit Us</Text>
             <View style={styles.mapWrapper}>
               {Platform.OS === 'web' ? (
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3970.5894634776437!2d-0.18566552603040923!3d5.627459532929082!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xfdf9b473890b8fd%3A0x831efdb91c838cfa!2sHappy%20Art!5e0!3m2!1sen!2sgh!4v1768613314968!5m2!1sen!2sgh"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0, borderRadius: 12 } as any}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
+                showInteractiveMap ? (
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3970.5894634776437!2d-0.18566552603040923!3d5.627459532929082!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xfdf9b473890b8fd%3A0x831efdb91c838cfa!2sHappy%20Art!5e0!3m2!1sen!2sgh!4v1768613314968!5m2!1sen!2sgh"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, borderRadius: 12 } as any}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.mapFacade} 
+                    onPress={() => setShowInteractiveMap(true)}
+                    activeOpacity={0.9}
+                  >
+                    <View style={styles.mapFacadeOverlay}>
+                      <View style={styles.mapFacadeContent}>
+                        <View style={styles.mapFacadeIconWrap}>
+                          <MapPin color={theme.colors.primary} size={32} />
+                        </View>
+                        <Text style={styles.mapFacadeTitle}>Interactive Studio Map</Text>
+                        <Text style={styles.mapFacadeSubtitle}>Click to load map and get directions</Text>
+                        <View style={styles.mapFacadeButton}>
+                          <Text style={styles.mapFacadeButtonText}>Load Map</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )
               ) : (
                 <View style={styles.map}>
                   <TouchableOpacity
@@ -1733,6 +1755,54 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.lg,
     overflow: 'hidden',
     ...theme.shadows.md,
+  },
+  mapFacade: {
+    flex: 1,
+    backgroundColor: '#F3F4F6', // Light gray map-like color
+    backgroundImage: 'linear-gradient(45deg, #F3F4F6 25%, #E5E7EB 25%, #E5E7EB 50%, #F3F4F6 50%, #F3F4F6 75%, #E5E7EB 75%, #E5E7EB 100%)',
+    backgroundSize: '40px 40px',
+  } as any,
+  mapFacadeOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapFacadeContent: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  mapFacadeIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...theme.shadows.md,
+    marginBottom: 8,
+  },
+  mapFacadeTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: theme.colors.secondary,
+  },
+  mapFacadeSubtitle: {
+    fontSize: 14,
+    color: theme.colors.textLight,
+    marginBottom: 12,
+  },
+  mapFacadeButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: theme.borderRadius.full,
+    ...theme.shadows.sm,
+  },
+  mapFacadeButtonText: {
+    color: theme.colors.white,
+    fontWeight: '600' as const,
+    fontSize: 14,
   },
   map: {
     flex: 1,
