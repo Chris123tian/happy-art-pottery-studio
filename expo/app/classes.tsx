@@ -46,7 +46,7 @@ export default function Classes() {
         <OptimizedImage
           uri={classItem.image}
           style={[styles.classImage, !isMediumScreen && { height: 180 }, isSmallScreen && { height: 150 }, isLargeScreen && { height: 180 }]}
-          contentFit="cover"
+          contentFit="contain"
           priority="normal"
           targetWidth={isLargeScreen ? 400 : 320}
           recyclingKey={`class-${classItem.id}`}

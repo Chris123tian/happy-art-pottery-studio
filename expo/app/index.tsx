@@ -568,7 +568,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={service.image}
                     style={[styles.serviceImage, isLargeScreen && styles.serviceImageLarge]}
-                    contentFit="cover"
+                    contentFit="contain"
                     priority="normal"
                     targetWidth={isLargeScreen ? 400 : 300}
                     recyclingKey={`service-${service.id}`}
@@ -801,7 +801,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={displaySettings.services!.find(s => s.id === 'shop')!.image}
                     style={styles.offeringImage}
-                    contentFit="cover"
+                    contentFit="contain"
                     targetWidth={400}
                   />
                 ) : (
@@ -832,7 +832,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={displaySettings.services!.find(s => s.id === 'parties')!.image}
                     style={styles.offeringImage}
-                    contentFit="cover"
+                    contentFit="contain"
                     targetWidth={400}
                   />
                 ) : (
@@ -863,7 +863,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={displaySettings.services!.find(s => s.id === 'schools')!.image}
                     style={styles.offeringImage}
-                    contentFit="cover"
+                    contentFit="contain"
                     targetWidth={400}
                   />
                 ) : (
