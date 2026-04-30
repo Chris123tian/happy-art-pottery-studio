@@ -225,30 +225,36 @@ export default function AdminSettings() {
           </Text>
         </View>
 
-        <View style={styles.section}>
+        <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Globe color={theme.colors.primary} size={24} />
-            <Text style={styles.sectionTitle}>Studio Information</Text>
+            <View style={[styles.iconBox, { backgroundColor: '#EBF5FF' }]}>
+              <Globe color="#007AFF" size={22} />
+            </View>
+            <View>
+              <Text style={styles.sectionTitle}>Studio Information</Text>
+              <Text style={styles.sectionSubtitle}>General branding and contact details</Text>
+            </View>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Studio Name</Text>
-            <TextInput
-              style={styles.input}
-              value={settings.studioName}
-              onChangeText={(value) => updateField('studioName', value)}
-              placeholder="Enter studio name"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Tagline</Text>
-            <TextInput
-              style={styles.input}
-              value={settings.tagline}
-              onChangeText={(value) => updateField('tagline', value)}
-              placeholder="Enter tagline"
-            />
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <Text style={styles.label}>Studio Name</Text>
+              <TextInput
+                style={styles.input}
+                value={settings.studioName}
+                onChangeText={(value) => updateField('studioName', value)}
+                placeholder="e.g. Happy Art Studio"
+              />
+            </View>
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <Text style={styles.label}>Tagline</Text>
+              <TextInput
+                style={styles.input}
+                value={settings.tagline}
+                onChangeText={(value) => updateField('tagline', value)}
+                placeholder="e.g. Create with Love"
+              />
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
@@ -257,32 +263,33 @@ export default function AdminSettings() {
               style={[styles.input, styles.textArea]}
               value={settings.description}
               onChangeText={(value) => updateField('description', value)}
-              placeholder="Enter studio description"
+              placeholder="Enter studio description..."
               multiline
               numberOfLines={4}
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Phone</Text>
-            <TextInput
-              style={styles.input}
-              value={settings.phone}
-              onChangeText={(value) => updateField('phone', value)}
-              placeholder="Enter phone number"
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>WhatsApp</Text>
-            <TextInput
-              style={styles.input}
-              value={settings.whatsapp}
-              onChangeText={(value) => updateField('whatsapp', value)}
-              placeholder="Enter WhatsApp number"
-              keyboardType="phone-pad"
-            />
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <Text style={styles.label}>Phone</Text>
+              <TextInput
+                style={styles.input}
+                value={settings.phone}
+                onChangeText={(value) => updateField('phone', value)}
+                placeholder="Phone number"
+                keyboardType="phone-pad"
+              />
+            </View>
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <Text style={styles.label}>WhatsApp</Text>
+              <TextInput
+                style={styles.input}
+                value={settings.whatsapp}
+                onChangeText={(value) => updateField('whatsapp', value)}
+                placeholder="WhatsApp number"
+                keyboardType="phone-pad"
+              />
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
@@ -291,7 +298,7 @@ export default function AdminSettings() {
               style={styles.input}
               value={settings.email}
               onChangeText={(value) => updateField('email', value)}
-              placeholder="Enter email address"
+              placeholder="studio@example.com"
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -303,225 +310,241 @@ export default function AdminSettings() {
               style={styles.input}
               value={settings.address}
               onChangeText={(value) => updateField('address', value)}
-              placeholder="Enter address"
+              placeholder="Street address, City"
             />
           </View>
         </View>
 
-        <View style={styles.section}>
+        <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Clock color={theme.colors.primary} size={24} />
-            <Text style={styles.sectionTitle}>Opening Hours</Text>
-          </View>
-
-          {Object.entries(settings.openingHours).map(([day, hours]) => (
-            <View key={day} style={styles.inputGroup}>
-              <Text style={styles.label}>
-                {day.charAt(0).toUpperCase() + day.slice(1)}
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={hours}
-                onChangeText={(value) =>
-                  updateOpeningHours(day as keyof SiteSettings['openingHours'], value)
-                }
-                placeholder="e.g., 9:00 AM - 5:00 PM or Closed"
-              />
+            <View style={[styles.iconBox, { backgroundColor: '#F0FDF4' }]}>
+              <Clock color="#16A34A" size={22} />
             </View>
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Music color={theme.colors.primary} size={24} />
-            <Text style={styles.sectionTitle}>Social Media Links</Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <View style={styles.socialLabel}>
-              <Facebook color="#1877F2" size={20} />
-              <Text style={styles.label}>Facebook</Text>
+            <View>
+              <Text style={styles.sectionTitle}>Opening Hours</Text>
+              <Text style={styles.sectionSubtitle}>When are you open for business?</Text>
             </View>
-            <TextInput
-              style={styles.input}
-              value={settings.socialMedia.facebook}
-              onChangeText={(value) => updateSocialMedia('facebook', value)}
-              placeholder="https://facebook.com/yourpage"
-              autoCapitalize="none"
-            />
           </View>
 
-          <View style={styles.inputGroup}>
-            <View style={styles.socialLabel}>
-              <Instagram color="#E4405F" size={20} />
-              <Text style={styles.label}>Instagram</Text>
-            </View>
-            <TextInput
-              style={styles.input}
-              value={settings.socialMedia.instagram}
-              onChangeText={(value) => updateSocialMedia('instagram', value)}
-              placeholder="https://instagram.com/yourpage"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <View style={styles.socialLabel}>
-              <Twitter color="#1DA1F2" size={20} />
-              <Text style={styles.label}>Twitter</Text>
-            </View>
-            <TextInput
-              style={styles.input}
-              value={settings.socialMedia.twitter}
-              onChangeText={(value) => updateSocialMedia('twitter', value)}
-              placeholder="https://twitter.com/yourpage"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <View style={styles.socialLabel}>
-              <Music color="#000000" size={20} />
-              <Text style={styles.label}>TikTok</Text>
-            </View>
-            <TextInput
-              style={styles.input}
-              value={settings.socialMedia.tiktok}
-              onChangeText={(value) => updateSocialMedia('tiktok', value)}
-              placeholder="https://tiktok.com/@yourpage"
-              autoCapitalize="none"
-            />
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Upload color={theme.colors.primary} size={24} />
-            <Text style={styles.sectionTitle}>Site Images</Text>
-          </View>
-          <Text style={styles.helpText}>
-            Upload images from your device for hero slideshow and about sections
-          </Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Hero Slideshow (Max 3 Images)</Text>
-            <Text style={styles.helpText}>
-              Add up to 3 images for the hero slideshow. Images will automatically rotate.
-            </Text>
-            {[0, 1, 2].map((index) => (
-              <View key={index} style={styles.heroSlideItem}>
-                <Text style={styles.slideLabel}>Image {index + 1}</Text>
-                {settings.heroImages?.[index] ? (
-                  <View style={styles.imageWithControls}>
-                    <Image
-                      source={{ uri: settings.heroImages[index] }}
-                      style={styles.imagePreview}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                      transition={200}
-                    />
-                    <View style={styles.imageControls}>
-                      <TouchableOpacity
-                        style={styles.changeButton}
-                        onPress={() => pickHeroSlideImage(index)}
-                      >
-                        <Upload color={theme.colors.white} size={18} />
-                        <Text style={styles.changeButtonText}>Change</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.removeButton}
-                        onPress={() => removeHeroSlideImage(index)}
-                      >
-                        <Text style={styles.removeButtonText}>Remove</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.uploadButton}
-                    onPress={() => pickHeroSlideImage(index)}
-                  >
-                    <Upload color={theme.colors.white} size={20} />
-                    <Text style={styles.uploadButtonText}>Upload Image {index + 1}</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Service Images</Text>
-            <Text style={styles.helpText}>
-              Upload custom images for each service displayed on the home page
-            </Text>
-            {currentServices.map((service) => (
-              <View key={service.id} style={styles.serviceItem}>
-                <Text style={styles.slideLabel}>
-                  {service.title || seedServices.find(s => s.id === service.id)?.title || 'Service'}
+          <View style={styles.gridRow}>
+            {Object.entries(settings.openingHours).map(([day, hours]) => (
+              <View key={day} style={styles.gridItem}>
+                <Text style={styles.label}>
+                  {day.charAt(0).toUpperCase() + day.slice(1)}
                 </Text>
                 <TextInput
-                  style={[styles.input, { marginBottom: theme.spacing.sm }]}
-                  value={service.title}
-                  onChangeText={(v) => updateServiceField(service.id, 'title', v)}
-                  placeholder={seedServices.find(s => s.id === service.id)?.title || "Service title"}
+                  style={styles.input}
+                  value={hours}
+                  onChangeText={(value) =>
+                    updateOpeningHours(day as keyof SiteSettings['openingHours'], value)
+                  }
+                  placeholder="e.g. 9am - 5pm"
                 />
-                <TextInput
-                  style={[styles.input, styles.textArea, { marginBottom: theme.spacing.sm }]}
-                  value={service.description}
-                  onChangeText={(v) => updateServiceField(service.id, 'description', v)}
-                  placeholder="Service description"
-                  multiline
-                  numberOfLines={2}
-                />
-                {service.image ? (
-                  <View style={styles.imageWithControls}>
-                    <Image
-                      source={{ uri: service.image }}
-                      style={styles.serviceImagePreview}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                      transition={200}
-                    />
-                    <TouchableOpacity
-                      style={styles.changeButton}
-                      onPress={() => pickServiceImage(service.id)}
-                    >
-                      <Upload color={theme.colors.white} size={18} />
-                      <Text style={styles.changeButtonText}>Change Image</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.uploadButton}
-                    onPress={() => pickServiceImage(service.id)}
-                  >
-                    <Upload color={theme.colors.white} size={20} />
-                    <Text style={styles.uploadButtonText}>Upload Image</Text>
-                  </TouchableOpacity>
-                )}
               </View>
             ))}
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.iconBox, { backgroundColor: '#FDF2F8' }]}>
+              <Music color="#DB2777" size={22} />
+            </View>
+            <View>
+              <Text style={styles.sectionTitle}>Social Media</Text>
+              <Text style={styles.sectionSubtitle}>Link your profiles for visitors</Text>
+            </View>
+          </View>
+
+          <View style={styles.gridRow}>
+            <View style={styles.gridItem}>
+              <View style={styles.socialLabel}>
+                <Facebook color="#1877F2" size={16} />
+                <Text style={styles.label}>Facebook</Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                value={settings.socialMedia.facebook}
+                onChangeText={(value) => updateSocialMedia('facebook', value)}
+                placeholder="Username/URL"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.gridItem}>
+              <View style={styles.socialLabel}>
+                <Instagram color="#E4405F" size={16} />
+                <Text style={styles.label}>Instagram</Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                value={settings.socialMedia.instagram}
+                onChangeText={(value) => updateSocialMedia('instagram', value)}
+                placeholder="Username/URL"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.gridItem}>
+              <View style={styles.socialLabel}>
+                <Twitter color="#1DA1F2" size={16} />
+                <Text style={styles.label}>Twitter</Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                value={settings.socialMedia.twitter}
+                onChangeText={(value) => updateSocialMedia('twitter', value)}
+                placeholder="Username/URL"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.gridItem}>
+              <View style={styles.socialLabel}>
+                <Music color="#000000" size={16} />
+                <Text style={styles.label}>TikTok</Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                value={settings.socialMedia.tiktok}
+                onChangeText={(value) => updateSocialMedia('tiktok', value)}
+                placeholder="Username/URL"
+                autoCapitalize="none"
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.iconBox, { backgroundColor: '#FFF7ED' }]}>
+              <Upload color="#EA580C" size={22} />
+            </View>
+            <View>
+              <Text style={styles.sectionTitle}>Visual Assets</Text>
+              <Text style={styles.sectionSubtitle}>Hero slideshow and about images</Text>
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Hero Slideshow (Max 3)</Text>
+            <View style={styles.heroGrid}>
+              {[0, 1, 2].map((index) => (
+                <View key={index} style={styles.heroGridItem}>
+                  {settings.heroImages?.[index] ? (
+                    <View style={styles.imageCard}>
+                      <Image
+                        source={{ uri: settings.heroImages[index] }}
+                        style={styles.heroPreview}
+                        contentFit="cover"
+                      />
+                      <View style={styles.imageOverlay}>
+                        <TouchableOpacity
+                          style={styles.miniButton}
+                          onPress={() => pickHeroSlideImage(index)}
+                        >
+                          <Upload color={theme.colors.white} size={14} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.miniButton, { backgroundColor: theme.colors.error }]}
+                          onPress={() => removeHeroSlideImage(index)}
+                        >
+                          <Trash2 color={theme.colors.white} size={14} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.placeholderBox}
+                      onPress={() => pickHeroSlideImage(index)}
+                    >
+                      <Upload color={theme.colors.textLight} size={24} />
+                      <Text style={styles.placeholderText}>Add</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>About Image</Text>
-            {settings.aboutImage && (
-              <Image
-                source={{ uri: settings.aboutImage }}
-                style={styles.imagePreview}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={200}
-              />
-            )}
-            <TouchableOpacity
-              style={styles.uploadButton}
-              onPress={() => pickImage('about')}
-            >
-              <Upload color={theme.colors.white} size={20} />
-              <Text style={styles.uploadButtonText}>Upload About Image</Text>
-            </TouchableOpacity>
+            <View style={styles.aboutImageRow}>
+              {settings.aboutImage ? (
+                <View style={[styles.imageCard, { flex: 1, height: 120 }]}>
+                  <Image
+                    source={{ uri: settings.aboutImage }}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                  />
+                  <TouchableOpacity
+                    style={styles.floatingButton}
+                    onPress={() => pickImage('about')}
+                  >
+                    <Upload color={theme.colors.white} size={16} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.placeholderBox, { flex: 1, height: 120 }]}
+                  onPress={() => pickImage('about')}
+                >
+                  <Upload color={theme.colors.textLight} size={24} />
+                  <Text style={styles.placeholderText}>Upload About Image</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.iconBox, { backgroundColor: '#F5F3FF' }]}>
+              <Paintbrush color="#7C3AED" size={22} />
+            </View>
+            <View>
+              <Text style={styles.sectionTitle}>Home Page Services</Text>
+              <Text style={styles.sectionSubtitle}>Customize titles and photos for services</Text>
+            </View>
+          </View>
+
+          {currentServices.map((service) => (
+            <View key={service.id} style={styles.serviceItem}>
+              <View style={styles.serviceMeta}>
+                <View style={styles.serviceFields}>
+                  <TextInput
+                    style={styles.miniInput}
+                    value={service.title}
+                    onChangeText={(v) => updateServiceField(service.id, 'title', v)}
+                    placeholder="Title"
+                  />
+                  <TextInput
+                    style={[styles.miniInput, { marginTop: 4, height: 60 }]}
+                    value={service.description}
+                    onChangeText={(v) => updateServiceField(service.id, 'description', v)}
+                    placeholder="Description"
+                    multiline
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.serviceImageCard}
+                  onPress={() => pickServiceImage(service.id)}
+                >
+                  {service.image ? (
+                    <Image
+                      source={{ uri: service.image }}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View style={styles.centered}>
+                      <Upload color={theme.colors.textLight} size={20} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
         </View>
 
         <TouchableOpacity
@@ -548,7 +571,7 @@ export default function AdminSettings() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#F8FAFC',
   },
   scrollView: {
     flex: 1,
@@ -566,10 +589,12 @@ const styles = StyleSheet.create({
   header: {
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
   title: {
     fontSize: 28,
-    fontWeight: '700' as const,
+    fontWeight: '800' as const,
     color: theme.colors.secondary,
     marginBottom: theme.spacing.xs,
   },
@@ -577,54 +602,179 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textLight,
   },
-  section: {
+  sectionCard: {
     backgroundColor: theme.colors.white,
+    borderRadius: 16,
     padding: theme.spacing.lg,
-    marginTop: theme.spacing.md,
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.lg,
+    ...theme.shadows.sm,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.lg,
+    gap: theme.spacing.md,
+    marginBottom: 20,
+  },
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700' as const,
     color: theme.colors.secondary,
   },
-  helpText: {
-    fontSize: 14,
+  sectionSubtitle: {
+    fontSize: 12,
     color: theme.colors.textLight,
-    marginBottom: theme.spacing.md,
+    marginTop: 2,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+  },
+  gridRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.md,
+  },
+  gridItem: {
+    width: '47%',
+    marginBottom: theme.spacing.sm,
   },
   inputGroup: {
     marginBottom: theme.spacing.md,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
     color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
+    marginBottom: 6,
   },
   socialLabel: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.xs,
-    marginBottom: theme.spacing.xs,
+    gap: 6,
+    marginBottom: 4,
   },
   input: {
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    fontSize: 16,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
     color: theme.colors.text,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#F8FAFC',
+  },
+  miniInput: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 13,
+    color: theme.colors.text,
+    backgroundColor: '#F8FAFC',
   },
   textArea: {
-    height: 100,
+    height: 80,
     textAlignVertical: 'top',
+  },
+  heroGrid: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+    marginTop: 8,
+  },
+  heroGridItem: {
+    flex: 1,
+    aspectRatio: 1,
+  },
+  imageCard: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#F1F5F9',
+    position: 'relative',
+    height: '100%',
+  },
+  heroPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  miniButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+  },
+  placeholderBox: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+  },
+  placeholderText: {
+    fontSize: 12,
+    color: theme.colors.textLight,
+    marginTop: 4,
+    fontWeight: '600' as const,
+  },
+  serviceItem: {
+    marginBottom: theme.spacing.md,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    borderRadius: 12,
+  },
+  serviceMeta: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+  },
+  serviceFields: {
+    flex: 1,
+  },
+  serviceImageCard: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   saveButton: {
     backgroundColor: theme.colors.primary,
@@ -633,7 +783,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: theme.spacing.sm,
     padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: 16,
     margin: theme.spacing.lg,
     ...theme.shadows.lg,
   },
@@ -644,81 +794,5 @@ const styles = StyleSheet.create({
     color: theme.colors.white,
     fontSize: 18,
     fontWeight: '700' as const,
-  },
-  imagePreview: {
-    width: '100%',
-    height: 200,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.sm,
-  },
-  uploadButton: {
-    backgroundColor: theme.colors.secondary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.sm,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-  },
-  uploadButtonText: {
-    color: theme.colors.white,
-    fontSize: 16,
-    fontWeight: '600' as const,
-  },
-  heroSlideItem: {
-    marginBottom: theme.spacing.lg,
-  },
-  slideLabel: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
-  },
-  imageWithControls: {
-    gap: theme.spacing.sm,
-  },
-  imageControls: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
-  changeButton: {
-    flex: 1,
-    backgroundColor: theme.colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.xs,
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.md,
-  },
-  changeButtonText: {
-    color: theme.colors.white,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  removeButton: {
-    flex: 1,
-    backgroundColor: theme.colors.error,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing.sm,
-    borderRadius: theme.borderRadius.md,
-  },
-  removeButtonText: {
-    color: theme.colors.white,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  serviceItem: {
-    marginBottom: theme.spacing.xl,
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-  },
-  serviceImagePreview: {
-    width: '100%',
-    height: 150,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.sm,
   },
 });

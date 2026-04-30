@@ -461,65 +461,49 @@ export default function Home() {
           <View style={styles.heroImageContainer}>
             {heroImages.length > 0 ? (
               <>
-                {/* Hidden image to wait for actual load/decode of the first slide */}
-                {!firstHeroReady && (
-                  <Image
-                    source={{ uri: fixFirebaseStorageUrl(heroImages[0]) }}
-                    style={{ width: 1, height: 1, opacity: 0, position: 'absolute' }}
-                    onLoad={() => setFirstHeroReady(true)}
+                <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityA }]}>
+                  <OptimizedImage
+                    uri={heroImages[heroIndexA]}
+                    style={styles.heroImage}
+                    contentFit="cover"
                     priority="high"
+                    targetWidth={heroTargetWidth}
+                    recyclingKey={`hero-a-${heroIndexA}`}
                   />
-                )}
-                
-                {heroImagesLoaded && firstHeroReady ? (
-                  <>
-                    <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityA }]}>
-                      <OptimizedImage
-                        uri={heroImages[heroIndexA]}
-                        style={styles.heroImage}
-                        contentFit="cover"
-                        priority="high"
-                        targetWidth={heroTargetWidth}
-                        recyclingKey={`hero-a-${heroIndexA}`}
-                      />
-                    </Animated.View>
-                    <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityB }]}>
-                      <OptimizedImage
-                        uri={heroImages[heroIndexB]}
-                        style={styles.heroImage}
-                        contentFit="cover"
-                        priority="high"
-                        targetWidth={heroTargetWidth}
-                        recyclingKey={`hero-b-${heroIndexB}`}
-                      />
-                    </Animated.View>
+                </Animated.View>
+                <Animated.View style={[StyleSheet.absoluteFill, { opacity: heroOpacityB }]}>
+                  <OptimizedImage
+                    uri={heroImages[heroIndexB]}
+                    style={styles.heroImage}
+                    contentFit="cover"
+                    priority="high"
+                    targetWidth={heroTargetWidth}
+                    recyclingKey={`hero-b-${heroIndexB}`}
+                  />
+                </Animated.View>
 
-                    <View style={styles.heroOverlay}>
-                      <Text style={[styles.heroTitle, isLargeScreen && { fontSize: 40 }, isExtraLarge && { fontSize: 48 }]}>{displaySettings?.studioName || 'Happy Art Pottery Studio'}</Text>
-                      <Text style={[styles.heroSubtitle, isLargeScreen && { fontSize: 18, maxWidth: 600 }]}>{displaySettings?.tagline || 'Creating Beautiful Pottery Together'}</Text>
-                      <Button
-                        title="Book a Class"
-                        onPress={handleBookingPress}
-                        style={styles.heroButton}
-                      />
-                    </View>
+                <View style={styles.heroOverlay}>
+                  <Text style={[styles.heroTitle, isLargeScreen && { fontSize: 40 }, isExtraLarge && { fontSize: 48 }]}>{displaySettings?.studioName || 'Happy Art Pottery Studio'}</Text>
+                  <Text style={[styles.heroSubtitle, isLargeScreen && { fontSize: 18, maxWidth: 600 }]}>{displaySettings?.tagline || 'Creating Beautiful Pottery Together'}</Text>
+                  <Button
+                    title="Book a Class"
+                    onPress={handleBookingPress}
+                    style={styles.heroButton}
+                  />
+                </View>
 
-                    {heroImages.length > 1 && (
-                      <View style={styles.heroIndicators}>
-                        {heroImages.map((_, idx) => (
-                          <View
-                            key={idx}
-                            style={[
-                              styles.heroDot,
-                              idx === currentHeroIndex && styles.heroDotActive,
-                            ]}
-                          />
-                        ))}
-                      </View>
-                    )}
-                  </>
-                ) : (
-                  <View style={[StyleSheet.absoluteFill, styles.heroPlaceholder]} />
+                {heroImages.length > 1 && (
+                  <View style={styles.heroIndicators}>
+                    {heroImages.map((_, idx) => (
+                      <View
+                        key={idx}
+                        style={[
+                          styles.heroDot,
+                          idx === currentHeroIndex && styles.heroDotActive,
+                        ]}
+                      />
+                    ))}
+                  </View>
                 )}
               </>
             ) : (
