@@ -13,6 +13,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Edit, Trash2, X, Star, Upload } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { Instructor } from '@/types';
@@ -208,12 +209,10 @@ export default function AdminInstructors() {
         <View style={styles.content}>
           {instructors.map((instructor) => (
             <View key={instructor.id} style={styles.card}>
-              <Image 
-                source={{ uri: instructor.image }} 
+              <OptimizedImage 
+                uri={instructor.image} 
                 style={styles.image} 
                 contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={200}
               />
               <View style={styles.cardContent}>
                 <View style={styles.cardHeader}>

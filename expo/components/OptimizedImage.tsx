@@ -1,6 +1,6 @@
 import React, { useState, useCallback, memo } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import { Palette } from 'lucide-react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Palette, ImageOff } from 'lucide-react-native';
 import { Skeleton } from './Skeleton';
 import { Image } from 'expo-image';
 
@@ -17,15 +17,16 @@ interface OptimizedImageProps {
   showSkeleton?: boolean;
   transitionDuration?: number;
   onLoad?: () => void;
+  onError?: () => void;
 }
 
 export function getProxyUrl(url: string, width?: number): string {
   if (!url) return '';
-  // Only proxy external URLs, ignore local assets or already proxied URLs
   if (!url.startsWith('http')) return url;
   if (url.includes('wsrv.nl')) return url;
+  if (url.includes('cloudinary.com')) return url;
+  if (url.startsWith('data:image/')) return url;
 
-  // Clean the URL for the proxy
   const encodedUrl = encodeURIComponent(url);
   let proxyUrl = `https://wsrv.nl/?url=${encodedUrl}&output=webp&q=80`;
   
@@ -41,7 +42,6 @@ export function fixFirebaseStorageUrl(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return '';
 
-  // Ensure Firebase URLs have the media parameter for direct access
   if (trimmed.includes('firebasestorage.googleapis.com') || trimmed.includes('firebasestorage.app')) {
     if (!trimmed.includes('alt=media')) {
       const separator = trimmed.includes('?') ? '&' : '?';
@@ -58,21 +58,34 @@ function OptimizedImageComponent({
   aspectRatio,
   blurhash,
   showSkeleton = true,
-  transitionDuration = 200, // Restore smooth transition by default
+  transitionDuration = 200,
   priority,
   targetWidth,
   onLoad,
+  onError,
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [useRawUri, setUseRawUri] = useState(false);
   
   const fixedUri = fixFirebaseStorageUrl(uri || '');
-  const finalUri = targetWidth ? getProxyUrl(fixedUri, targetWidth) : fixedUri;
+  const isBase64 = fixedUri.startsWith('data:image/');
+  const isCloudinary = fixedUri.includes('cloudinary.com');
+
+  const finalUri = (targetWidth && !useRawUri && !isBase64 && !isCloudinary)
+    ? getProxyUrl(fixedUri, targetWidth)
+    : fixedUri;
 
   const handleError = useCallback(() => {
-    console.log('[OptimizedImage] Image failed to load:', uri);
-    setHasError(true);
-  }, [uri]);
+    console.warn('[OptimizedImage] Failed to load image:', finalUri);
+    if (finalUri !== fixedUri && !useRawUri) {
+      console.log('[OptimizedImage] Retrying with raw URI:', fixedUri);
+      setUseRawUri(true);
+    } else {
+      setHasError(true);
+      if (onError) onError();
+    }
+  }, [finalUri, fixedUri, useRawUri, onError]);
 
   const handleLoad = useCallback(() => {
     setIsLoaded(true);
@@ -86,11 +99,19 @@ function OptimizedImageComponent({
   ];
 
   if (!fixedUri || hasError) {
+    const isFirebase = fixedUri.includes('firebasestorage');
     return (
-      <View style={[...containerStyle, { backgroundColor: 'transparent' }]}>
-        <View style={innerStyles.placeholder}>
-          <Palette color="#C4A882" size={32} />
-        </View>
+      <View style={[...containerStyle, innerStyles.errorContainer]}>
+        <ImageOff color="#C4A882" size={24} />
+        {isFirebase ? (
+          <Text style={innerStyles.errorText} numberOfLines={1}>
+            Storage Quota Exceeded
+          </Text>
+        ) : (
+          <Text style={innerStyles.errorText} numberOfLines={1}>
+            Image Unavailable
+          </Text>
+        )}
       </View>
     );
   }
@@ -120,12 +141,20 @@ function OptimizedImageComponent({
 }
 
 const innerStyles = StyleSheet.create({
-  placeholder: {
-    flex: 1,
+  errorContainer: {
+    backgroundColor: '#F5F0EB',
     alignItems: 'center',
     justifyContent: 'center',
-    opacity: 0.4,
+    gap: 4,
+    padding: 8,
+  },
+  errorText: {
+    fontSize: 10,
+    color: '#8C7A6B',
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 
 export const OptimizedImage = memo(OptimizedImageComponent);
+

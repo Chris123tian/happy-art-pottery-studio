@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Plus, Trash2 } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
 import { GalleryImage } from '@/types';
@@ -144,17 +145,10 @@ export default function AdminGallery() {
           {images.map((image) => (
             <View key={image.id} style={styles.imageItem}>
               {image.source ? (
-                <Image
-                  source={{ uri: image.source }}
+                <OptimizedImage
+                  uri={image.source}
                   style={styles.image}
                   contentFit="cover"
-                  cachePolicy="memory-disk"
-                  transition={200}
-                  onError={(error: any) => {
-                    console.error('Image load error for', image.id, error);
-                  }}
-                  onLoadStart={() => console.log('Loading image:', image.id)}
-                  onLoadEnd={() => console.log('Image loaded:', image.id)}
                 />
               ) : (
                 <View style={[styles.image, styles.imagePlaceholder]}>

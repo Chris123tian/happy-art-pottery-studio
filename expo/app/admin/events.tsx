@@ -14,6 +14,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Edit2, Trash2, Upload, X } from 'lucide-react-native';
 import { AdminHeader } from '@/components/AdminHeader';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { Button } from '@/components/Button';
 import { theme } from '@/constants/theme';
 import { dataService } from '@/services/dataService';
@@ -373,9 +374,9 @@ export default function AdminEvents() {
           )}
           {events.map((event) => (
             <View key={event.id} style={styles.eventCard}>
-              {event.image && (
-                <Image source={{ uri: event.image }} style={styles.eventImage} contentFit="cover" />
-              )}
+              {event.image ? (
+                <OptimizedImage uri={event.image} style={styles.eventImage} contentFit="cover" />
+              ) : null}
               <View style={styles.eventContent}>
                 <View style={styles.eventHeader}>
                   <Text style={styles.eventTitle}>{event.title}</Text>
