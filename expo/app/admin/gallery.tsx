@@ -7,6 +7,7 @@ import {
   Platform,
   Alert,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -149,8 +150,8 @@ export default function AdminGallery() {
                   contentFit="cover"
                   cachePolicy="memory-disk"
                   transition={200}
-                  onError={(error) => {
-                    console.error('Image load error for', image.id, error.nativeEvent?.error);
+                  onError={(error: any) => {
+                    console.error('Image load error for', image.id, error);
                   }}
                   onLoadStart={() => console.log('Loading image:', image.id)}
                   onLoadEnd={() => console.log('Image loaded:', image.id)}
