@@ -466,7 +466,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={heroImages[heroIndexA]}
                     style={styles.heroImage}
-                    contentFit="cover"
+                    contentFit="contain"
                     priority="high"
                     targetWidth={heroTargetWidth}
                     recyclingKey={`hero-a-${heroIndexA}`}
@@ -476,7 +476,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={heroImages[heroIndexB]}
                     style={styles.heroImage}
-                    contentFit="cover"
+                    contentFit="contain"
                     priority="high"
                     targetWidth={heroTargetWidth}
                     recyclingKey={`hero-b-${heroIndexB}`}
@@ -548,7 +548,7 @@ export default function Home() {
             <OptimizedImage
               uri={displaySettings?.aboutImage}
               style={[styles.aboutImage, isLargeScreen && styles.aboutImageLarge, isExtraLarge && styles.aboutImageExtraLarge]}
-              contentFit="cover"
+              contentFit="contain"
               priority="high"
               targetWidth={isLargeScreen ? 640 : 480}
             />

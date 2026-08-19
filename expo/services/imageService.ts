@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { getApp } from 'firebase/app';
 import { Platform } from 'react-native';
 
@@ -219,6 +219,27 @@ export const imageService = {
     quality?: number;
   }): Promise<string | null> {
     return this.pickAndUploadImage(options);
+  },
+
+  async deleteImageFromStorage(imageUrl: string): Promise<void> {
+    try {
+      if (!imageUrl || typeof imageUrl !== 'string') return;
+
+      if (imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('firebasestorage.app')) {
+        try {
+          console.log('[ImageService] Deleting storage object from Firebase Storage:', imageUrl);
+          const app = getApp();
+          const storage = getStorage(app);
+          const imageRef = ref(storage, imageUrl);
+          await deleteObject(imageRef);
+          console.log('[ImageService] ✓ Storage object deleted successfully from Firebase Storage');
+        } catch (storageError: any) {
+          console.warn('[ImageService] Could not delete file from Firebase Storage:', storageError?.message || storageError);
+        }
+      }
+    } catch (error: any) {
+      console.warn('[ImageService] Error in deleteImageFromStorage:', error?.message);
+    }
   },
 };
 

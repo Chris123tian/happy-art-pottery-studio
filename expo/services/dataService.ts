@@ -11,6 +11,7 @@ import {
   ShopItem,
 } from '@/types';
 import { database } from './database';
+import { imageService } from './imageService';
 import { seedClasses, seedInstructors, seedGallery, seedEvents, seedSettings, seedTestimonials } from './seedData';
 
 export const dataService = {
@@ -133,6 +134,15 @@ export const dataService = {
   },
 
   async deleteInstructor(id: string): Promise<void> {
+    try {
+      const items = await database.select<Instructor>('instructors');
+      const item = items.find((i) => i.id === id);
+      if (item?.image) {
+        await imageService.deleteImageFromStorage(item.image);
+      }
+    } catch (e) {
+      console.warn('[DataService] Error deleting instructor storage image:', e);
+    }
     await database.delete(`instructors:${id}`);
   },
 
@@ -172,6 +182,15 @@ export const dataService = {
   },
 
   async deleteGalleryImage(id: string): Promise<void> {
+    try {
+      const items = await database.select<GalleryImage>('gallery');
+      const item = items.find((g) => g.id === id);
+      if (item?.source) {
+        await imageService.deleteImageFromStorage(item.source);
+      }
+    } catch (e) {
+      console.warn('[DataService] Error deleting gallery storage image:', e);
+    }
     await database.delete(`gallery:${id}`);
   },
 
@@ -211,6 +230,15 @@ export const dataService = {
   },
 
   async deleteEvent(id: string): Promise<void> {
+    try {
+      const items = await database.select<Event>('events');
+      const item = items.find((e) => e.id === id);
+      if (item?.image) {
+        await imageService.deleteImageFromStorage(item.image);
+      }
+    } catch (e) {
+      console.warn('[DataService] Error deleting event storage image:', e);
+    }
     await database.delete(`events:${id}`);
   },
 
@@ -323,6 +351,15 @@ export const dataService = {
   },
 
   async deleteShopItem(id: string): Promise<void> {
+    try {
+      const items = await database.select<ShopItem>('shop');
+      const item = items.find((s) => s.id === id);
+      if (item?.image) {
+        await imageService.deleteImageFromStorage(item.image);
+      }
+    } catch (e) {
+      console.warn('[DataService] Error deleting shop storage image:', e);
+    }
     await database.delete(`shop:${id}`);
   },
 };
