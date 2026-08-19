@@ -44,6 +44,7 @@ export default function AdminGallery() {
     onSuccess: async () => {
       console.log('Image created successfully');
       await queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      try { await Image.clearMemoryCache(); await Image.clearDiskCache(); } catch (_) {}
       if (Platform.OS === 'web') {
         alert('Image added successfully!');
       } else {
@@ -65,8 +66,9 @@ export default function AdminGallery() {
 
   const deleteImageMutation = useMutation({
     mutationFn: (id: string) => dataService.deleteGalleryImage(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['gallery'] });
+      try { await Image.clearMemoryCache(); await Image.clearDiskCache(); } catch (_) {}
     },
     onError: (error) => {
       console.error('Error deleting image:', error);

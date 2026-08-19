@@ -43,7 +43,15 @@ export default function AdminSettings() {
       console.log('[Settings] Invalidating queries...');
       await queryClient.invalidateQueries({ queryKey: ['settings'] });
       await queryClient.refetchQueries({ queryKey: ['settings'] });
-      Alert.alert('Success', 'Settings saved successfully!');
+      // Clear image cache so freshly-uploaded images appear immediately everywhere
+      try {
+        await Image.clearMemoryCache();
+        await Image.clearDiskCache();
+        console.log('[Settings] Image cache cleared — website will show new images immediately');
+      } catch (cacheErr) {
+        console.warn('[Settings] Could not clear image cache:', cacheErr);
+      }
+      Alert.alert('Success', 'Settings saved successfully! The website will show your changes.');
     },
     onError: (error) => {
       console.error('[Settings] Error saving settings:', error);

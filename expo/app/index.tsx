@@ -444,7 +444,8 @@ export default function Home() {
   const isExtraLarge = screenWidth > 1200;
   const isSmallScreen = screenWidth <= 380;
   const currentHeroIndex = activeLayer === 'A' ? heroIndexA : heroIndexB;
-  const heroHeight = isExtraLarge ? 520 : isLargeScreen ? 440 : isMediumScreen ? 360 : isSmallScreen ? 240 : 300;
+  // Hero height scales with screen but never too short — image fills full width with cover
+  const heroHeight = isExtraLarge ? 600 : isLargeScreen ? 500 : isMediumScreen ? 420 : isSmallScreen ? 280 : 340;
   const heroTargetWidth = isExtraLarge ? 1920 : isLargeScreen ? 1280 : isMediumScreen ? 960 : 640;
 
   return (
@@ -466,7 +467,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={heroImages[heroIndexA]}
                     style={styles.heroImage}
-                    contentFit="contain"
+                    contentFit="cover"
                     priority="high"
                     targetWidth={heroTargetWidth}
                     recyclingKey={`hero-a-${heroIndexA}`}
@@ -476,7 +477,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={heroImages[heroIndexB]}
                     style={styles.heroImage}
-                    contentFit="contain"
+                    contentFit="cover"
                     priority="high"
                     targetWidth={heroTargetWidth}
                     recyclingKey={`hero-b-${heroIndexB}`}
@@ -548,7 +549,7 @@ export default function Home() {
             <OptimizedImage
               uri={displaySettings?.aboutImage}
               style={[styles.aboutImage, isLargeScreen && styles.aboutImageLarge, isExtraLarge && styles.aboutImageExtraLarge]}
-              contentFit="contain"
+              contentFit="cover"
               priority="high"
               targetWidth={isLargeScreen ? 640 : 480}
             />
@@ -1240,12 +1241,13 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.white,
   },
   hero: {
-    height: 280,
+    // Height is set dynamically in JSX via heroHeight variable
     position: 'relative',
+    overflow: 'hidden',
   },
   heroImageContainer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
+    backgroundColor: '#3D1F12',
   },
   heroImage: {
     width: '100%',
@@ -1383,16 +1385,18 @@ const styles = StyleSheet.create({
   },
   aboutImage: {
     width: '100%',
-    height: 240,
+    aspectRatio: 4 / 3,
     borderRadius: theme.borderRadius.lg,
-    backgroundColor: 'transparent',
+    backgroundColor: '#F5F0EB',
+    overflow: 'hidden',
   },
   aboutImageLarge: {
     width: '45%',
-    height: 340,
+    aspectRatio: undefined,
+    height: 380,
   },
   aboutImageExtraLarge: {
-    height: 400,
+    height: 440,
   },
   aboutText: {
     flex: 1,
