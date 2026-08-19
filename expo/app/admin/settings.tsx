@@ -732,6 +732,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     elevation: 4,
   },
+  aboutImageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   placeholderBox: {
     flex: 1,
     borderRadius: 12,
