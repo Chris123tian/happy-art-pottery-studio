@@ -7,6 +7,29 @@ import { Platform } from 'react-native';
  * Resizes and compresses an image URI into a smaller JPEG Blob and Data URI.
  * Reduces 5-10MB camera pictures down to ~50-100KB.
  */
+async function fallbackFetch(uri: string): Promise<{ blob: Blob; dataUrl: string }> {
+  try {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+    return { blob, dataUrl };
+  } catch (e) {
+    console.error('[ImageService] Fallback fetch failed:', e);
+    throw e;
+  }
+}
+
+/**
+ * Resizes and compresses an image URI into a smaller JPEG Blob and permanent Base64 Data URI.
+ * Reduces 5-10MB camera pictures down to ~50-100KB.
+ */
 async function compressImageUri(
   uri: string,
   maxWidth = 1000,
@@ -15,66 +38,62 @@ async function compressImageUri(
   if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof document !== 'undefined') {
     return new Promise((resolve) => {
       const img = new window.Image();
-      img.crossOrigin = 'anonymous';
+      if (uri.startsWith('http://') || uri.startsWith('https://')) {
+        img.crossOrigin = 'anonymous';
+      }
+
       img.onload = () => {
-        let width = img.width;
-        let height = img.height;
+        try {
+          let width = img.width;
+          let height = img.height;
 
-        if (width > maxWidth || height > maxWidth) {
-          if (width > height) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          } else {
-            width = Math.round((width * maxWidth) / height);
-            height = maxWidth;
-          }
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          fetch(uri).then(res => res.blob()).then(blob => resolve({ blob, dataUrl: uri }));
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve({ blob, dataUrl });
+          if (width > maxWidth || height > maxWidth) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
             } else {
-              try {
-                const byteString = atob(dataUrl.split(',')[1]);
-                const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
-                const ab = new ArrayBuffer(byteString.length);
-                const ia = new Uint8Array(ab);
-                for (let i = 0; i < byteString.length; i++) {
-                  ia[i] = byteString.charCodeAt(i);
-                }
-                resolve({ blob: new Blob([ab], { type: mimeString }), dataUrl });
-              } catch (e) {
-                fetch(uri).then(res => res.blob()).then(b => resolve({ blob: b, dataUrl: uri }));
-              }
+              width = Math.round((width * maxWidth) / height);
+              height = maxWidth;
             }
-          },
-          'image/jpeg',
-          quality
-        );
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            fallbackFetch(uri).then(resolve).catch(() => resolve({ blob: new Blob([]), dataUrl: uri }));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+          const byteString = atob(dataUrl.split(',')[1]);
+          const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+          const blob = new Blob([ab], { type: mimeString });
+          resolve({ blob, dataUrl });
+        } catch (err) {
+          console.warn('[ImageService] Canvas compression failed, trying FileReader:', err);
+          fallbackFetch(uri).then(resolve).catch(() => resolve({ blob: new Blob([]), dataUrl: uri }));
+        }
       };
-      img.onerror = () => {
-        fetch(uri).then(res => res.blob()).then(blob => resolve({ blob, dataUrl: uri }));
+
+      img.onerror = (err) => {
+        console.warn('[ImageService] Image load error in canvas compression, trying FileReader:', err);
+        fallbackFetch(uri).then(resolve).catch(() => resolve({ blob: new Blob([]), dataUrl: uri }));
       };
+
       img.src = uri;
     });
   } else {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    return { blob, dataUrl: uri };
+    return fallbackFetch(uri);
   }
 }
 

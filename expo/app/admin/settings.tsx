@@ -98,12 +98,13 @@ export default function AdminSettings() {
       });
 
       if (imageUrl) {
-        console.log(`[Settings] ${type} image uploaded successfully`);
+        console.log(`[Settings] ${type} image uploaded successfully:`, imageUrl.substring(0, 50));
         const updatedSettings = {
           ...settings,
           [type === 'hero' ? 'heroImage' : 'aboutImage']: imageUrl,
         };
         setSettings(updatedSettings);
+        updateSettingsMutation.mutate(updatedSettings);
       }
     } catch (error: any) {
       console.error('[Settings] Error picking image:', error);
@@ -127,10 +128,12 @@ export default function AdminSettings() {
         console.log(`[Settings] Hero slide image ${index} uploaded successfully`);
         const updatedHeroImages = [...(settings.heroImages || [])];
         updatedHeroImages[index] = imageUrl;
-        setSettings({
+        const updatedSettings = {
           ...settings,
           heroImages: updatedHeroImages,
-        });
+        };
+        setSettings(updatedSettings);
+        updateSettingsMutation.mutate(updatedSettings);
       }
     } catch (error: any) {
       console.error('[Settings] Error picking hero slide image:', error);
@@ -140,10 +143,12 @@ export default function AdminSettings() {
 
   const removeHeroSlideImage = (index: number) => {
     const updatedHeroImages = settings.heroImages?.filter((_, i) => i !== index) || [];
-    setSettings({
+    const updatedSettings = {
       ...settings,
       heroImages: updatedHeroImages,
-    });
+    };
+    setSettings(updatedSettings);
+    updateSettingsMutation.mutate(updatedSettings);
   };
 
   const currentServices = [...(settings.services || [])];
@@ -166,7 +171,9 @@ export default function AdminSettings() {
         const updatedServices = currentServices.map((s) =>
           s.id === serviceId ? { ...s, image: imageUrl } : s
         );
-        setSettings({ ...settings, services: updatedServices });
+        const updatedSettings = { ...settings, services: updatedServices };
+        setSettings(updatedSettings);
+        updateSettingsMutation.mutate(updatedSettings);
       }
     } catch (error: any) {
       console.error('[Settings] Error picking service image:', error);

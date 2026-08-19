@@ -1,6 +1,5 @@
 import React, { useState, useCallback, memo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Palette, ImageOff } from 'lucide-react-native';
+import { View, StyleSheet } from 'react-native';
 import { Skeleton } from './Skeleton';
 import { Image } from 'expo-image';
 
@@ -18,13 +17,17 @@ interface OptimizedImageProps {
   transitionDuration?: number;
   onLoad?: () => void;
   onError?: () => void;
+  fallbackUri?: string;
 }
+
+const DEFAULT_POTTERY_FALLBACK = 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=800&auto=format&fit=crop&q=80';
 
 export function getProxyUrl(url: string, width?: number): string {
   if (!url) return '';
   if (!url.startsWith('http')) return url;
   if (url.includes('wsrv.nl')) return url;
   if (url.includes('cloudinary.com')) return url;
+  if (url.includes('unsplash.com')) return url;
   if (url.startsWith('data:image/')) return url;
 
   const encodedUrl = encodeURIComponent(url);
@@ -63,29 +66,38 @@ function OptimizedImageComponent({
   targetWidth,
   onLoad,
   onError,
+  fallbackUri = DEFAULT_POTTERY_FALLBACK,
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [useRawUri, setUseRawUri] = useState(false);
-  
+  const [useFallbackImage, setUseFallbackImage] = useState(false);
+
   const fixedUri = fixFirebaseStorageUrl(uri || '');
   const isBase64 = fixedUri.startsWith('data:image/');
   const isCloudinary = fixedUri.includes('cloudinary.com');
+  const isUnsplash = fixedUri.includes('unsplash.com');
 
-  const finalUri = (targetWidth && !useRawUri && !isBase64 && !isCloudinary)
-    ? getProxyUrl(fixedUri, targetWidth)
-    : fixedUri;
+  const activeUri = useFallbackImage ? fallbackUri : fixedUri;
+
+  const finalUri = (targetWidth && !useRawUri && !isBase64 && !isCloudinary && !isUnsplash)
+    ? getProxyUrl(activeUri, targetWidth)
+    : activeUri;
 
   const handleError = useCallback(() => {
-    console.warn('[OptimizedImage] Failed to load image:', finalUri);
-    if (finalUri !== fixedUri && !useRawUri) {
-      console.log('[OptimizedImage] Retrying with raw URI:', fixedUri);
+    console.warn('[OptimizedImage] Image load failed:', finalUri);
+    if (finalUri !== activeUri && !useRawUri) {
+      console.log('[OptimizedImage] Retrying with raw URI:', activeUri);
+      setUseRawUri(true);
+    } else if (!useFallbackImage && fallbackUri && activeUri !== fallbackUri) {
+      console.log('[OptimizedImage] Falling back to default studio fallback image.');
+      setUseFallbackImage(true);
       setUseRawUri(true);
     } else {
       setHasError(true);
       if (onError) onError();
     }
-  }, [finalUri, fixedUri, useRawUri, onError]);
+  }, [finalUri, activeUri, useRawUri, useFallbackImage, fallbackUri, onError]);
 
   const handleLoad = useCallback(() => {
     setIsLoaded(true);
@@ -98,21 +110,9 @@ function OptimizedImageComponent({
     aspectRatio ? { aspectRatio } : undefined,
   ];
 
-  if (!fixedUri || hasError) {
-    const isFirebase = fixedUri.includes('firebasestorage');
+  if ((!fixedUri && !fallbackUri) || (hasError && !fallbackUri)) {
     return (
-      <View style={[...containerStyle, innerStyles.errorContainer]}>
-        <ImageOff color="#C4A882" size={24} />
-        {isFirebase ? (
-          <Text style={innerStyles.errorText} numberOfLines={1}>
-            Storage Quota Exceeded
-          </Text>
-        ) : (
-          <Text style={innerStyles.errorText} numberOfLines={1}>
-            Image Unavailable
-          </Text>
-        )}
-      </View>
+      <View style={[...containerStyle, innerStyles.placeholderContainer]} />
     );
   }
 
@@ -126,7 +126,7 @@ function OptimizedImageComponent({
         />
       )}
       <Image
-        source={{ uri: finalUri }}
+        source={{ uri: finalUri || fallbackUri }}
         style={{ width: '100%', height: '100%' }}
         contentFit={contentFit}
         {...(blurhash ? { placeholder: blurhash } : {})}
@@ -141,18 +141,8 @@ function OptimizedImageComponent({
 }
 
 const innerStyles = StyleSheet.create({
-  errorContainer: {
+  placeholderContainer: {
     backgroundColor: '#F5F0EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    padding: 8,
-  },
-  errorText: {
-    fontSize: 10,
-    color: '#8C7A6B',
-    fontWeight: '600',
-    textAlign: 'center',
   },
 });
 
