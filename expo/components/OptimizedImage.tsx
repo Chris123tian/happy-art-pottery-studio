@@ -67,6 +67,7 @@ function OptimizedImageComponent({
   transitionDuration = 200,
   priority,
   targetWidth,
+  recyclingKey,
   onLoad,
   onError,
   fallbackUri = DEFAULT_POTTERY_FALLBACK,
@@ -75,6 +76,14 @@ function OptimizedImageComponent({
   const [isLoaded, setIsLoaded] = useState(false);
   const [useRawUri, setUseRawUri] = useState(false);
   const [useFallbackImage, setUseFallbackImage] = useState(false);
+
+  // Reset component state when uri or recyclingKey changes so updated images display immediately
+  React.useEffect(() => {
+    setHasError(false);
+    setIsLoaded(false);
+    setUseRawUri(false);
+    setUseFallbackImage(false);
+  }, [uri, recyclingKey]);
 
   const fixedUri = fixFirebaseStorageUrl(uri || '');
   const isBase64 = fixedUri.startsWith('data:image/');
@@ -129,9 +138,11 @@ function OptimizedImageComponent({
         />
       )}
       <Image
+        key={finalUri || fallbackUri}
         source={{ uri: finalUri || fallbackUri }}
         style={{ width: '100%', height: '100%' }}
         contentFit={contentFit}
+        recyclingKey={recyclingKey}
         {...(blurhash ? { placeholder: blurhash } : {})}
         cachePolicy="memory-disk"
         transition={transitionDuration}

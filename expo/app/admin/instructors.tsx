@@ -50,6 +50,7 @@ export default function AdminInstructors() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['instructors'] });
+      try { await Image.clearMemoryCache(); await Image.clearDiskCache(); } catch (_) {}
       Alert.alert('Success', 'Instructor created successfully!');
       closeModal();
     },
@@ -77,6 +78,7 @@ export default function AdminInstructors() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['instructors'] });
+      try { await Image.clearMemoryCache(); await Image.clearDiskCache(); } catch (_) {}
       Alert.alert('Success', 'Instructor updated successfully!');
       closeModal();
     },
@@ -115,14 +117,15 @@ export default function AdminInstructors() {
 
   const pickImage = async () => {
     try {
-      const base64Image = await imageService.pickImage({
+      const uploadedUrl = await imageService.pickImage({
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.7,
+        quality: 0.8,
+        storagePath: `instructors/instructor_${Date.now()}.jpg`,
       });
 
-      if (base64Image) {
-        setFormData({ ...formData, image: base64Image });
+      if (uploadedUrl) {
+        setFormData((prev) => ({ ...prev, image: uploadedUrl }));
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -177,7 +180,7 @@ export default function AdminInstructors() {
       name: formData.name,
       title: formData.title,
       bio: formData.bio,
-      image: formData.image || 'https://via.placeholder.com/400',
+      image: formData.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80',
       experience: formData.experience,
       specialties: specialtiesArray,
       featured: formData.featured,
