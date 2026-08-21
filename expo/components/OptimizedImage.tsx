@@ -29,6 +29,9 @@ export function getProxyUrl(url: string, width?: number): string {
   if (url.includes('cloudinary.com')) return url;
   if (url.includes('unsplash.com')) return url;
   if (url.startsWith('data:image/')) return url;
+  // Firebase Storage has its own CDN — proxy is counterproductive and slow
+  if (url.includes('firebasestorage.googleapis.com')) return url;
+  if (url.includes('firebasestorage.app')) return url;
 
   const encodedUrl = encodeURIComponent(url);
   let proxyUrl = `https://wsrv.nl/?url=${encodedUrl}&output=webp&q=80`;

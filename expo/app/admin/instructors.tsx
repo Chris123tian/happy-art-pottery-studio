@@ -90,11 +90,24 @@ export default function AdminInstructors() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => dataService.deleteInstructor(id),
+    mutationFn: ({ id, imageUrl }: { id: string; imageUrl?: string }) =>
+      dataService.deleteInstructor(id, imageUrl),
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: ['instructors'] });
+      const previousInstructors = queryClient.getQueryData(['instructors']);
+      // Optimistically remove immediately
+      queryClient.setQueryData(['instructors'], (old: any) =>
+        (old || []).filter((inst: Instructor) => inst.id !== id)
+      );
+      return { previousInstructors };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['instructors'] });
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousInstructors) {
+        queryClient.setQueryData(['instructors'], context.previousInstructors);
+      }
       console.error('Error deleting instructor:', error);
       Alert.alert('Error', 'Failed to delete instructor');
     },
@@ -186,7 +199,7 @@ export default function AdminInstructors() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => deleteMutation.mutate(instructor.id),
+          onPress: () => deleteMutation.mutate({ id: instructor.id, imageUrl: instructor.image }),
         },
       ]
     );

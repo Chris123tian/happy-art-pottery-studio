@@ -65,12 +65,25 @@ export default function AdminGallery() {
   });
 
   const deleteImageMutation = useMutation({
-    mutationFn: (id: string) => dataService.deleteGalleryImage(id),
+    mutationFn: ({ id, imageUrl }: { id: string; imageUrl?: string }) =>
+      dataService.deleteGalleryImage(id, imageUrl),
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: ['gallery'] });
+      const previousGallery = queryClient.getQueryData(['gallery']);
+      // Optimistically remove the image immediately
+      queryClient.setQueryData(['gallery'], (old: any) =>
+        (old || []).filter((img: any) => img.id !== id)
+      );
+      return { previousGallery };
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['gallery'] });
       try { await Image.clearMemoryCache(); await Image.clearDiskCache(); } catch (_) {}
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousGallery) {
+        queryClient.setQueryData(['gallery'], context.previousGallery);
+      }
       console.error('Error deleting image:', error);
       Alert.alert('Error', 'Failed to delete image');
     },
@@ -114,10 +127,10 @@ export default function AdminGallery() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, imageUrl?: string) => {
     if (Platform.OS === 'web') {
       if (confirm('Are you sure you want to delete this image?')) {
-        deleteImageMutation.mutate(id);
+        deleteImageMutation.mutate({ id, imageUrl });
       }
     } else {
       Alert.alert(
@@ -125,7 +138,7 @@ export default function AdminGallery() {
         'Are you sure you want to delete this image?',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: () => deleteImageMutation.mutate(id) },
+          { text: 'Delete', style: 'destructive', onPress: () => deleteImageMutation.mutate({ id, imageUrl }) },
         ]
       );
     }
@@ -159,7 +172,7 @@ export default function AdminGallery() {
               )}
               <TouchableOpacity
                 style={styles.deleteButton}
-                onPress={() => handleDelete(image.id)}
+                onPress={() => handleDelete(image.id, image.source)}
               >
                 <Trash2 color={theme.colors.white} size={20} />
               </TouchableOpacity>

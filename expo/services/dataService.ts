@@ -133,15 +133,13 @@ export const dataService = {
     return await database.update(`instructors:${id}`, instructor);
   },
 
-  async deleteInstructor(id: string): Promise<void> {
-    try {
-      const items = await database.select<Instructor>('instructors');
-      const item = items.find((i) => i.id === id);
-      if (item?.image) {
-        await imageService.deleteImageFromStorage(item.image);
+  async deleteInstructor(id: string, imageUrl?: string): Promise<void> {
+    if (imageUrl) {
+      try {
+        await imageService.deleteImageFromStorage(imageUrl);
+      } catch (e) {
+        console.warn('[DataService] Error deleting instructor storage image:', e);
       }
-    } catch (e) {
-      console.warn('[DataService] Error deleting instructor storage image:', e);
     }
     await database.delete(`instructors:${id}`);
   },
@@ -181,15 +179,13 @@ export const dataService = {
     return await database.update(`gallery:${id}`, image);
   },
 
-  async deleteGalleryImage(id: string): Promise<void> {
-    try {
-      const items = await database.select<GalleryImage>('gallery');
-      const item = items.find((g) => g.id === id);
-      if (item?.source) {
-        await imageService.deleteImageFromStorage(item.source);
+  async deleteGalleryImage(id: string, imageUrl?: string): Promise<void> {
+    if (imageUrl) {
+      try {
+        await imageService.deleteImageFromStorage(imageUrl);
+      } catch (e) {
+        console.warn('[DataService] Error deleting gallery storage image:', e);
       }
-    } catch (e) {
-      console.warn('[DataService] Error deleting gallery storage image:', e);
     }
     await database.delete(`gallery:${id}`);
   },
@@ -229,15 +225,13 @@ export const dataService = {
     return await database.update(`events:${id}`, event);
   },
 
-  async deleteEvent(id: string): Promise<void> {
-    try {
-      const items = await database.select<Event>('events');
-      const item = items.find((e) => e.id === id);
-      if (item?.image) {
-        await imageService.deleteImageFromStorage(item.image);
+  async deleteEvent(id: string, imageUrl?: string): Promise<void> {
+    if (imageUrl) {
+      try {
+        await imageService.deleteImageFromStorage(imageUrl);
+      } catch (e) {
+        console.warn('[DataService] Error deleting event storage image:', e);
       }
-    } catch (e) {
-      console.warn('[DataService] Error deleting event storage image:', e);
     }
     await database.delete(`events:${id}`);
   },
@@ -350,15 +344,13 @@ export const dataService = {
     return await database.update(`shop:${id}`, item);
   },
 
-  async deleteShopItem(id: string): Promise<void> {
-    try {
-      const items = await database.select<ShopItem>('shop');
-      const item = items.find((s) => s.id === id);
-      if (item?.image) {
-        await imageService.deleteImageFromStorage(item.image);
+  async deleteShopItem(id: string, imageUrl?: string): Promise<void> {
+    if (imageUrl) {
+      try {
+        await imageService.deleteImageFromStorage(imageUrl);
+      } catch (e) {
+        console.warn('[DataService] Error deleting shop storage image:', e);
       }
-    } catch (e) {
-      console.warn('[DataService] Error deleting shop storage image:', e);
     }
     await database.delete(`shop:${id}`);
   },

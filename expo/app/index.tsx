@@ -149,42 +149,24 @@ export default function Home() {
     };
     fetchBlogPosts();
 
-    // Safety timeout for hero images: if the first slide doesn't signal "ready" 
-    // within 3.5 seconds, show it anyway to avoid a blank hero section.
-    const heroTimeout = setTimeout(() => {
-      if (isMounted) {
-        setFirstHeroReady(true);
-      }
-    }, 3500);
-
     return () => {
       isMounted = false;
-      clearTimeout(heroTimeout);
     };
   }, []);
 
-  // Preload Hero Images
+  // Fire-and-forget prefetch — expo-image handles caching internally.
+  // We mark heroImagesLoaded=true immediately so the slideshow can start
+  // without blocking on a network round-trip.
   useEffect(() => {
-    let isMounted = true;
-    const preloadHeroImages = async () => {
-      if (heroImages.length > 0) {
-        try {
-          // Preload all hero images with fixed URLs
-          const prefetchPromises = heroImages.map(url => Image.prefetch(fixFirebaseStorageUrl(url)));
-          await Promise.all(prefetchPromises);
-        } catch (error) {
-          console.log('[Home] Error prefetching hero images:', error);
-        } finally {
-          if (isMounted) {
-            setHeroImagesLoaded(true);
-          }
-        }
+    if (heroImages.length > 0) {
+      setHeroImagesLoaded(true);
+      setFirstHeroReady(true);
+      // Kick off background prefetch for slides 2+ so transitions are smooth
+      const urlsToPreload = heroImages.slice(1).map(url => fixFirebaseStorageUrl(url));
+      if (urlsToPreload.length > 0) {
+        Image.prefetch(urlsToPreload).catch(() => {});
       }
-    };
-    preloadHeroImages();
-    return () => {
-      isMounted = false;
-    };
+    }
   }, [heroImages]);
 
   const transitioningRef = useRef(false);

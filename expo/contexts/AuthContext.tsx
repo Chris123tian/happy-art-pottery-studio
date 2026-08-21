@@ -15,7 +15,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       
       console.log('[Auth] Setting up Firebase Auth listener');
       
-      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      const unsubscribe = onAuthStateChanged(auth, (firebaseUser: User | null) => {
         console.log('[Auth] State changed:', firebaseUser ? 'Authenticated' : 'Not authenticated');
         if (firebaseUser) {
           console.log('[Auth] User email:', firebaseUser.email);

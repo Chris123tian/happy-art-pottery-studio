@@ -114,11 +114,24 @@ export default function AdminShop() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => dataService.deleteShopItem(id),
+    mutationFn: ({ id, imageUrl }: { id: string; imageUrl?: string }) =>
+      dataService.deleteShopItem(id, imageUrl),
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: ['shop'] });
+      const previousItems = queryClient.getQueryData(['shop']);
+      // Optimistically remove immediately
+      queryClient.setQueryData(['shop'], (old: any) =>
+        (old || []).filter((it: any) => it.id !== id)
+      );
+      return { previousItems };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shop'] });
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData(['shop'], context.previousItems);
+      }
       console.error('[AdminShop] Delete error:', error);
       if (Platform.OS === 'web') {
         alert('Failed to delete item.');
@@ -206,15 +219,15 @@ export default function AdminShop() {
     }
   }, [form, editingItem, createMutation, updateMutation]);
 
-  const handleDelete = useCallback((id: string) => {
+  const handleDelete = useCallback((id: string, imageUrl?: string) => {
     if (Platform.OS === 'web') {
       if (confirm('Delete this item?')) {
-        deleteMutation.mutate(id);
+        deleteMutation.mutate({ id, imageUrl });
       }
     } else {
       Alert.alert('Delete Item', 'Are you sure?', [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate(id) },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate({ id, imageUrl }) },
       ]);
     }
   }, [deleteMutation]);
@@ -318,7 +331,7 @@ export default function AdminShop() {
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.deleteBtn}
-                        onPress={() => handleDelete(item.id)}
+                        onPress={() => handleDelete(item.id, item.image)}
                         activeOpacity={0.7}
                       >
                         <Trash2 color={theme.colors.error} size={18} />

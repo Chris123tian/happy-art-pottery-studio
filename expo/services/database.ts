@@ -189,7 +189,7 @@ class Database {
       const snapshot = await getDocs(colRef);
       
       const data: T[] = [];
-      snapshot.forEach((docSnap) => {
+      snapshot.forEach((docSnap: any) => {
         data.push({ id: docSnap.id, ...docSnap.data() } as T);
       });
       
@@ -234,15 +234,15 @@ class Database {
         {
           includeMetadataChanges: false,
         },
-        (snapshot) => {
+        (snapshot: any) => {
           const data: T[] = [];
-          snapshot.forEach((docSnap) => {
+          snapshot.forEach((docSnap: any) => {
             data.push({ id: docSnap.id, ...docSnap.data() } as T);
           });
           console.log(`[DB] ✓ Real-time update: ${data.length} records from ${table}`);
           callback(data);
         },
-        (error) => {
+        (error: any) => {
           if (error.message.includes('Missing or insufficient permissions')) {
             console.log(`[DB] ${table} requires authentication - providing empty array`);
             callback([]);

@@ -64,10 +64,22 @@ export default function AdminReviews() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => dataService.deleteReview(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['reviews'] });
+      const previousReviews = queryClient.getQueryData(['reviews']);
+      // Optimistically remove immediately
+      queryClient.setQueryData(['reviews'], (old: any) =>
+        (old || []).filter((r: Review) => r.id !== id)
+      );
+      return { previousReviews };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousReviews) {
+        queryClient.setQueryData(['reviews'], context.previousReviews);
+      }
       console.error('[AdminReviews] Error deleting review:', error);
       showAlert('Error', 'Failed to delete review');
     },

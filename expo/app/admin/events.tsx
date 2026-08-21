@@ -108,11 +108,24 @@ export default function AdminEvents() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => dataService.deleteEvent(id),
+    mutationFn: ({ id, imageUrl }: { id: string; imageUrl?: string }) =>
+      dataService.deleteEvent(id, imageUrl),
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: ['events'] });
+      const previousEvents = queryClient.getQueryData(['events']);
+      // Optimistically remove immediately
+      queryClient.setQueryData(['events'], (old: any) =>
+        (old || []).filter((ev: any) => ev.id !== id)
+      );
+      return { previousEvents };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousEvents) {
+        queryClient.setQueryData(['events'], context.previousEvents);
+      }
       console.error('Error deleting event:', error);
       showAlert('Error', 'Failed to delete event. Please try again.');
     },
@@ -192,10 +205,10 @@ export default function AdminEvents() {
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, imageUrl?: string) => {
     if (Platform.OS === 'web') {
       if (confirm('Are you sure you want to delete this event?')) {
-        deleteMutation.mutate(id);
+        deleteMutation.mutate({ id, imageUrl });
       }
     } else {
       Alert.alert(
@@ -203,7 +216,7 @@ export default function AdminEvents() {
         'Are you sure you want to delete this event?',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate(id) },
+          { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate({ id, imageUrl }) },
         ]
       );
     }
@@ -384,7 +397,7 @@ export default function AdminEvents() {
                     <TouchableOpacity onPress={() => handleEdit(event)} style={styles.actionButton}>
                       <Edit2 color={theme.colors.primary} size={20} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(event.id)} style={styles.actionButton}>
+                    <TouchableOpacity onPress={() => handleDelete(event.id, event.image)} style={styles.actionButton}>
                       <Trash2 color={theme.colors.error} size={20} />
                     </TouchableOpacity>
                   </View>
