@@ -39,6 +39,106 @@ interface BlogPost {
 
 const REVIEW_CARD_WIDTH = 300;
 
+function AnimatedStatsBanner({ isExtraLarge }: { isExtraLarge: boolean }) {
+  const colorAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const colorLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(colorAnim, {
+          toValue: 1,
+          duration: 3500,
+          useNativeDriver: false,
+        }),
+        Animated.timing(colorAnim, {
+          toValue: 2,
+          duration: 3500,
+          useNativeDriver: false,
+        }),
+        Animated.timing(colorAnim, {
+          toValue: 3,
+          duration: 3500,
+          useNativeDriver: false,
+        }),
+        Animated.timing(colorAnim, {
+          toValue: 0,
+          duration: 3500,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+
+    const slideLoop = Animated.loop(
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: Platform.OS !== 'web',
+      })
+    );
+
+    colorLoop.start();
+    slideLoop.start();
+
+    return () => {
+      colorLoop.stop();
+      slideLoop.stop();
+    };
+  }, [colorAnim, slideAnim]);
+
+  const backgroundColor = colorAnim.interpolate({
+    inputRange: [0, 1, 2, 3],
+    outputRange: [
+      '#5C2C1E', // Rich Pottery Clay
+      '#8B4513', // Warm Terracotta / Saddle
+      '#A0522D', // Sienna Bronze
+      '#6B3A2A', // Deep Terracotta
+    ],
+  });
+
+  const shimmerTranslateX = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['-100%', '200%'],
+  });
+
+  return (
+    <Animated.View style={[styles.statsBanner, { backgroundColor }]}>
+      <Animated.View
+        style={[
+          styles.statsShimmer,
+          {
+            transform: [{ translateX: shimmerTranslateX as any }],
+          },
+        ]}
+      />
+      <View style={[styles.statsInner, isExtraLarge && { maxWidth: 1000, alignSelf: 'center' as const, width: '100%' as any }]}>
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>39+</Text>
+          <Text style={styles.statLabel}>YEARS OF CRAFT</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>3+</Text>
+          <Text style={styles.statLabel}>AGES WELCOME</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>100</Text>
+          <Text style={styles.statLabel}>MAX GROUP SIZE</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <View style={styles.statRatingRow}>
+            <Text style={styles.statNumber}>4.8</Text>
+            <Star color="#FFFFFF" size={16} fill="#FFFFFF" />
+          </View>
+          <Text style={styles.statLabel}>GOOGLE RATING</Text>
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
@@ -496,33 +596,8 @@ export default function Home() {
           </View>
         </View>
 
-        {/* STATS BANNER */}
-        <View style={styles.statsBanner}>
-          <View style={[styles.statsInner, isExtraLarge && { maxWidth: 1000, alignSelf: 'center' as const, width: '100%' as any }]}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>39+</Text>
-              <Text style={styles.statLabel}>YEARS OF CRAFT</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>3+</Text>
-              <Text style={styles.statLabel}>AGES WELCOME</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>100</Text>
-              <Text style={styles.statLabel}>MAX GROUP SIZE</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <View style={styles.statRatingRow}>
-                <Text style={styles.statNumber}>4.8</Text>
-                <Star color="#FFFFFF" size={16} fill="#FFFFFF" />
-              </View>
-              <Text style={styles.statLabel}>GOOGLE RATING</Text>
-            </View>
-          </View>
-        </View>
+        {/* STATS BANNER - Animated Color Cycle & Horizontal Motion Shimmer */}
+        <AnimatedStatsBanner isExtraLarge={isExtraLarge} />
 
         {/* ABOUT - side by side on large screens */}
         <View style={styles.section}>
@@ -1285,9 +1360,23 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statsBanner: {
-    backgroundColor: '#6B3A2A',
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 12,
+    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  statsShimmer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: '40%',
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    transform: [{ skewX: '-20deg' }],
   },
   statsInner: {
     flexDirection: 'row',
