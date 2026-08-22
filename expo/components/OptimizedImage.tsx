@@ -70,7 +70,7 @@ function OptimizedImageComponent({
   recyclingKey,
   onLoad,
   onError,
-  fallbackUri = DEFAULT_POTTERY_FALLBACK,
+  fallbackUri,
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -90,18 +90,19 @@ function OptimizedImageComponent({
   const isCloudinary = fixedUri.includes('cloudinary.com');
   const isUnsplash = fixedUri.includes('unsplash.com');
 
-  const activeUri = useFallbackImage ? fallbackUri : fixedUri;
+  const activeUri = useFallbackImage ? (fallbackUri || DEFAULT_POTTERY_FALLBACK) : fixedUri;
 
-  const finalUri = (targetWidth && !useRawUri && !isBase64 && !isCloudinary && !isUnsplash)
+  const finalUri = (targetWidth && !useRawUri && !isBase64 && !isCloudinary && !isUnsplash && activeUri)
     ? getProxyUrl(activeUri, targetWidth)
     : activeUri;
 
   const handleError = useCallback(() => {
     console.warn('[OptimizedImage] Image load failed:', finalUri);
+    const fallbackToUse = fallbackUri || DEFAULT_POTTERY_FALLBACK;
     if (finalUri !== activeUri && !useRawUri) {
       console.log('[OptimizedImage] Retrying with raw URI:', activeUri);
       setUseRawUri(true);
-    } else if (!useFallbackImage && fallbackUri && activeUri !== fallbackUri) {
+    } else if (!useFallbackImage && fallbackToUse && activeUri !== fallbackToUse) {
       console.log('[OptimizedImage] Falling back to default studio fallback image.');
       setUseFallbackImage(true);
       setUseRawUri(true);
@@ -122,9 +123,21 @@ function OptimizedImageComponent({
     aspectRatio ? { aspectRatio } : undefined,
   ];
 
-  if ((!fixedUri && !fallbackUri) || (hasError && !fallbackUri)) {
+  if (!finalUri && !showSkeleton) {
     return (
       <View style={[...containerStyle, innerStyles.placeholderContainer]} />
+    );
+  }
+
+  if (!finalUri && showSkeleton) {
+    return (
+      <View style={containerStyle}>
+        <Skeleton 
+          width="100%" 
+          height="100%" 
+          style={StyleSheet.absoluteFillObject} 
+        />
+      </View>
     );
   }
 
@@ -138,8 +151,8 @@ function OptimizedImageComponent({
         />
       )}
       <Image
-        key={finalUri || fallbackUri}
-        source={{ uri: finalUri || fallbackUri }}
+        key={finalUri}
+        source={{ uri: finalUri }}
         style={{ width: '100%', height: '100%' }}
         contentFit={contentFit}
         recyclingKey={recyclingKey}
@@ -161,4 +174,3 @@ const innerStyles = StyleSheet.create({
 });
 
 export const OptimizedImage = memo(OptimizedImageComponent);
-
