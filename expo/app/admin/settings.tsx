@@ -107,10 +107,16 @@ export default function AdminSettings() {
 
       if (imageUrl) {
         console.log(`[Settings] ${type} image uploaded successfully:`, imageUrl.substring(0, 50));
-        const updatedSettings = {
-          ...settings,
-          [type === 'hero' ? 'heroImage' : 'aboutImage']: imageUrl,
-        };
+        const updatedSettings = type === 'hero' 
+          ? {
+              ...settings,
+              heroImage: imageUrl,
+              heroImages: [imageUrl, ...(settings.heroImages || []).slice(1)],
+            }
+          : {
+              ...settings,
+              aboutImage: imageUrl,
+            };
         setSettings(updatedSettings);
         updateSettingsMutation.mutate(updatedSettings);
       }
@@ -138,6 +144,7 @@ export default function AdminSettings() {
         updatedHeroImages[index] = imageUrl;
         const updatedSettings = {
           ...settings,
+          heroImage: updatedHeroImages[0] || imageUrl,
           heroImages: updatedHeroImages,
         };
         setSettings(updatedSettings);
