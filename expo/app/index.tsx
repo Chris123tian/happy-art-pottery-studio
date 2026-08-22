@@ -139,6 +139,73 @@ function AnimatedStatsBanner({ isExtraLarge }: { isExtraLarge: boolean }) {
   );
 }
 
+function AnimatedInteractiveCard({
+  children,
+  style,
+  index = 0,
+}: {
+  children: React.ReactNode;
+  style?: any;
+  index?: number;
+}) {
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const floatLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -5,
+          duration: 2000 + (index % 3) * 400,
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 2000 + (index % 3) * 400,
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+      ])
+    );
+    floatLoop.start();
+    return () => floatLoop.stop();
+  }, [floatAnim, index]);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.96,
+      friction: 6,
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 4,
+      tension: 40,
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  };
+
+  return (
+    <Animated.View
+      style={[
+        style,
+        {
+          transform: [
+            { translateY: floatAnim },
+            { scale: scaleAnim },
+          ],
+        },
+      ]}
+      onTouchStart={handlePressIn}
+      onTouchEnd={handlePressOut}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
@@ -510,17 +577,35 @@ export default function Home() {
     reviewScrollRef.current?.scrollToIndex({ index: newIdx, animated: true });
   }, [reviewScrollIndex, allReviewItems.length]);
 
-  const renderReviewItem = useCallback(({ item }: { item: typeof allReviewItems[0] }) => (
-    <View style={[styles.reviewSlideCard, { width: REVIEW_CARD_WIDTH }]}>
-      <View style={styles.starsRow}>
-        {[...Array(item.rating)].map((_, i) => (
-          <Star key={i} color="#F5A623" size={16} fill="#F5A623" />
-        ))}
-      </View>
-      <Text style={styles.testimonialText} numberOfLines={4}>&ldquo;{item.text}&rdquo;</Text>
-      <Text style={styles.testimonialAuthor}>- {item.name}</Text>
-    </View>
-  ), []);
+  const renderReviewItem = useCallback(({ item, index }: { item: typeof allReviewItems[0]; index: number }) => {
+    const themeColors = [
+      { bg: '#FFFBF7', border: '#C4704B', avatarBg: '#FFEADF', avatarText: '#C4704B' },
+      { bg: '#F4FBF7', border: '#2E7D32', avatarBg: '#DCFCE7', avatarText: '#2E7D32' },
+      { bg: '#FFFDF0', border: '#D97706', avatarBg: '#FEF3C7', avatarText: '#D97706' },
+    ];
+    const currentTheme = themeColors[index % 3];
+
+    return (
+      <AnimatedInteractiveCard index={index}>
+        <View style={[styles.reviewSlideCard, { width: REVIEW_CARD_WIDTH, backgroundColor: currentTheme.bg, borderLeftColor: currentTheme.border }]}>
+          <View style={styles.starsRow}>
+            {[...Array(item.rating)].map((_, i) => (
+              <Star key={i} color="#F5A623" size={16} fill="#F5A623" />
+            ))}
+          </View>
+          <Text style={styles.testimonialText} numberOfLines={4}>&ldquo;{item.text}&rdquo;</Text>
+          <View style={styles.reviewAuthorRow}>
+            <View style={[styles.authorAvatarBadge, { backgroundColor: currentTheme.avatarBg }]}>
+              <Text style={[styles.authorAvatarText, { color: currentTheme.avatarText }]}>
+                {item.name ? item.name.charAt(0).toUpperCase() : 'S'}
+              </Text>
+            </View>
+            <Text style={[styles.testimonialAuthor, { color: currentTheme.border }]}>- {item.name}</Text>
+          </View>
+        </View>
+      </AnimatedInteractiveCard>
+    );
+  }, []);
 
   const isMediumScreen = screenWidth > 480;
   const isExtraLarge = screenWidth > 1200;
@@ -954,42 +1039,50 @@ export default function Home() {
         <View style={[styles.section, styles.processSection]}>
           <Text style={styles.sectionTitle}>How It Works</Text>
           <View style={[styles.processStepsRow, isLargeScreen && { justifyContent: 'center' as const }]}>
-            <View style={[styles.processStep, isLargeScreen && { width: '30%' as any }]}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>1</Text>
+            <AnimatedInteractiveCard index={0} style={[styles.processStepCardWrap, isLargeScreen && { width: '30%' as any }]}>
+              <View style={[styles.processStep, styles.processStep1]}>
+                <View style={[styles.stepNumber, { backgroundColor: '#C4704B' }]}>
+                  <Text style={styles.stepNumberText}>1</Text>
+                </View>
+                <View style={[styles.stepIconWrap, { backgroundColor: '#FFE5D9' }]}>
+                  <Palette color="#C4704B" size={32} />
+                </View>
+                <Text style={styles.stepTitle}>Choose Your Class</Text>
+                <Text style={styles.stepDescription}>
+                  Select from Wheel Throwing or Pot Painting classes
+                </Text>
               </View>
-              <View style={styles.stepIcon}>
-                <Palette color={theme.colors.primary} size={32} />
+            </AnimatedInteractiveCard>
+
+            <AnimatedInteractiveCard index={1} style={[styles.processStepCardWrap, isLargeScreen && { width: '30%' as any }]}>
+              <View style={[styles.processStep, styles.processStep2]}>
+                <View style={[styles.stepNumber, { backgroundColor: '#2E7D32' }]}>
+                  <Text style={styles.stepNumberText}>2</Text>
+                </View>
+                <View style={[styles.stepIconWrap, { backgroundColor: '#DCFCE7' }]}>
+                  <Users color="#2E7D32" size={32} />
+                </View>
+                <Text style={styles.stepTitle}>Book Your Session</Text>
+                <Text style={styles.stepDescription}>
+                  Reserve your spot for individuals, groups, or parties
+                </Text>
               </View>
-              <Text style={styles.stepTitle}>Choose Your Class</Text>
-              <Text style={styles.stepDescription}>
-                Select from Wheel Throwing or Pot Painting classes
-              </Text>
-            </View>
-            <View style={[styles.processStep, isLargeScreen && { width: '30%' as any }]}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>2</Text>
+            </AnimatedInteractiveCard>
+
+            <AnimatedInteractiveCard index={2} style={[styles.processStepCardWrap, isLargeScreen && { width: '30%' as any }]}>
+              <View style={[styles.processStep, styles.processStep3]}>
+                <View style={[styles.stepNumber, { backgroundColor: '#D946EF' }]}>
+                  <Text style={styles.stepNumberText}>3</Text>
+                </View>
+                <View style={[styles.stepIconWrap, { backgroundColor: '#FCE7F3' }]}>
+                  <Heart color="#D946EF" size={32} />
+                </View>
+                <Text style={styles.stepTitle}>Create & Enjoy</Text>
+                <Text style={styles.stepDescription}>
+                  Learn pottery techniques and take home your masterpiece
+                </Text>
               </View>
-              <View style={styles.stepIcon}>
-                <Users color={theme.colors.primary} size={32} />
-              </View>
-              <Text style={styles.stepTitle}>Book Your Session</Text>
-              <Text style={styles.stepDescription}>
-                Reserve your spot for individuals, groups, or parties
-              </Text>
-            </View>
-            <View style={[styles.processStep, isLargeScreen && { width: '30%' as any }]}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>3</Text>
-              </View>
-              <View style={styles.stepIcon}>
-                <Heart color={theme.colors.primary} size={32} />
-              </View>
-              <Text style={styles.stepTitle}>Create & Enjoy</Text>
-              <Text style={styles.stepDescription}>
-                Learn pottery techniques and take home your masterpiece
-              </Text>
-            </View>
+            </AnimatedInteractiveCard>
           </View>
         </View>
 
@@ -1054,42 +1147,61 @@ export default function Home() {
         <View style={[styles.section, styles.faqSection]}>
           <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
           <View style={[styles.faqList, isLargeScreen && { flexDirection: 'row' as const, flexWrap: 'wrap' as const }]}>
-            <View style={[styles.faqItem, isLargeScreen && { width: '48%' as any }]}>
-              <View style={styles.faqQuestion}>
-                <HelpCircle color={theme.colors.primary} size={20} />
-                <Text style={styles.faqQuestionText}>What should I wear to class?</Text>
+            <AnimatedInteractiveCard index={0} style={[styles.faqItemWrap, isLargeScreen && { width: '48%' as any }]}>
+              <View style={[styles.faqItem, { backgroundColor: '#FFF8F5', borderLeftColor: '#C4704B' }]}>
+                <View style={styles.faqQuestion}>
+                  <View style={[styles.faqIconBadge, { backgroundColor: '#FFEADF' }]}>
+                    <HelpCircle color="#C4704B" size={20} />
+                  </View>
+                  <Text style={styles.faqQuestionText}>What should I wear to class?</Text>
+                </View>
+                <Text style={styles.faqAnswer}>
+                  Wear comfortable clothes that you don&apos;t mind getting a little dirty. We provide aprons, but clay can be messy!
+                </Text>
               </View>
-              <Text style={styles.faqAnswer}>
-                Wear comfortable clothes that you don&apos;t mind getting a little dirty. We provide aprons, but clay can be messy!
-              </Text>
-            </View>
-            <View style={[styles.faqItem, isLargeScreen && { width: '48%' as any }]}>
-              <View style={styles.faqQuestion}>
-                <HelpCircle color={theme.colors.primary} size={20} />
-                <Text style={styles.faqQuestionText}>Do I need prior experience?</Text>
+            </AnimatedInteractiveCard>
+
+            <AnimatedInteractiveCard index={1} style={[styles.faqItemWrap, isLargeScreen && { width: '48%' as any }]}>
+              <View style={[styles.faqItem, { backgroundColor: '#F0FDF4', borderLeftColor: '#2E7D32' }]}>
+                <View style={styles.faqQuestion}>
+                  <View style={[styles.faqIconBadge, { backgroundColor: '#DCFCE7' }]}>
+                    <HelpCircle color="#2E7D32" size={20} />
+                  </View>
+                  <Text style={styles.faqQuestionText}>Do I need prior experience?</Text>
+                </View>
+                <Text style={styles.faqAnswer}>
+                  Not at all! Our classes welcome beginners and experienced potters alike. Our instructors guide you every step of the way.
+                </Text>
               </View>
-              <Text style={styles.faqAnswer}>
-                Not at all! Our classes welcome beginners and experienced potters alike. Our instructors guide you every step of the way.
-              </Text>
-            </View>
-            <View style={[styles.faqItem, isLargeScreen && { width: '48%' as any }]}>
-              <View style={styles.faqQuestion}>
-                <HelpCircle color={theme.colors.primary} size={20} />
-                <Text style={styles.faqQuestionText}>How many people can attend?</Text>
+            </AnimatedInteractiveCard>
+
+            <AnimatedInteractiveCard index={2} style={[styles.faqItemWrap, isLargeScreen && { width: '48%' as any }]}>
+              <View style={[styles.faqItem, { backgroundColor: '#FFFBEB', borderLeftColor: '#D97706' }]}>
+                <View style={styles.faqQuestion}>
+                  <View style={[styles.faqIconBadge, { backgroundColor: '#FEF3C7' }]}>
+                    <HelpCircle color="#D97706" size={20} />
+                  </View>
+                  <Text style={styles.faqQuestionText}>How many people can attend?</Text>
+                </View>
+                <Text style={styles.faqAnswer}>
+                  We can accommodate 1 to 100 people! Perfect for individuals, couples, groups, parties, schools, and corporate events.
+                </Text>
               </View>
-              <Text style={styles.faqAnswer}>
-                We can accommodate 1 to 100 people! Perfect for individuals, couples, groups, parties, schools, and corporate events.
-              </Text>
-            </View>
-            <View style={[styles.faqItem, isLargeScreen && { width: '48%' as any }]}>
-              <View style={styles.faqQuestion}>
-                <HelpCircle color={theme.colors.primary} size={20} />
-                <Text style={styles.faqQuestionText}>Can I purchase pottery pieces?</Text>
+            </AnimatedInteractiveCard>
+
+            <AnimatedInteractiveCard index={3} style={[styles.faqItemWrap, isLargeScreen && { width: '48%' as any }]}>
+              <View style={[styles.faqItem, { backgroundColor: '#FDF2F8', borderLeftColor: '#BE185D' }]}>
+                <View style={styles.faqQuestion}>
+                  <View style={[styles.faqIconBadge, { backgroundColor: '#FCE7F3' }]}>
+                    <HelpCircle color="#BE185D" size={20} />
+                  </View>
+                  <Text style={styles.faqQuestionText}>Can I purchase pottery pieces?</Text>
+                </View>
+                <Text style={styles.faqAnswer}>
+                  Yes! We have beautiful handmade pots and ceramic pieces for sale at the studio.
+                </Text>
               </View>
-              <Text style={styles.faqAnswer}>
-                Yes! We have beautiful handmade pots and ceramic pieces for sale at the studio.
-              </Text>
-            </View>
+            </AnimatedInteractiveCard>
           </View>
         </View>
 
@@ -1930,6 +2042,11 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.md,
     flexWrap: 'wrap',
   },
+  processStepCardWrap: {
+    flex: 1,
+    minWidth: 220,
+    marginBottom: theme.spacing.sm,
+  },
   processStep: {
     flex: 1,
     minWidth: 200,
@@ -1939,6 +2056,24 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.lg,
     ...theme.shadows.md,
     position: 'relative',
+  },
+  processStep1: {
+    backgroundColor: '#FFF4EE',
+    borderColor: '#FFD5C2',
+    borderWidth: 2,
+    borderRadius: 20,
+  },
+  processStep2: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#C6F6D5',
+    borderWidth: 2,
+    borderRadius: 20,
+  },
+  processStep3: {
+    backgroundColor: '#FFF5F7',
+    borderColor: '#FECDDA',
+    borderWidth: 2,
+    borderRadius: 20,
   },
   stepNumber: {
     position: 'absolute',
@@ -1957,6 +2092,15 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   stepIcon: {
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+  },
+  stepIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center' as const,
     marginTop: theme.spacing.lg,
     marginBottom: theme.spacing.md,
   },
@@ -1995,6 +2139,22 @@ const styles = StyleSheet.create({
     ...theme.shadows.md,
     borderLeftWidth: 4,
     borderLeftColor: theme.colors.primary,
+  },
+  reviewAuthorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  authorAvatarBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  authorAvatarText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
   },
   reviewDots: {
     flexDirection: 'row',
@@ -2036,10 +2196,15 @@ const styles = StyleSheet.create({
   faqList: {
     gap: theme.spacing.lg,
   },
+  faqItemWrap: {
+    flex: 1,
+    minWidth: 260,
+  },
   faqItem: {
     backgroundColor: theme.colors.white,
     padding: theme.spacing.lg,
     borderRadius: theme.borderRadius.md,
+    borderLeftWidth: 4,
     ...theme.shadows.sm,
   },
   faqQuestion: {
@@ -2047,6 +2212,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.sm,
     marginBottom: theme.spacing.sm,
+  },
+  faqIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   faqQuestionText: {
     fontSize: 16,
@@ -2058,7 +2230,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: theme.colors.textLight,
-    marginLeft: 28,
+    marginLeft: 0,
   },
   blogSection: {
     backgroundColor: theme.colors.surface,
