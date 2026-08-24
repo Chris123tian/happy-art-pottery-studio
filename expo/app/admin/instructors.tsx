@@ -120,7 +120,7 @@ export default function AdminInstructors() {
       const uploadedUrl = await imageService.pickImage({
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.9,
         storagePath: `instructors/instructor_${Date.now()}.jpg`,
       });
 
@@ -339,7 +339,7 @@ export default function AdminInstructors() {
                   <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
                     <Upload color={theme.colors.primary} size={24} />
                     <Text style={styles.uploadButtonText}>Upload Photo</Text>
-                    <Text style={styles.uploadHint}>Tap to select from device</Text>
+                    <Text style={styles.uploadHint}>Tap to select photo (up to 2.5MB)</Text>
                   </TouchableOpacity>
                 )}
               </View>

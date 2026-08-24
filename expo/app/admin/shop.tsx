@@ -167,7 +167,7 @@ export default function AdminShop() {
       const url = await imageService.pickAndUploadImage({
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.7,
+        quality: 0.9,
         storagePath: `shop/item_${Date.now()}.jpg`,
       });
       if (url) {
@@ -456,7 +456,7 @@ export default function AdminShop() {
                   <View style={styles.imagePlaceholder}>
                     <Package color={theme.colors.border} size={40} />
                     <Text style={styles.imagePlaceholderText}>
-                      {uploading ? 'Uploading...' : 'Tap to upload image'}
+                      {uploading ? 'Uploading...' : 'Tap to upload image (up to 2.5MB)'}
                     </Text>
                   </View>
                 )}

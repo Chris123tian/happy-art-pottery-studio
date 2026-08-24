@@ -101,7 +101,7 @@ export default function AdminSettings() {
       const imageUrl = await imageService.pickAndUploadImage({
         allowsEditing: true,
         aspect: type === 'hero' ? [16, 9] : [4, 3],
-        quality: 0.8,
+        quality: 0.9,
         storagePath: `settings/${type}_${Date.now()}.jpg`,
       });
 
@@ -134,7 +134,7 @@ export default function AdminSettings() {
       const imageUrl = await imageService.pickAndUploadImage({
         allowsEditing: true,
         aspect: [16, 9],
-        quality: 0.8,
+        quality: 0.9,
         storagePath: `settings/hero_slide_${index}_${Date.now()}.jpg`,
       });
 
@@ -179,7 +179,7 @@ export default function AdminSettings() {
       const imageUrl = await imageService.pickAndUploadImage({
         allowsEditing: true,
         aspect: [16, 9],
-        quality: 0.8,
+        quality: 0.9,
         storagePath: `services/${serviceId}_${Date.now()}.jpg`,
       });
       if (imageUrl) {

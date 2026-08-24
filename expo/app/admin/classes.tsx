@@ -148,7 +148,7 @@ export default function AdminClasses() {
       setUploadingImage(true);
       const imageUrl = await imageService.pickAndUploadImage({
         storagePath: `classes/class_${Date.now()}.jpg`,
-        quality: 0.8,
+        quality: 0.9,
       });
       
       if (imageUrl) {
@@ -266,7 +266,7 @@ export default function AdminClasses() {
                     <>
                       <Upload color={theme.colors.primary} size={32} />
                       <Text style={styles.uploadButtonText}>Upload Class Image</Text>
-                      <Text style={styles.uploadButtonSubtext}>Tap to select image</Text>
+                      <Text style={styles.uploadButtonSubtext}>Tap to select image (up to 2.5MB)</Text>
                     </>
                   )}
                 </TouchableOpacity>

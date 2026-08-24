@@ -4,6 +4,8 @@ import { getApp } from 'firebase/app';
 import { Platform } from 'react-native';
 import { database } from './database';
 
+const DEFAULT_MAX_SIZE_BYTES = 2.5 * 1024 * 1024; // 2.5MB target limit
+
 /**
  * Safely converts any URI (blob:, file:, data:, http:) into a permanent Data URI string.
  */
@@ -13,7 +15,7 @@ async function readAsDataUrl(uri: string): Promise<string> {
   try {
     const res = await fetch(uri);
     const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
+    return await new Promise<string>((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve((reader.result as string) || uri);
       reader.onerror = () => resolve(uri);
@@ -26,13 +28,14 @@ async function readAsDataUrl(uri: string): Promise<string> {
 }
 
 /**
- * Resizes and compresses an image URI into a smaller JPEG Blob and Data URI.
- * Reduces 5-10MB camera pictures down to ~50-100KB.
+ * Resizes and compresses an image URI into a high-quality JPEG Blob and Data URI.
+ * Supports image sizes up to ~2.5MB with high resolution (up to 2560px).
  */
 async function compressImageUri(
   uri: string,
-  maxWidth = 1000,
-  quality = 0.75
+  maxWidth = 2560,
+  quality = 0.85,
+  maxSizeBytes = DEFAULT_MAX_SIZE_BYTES
 ): Promise<{ blob: Blob; dataUrl: string }> {
   const baseDataUrl = await readAsDataUrl(uri);
 
@@ -71,17 +74,65 @@ async function compressImageUri(
             }
 
             ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            
+            let currentQuality = quality;
+            let dataUrl = canvas.toDataURL('image/jpeg', currentQuality);
 
-            const byteString = atob(dataUrl.split(',')[1]);
-            const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
+            let byteString = atob(dataUrl.split(',')[1]);
+            let mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+            let ab = new ArrayBuffer(byteString.length);
+            let ia = new Uint8Array(ab);
             for (let i = 0; i < byteString.length; i++) {
               ia[i] = byteString.charCodeAt(i);
             }
-            const blob = new Blob([ab], { type: mimeString });
-            resolve({ blob, dataUrl });
+            let blob = new Blob([ab], { type: mimeString });
+
+            // If blob size exceeds maxSizeBytes (e.g. 2.5MB), incrementally adjust quality to fit under 2.5MB
+            let attempts = 0;
+            while (blob.size > maxSizeBytes && currentQuality > 0.4 && attempts < 4) {
+              attempts++;
+              currentQuality -= 0.1;
+              dataUrl = canvas.toDataURL('image/jpeg', currentQuality);
+              byteString = atob(dataUrl.split(',')[1]);
+              mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+              ab = new ArrayBuffer(byteString.length);
+              ia = new Uint8Array(ab);
+              for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+              }
+              blob = new Blob([ab], { type: mimeString });
+            }
+
+            // Create safe inline dataUrl fallback for Firestore (< 850KB to stay safely under Firestore 1MB doc limit)
+            let safeDataUrl = dataUrl;
+            if (safeDataUrl.length > 850000) {
+              try {
+                let fbWidth = width;
+                let fbHeight = height;
+                const maxFbDim = 1000;
+                if (fbWidth > maxFbDim || fbHeight > maxFbDim) {
+                  if (fbWidth > fbHeight) {
+                    fbHeight = Math.round((fbHeight * maxFbDim) / fbWidth);
+                    fbWidth = maxFbDim;
+                  } else {
+                    fbWidth = Math.round((fbWidth * maxFbDim) / fbHeight);
+                    fbHeight = maxFbDim;
+                  }
+                }
+                const fbCanvas = document.createElement('canvas');
+                fbCanvas.width = fbWidth;
+                fbCanvas.height = fbHeight;
+                const fbCtx = fbCanvas.getContext('2d');
+                if (fbCtx) {
+                  fbCtx.drawImage(img, 0, 0, fbWidth, fbHeight);
+                  safeDataUrl = fbCanvas.toDataURL('image/jpeg', 0.7);
+                }
+              } catch (e) {
+                console.warn('[ImageService] Safe Data URI resize fallback error:', e);
+              }
+            }
+
+            resolve({ blob, dataUrl: safeDataUrl });
           } catch (err) {
             reject(err);
           }
@@ -148,13 +199,21 @@ async function uploadToCloudinary(
 }
 
 export const imageService = {
-  async uploadImageToStorage(uri: string, path: string): Promise<string> {
+  async uploadImageToStorage(
+    uri: string,
+    path: string,
+    options?: { maxWidth?: number; quality?: number; maxSizeBytes?: number }
+  ): Promise<string> {
     try {
-      console.log('[ImageService] Compressing image before upload:', path);
-      const { blob, dataUrl } = await compressImageUri(uri, 1000, 0.75);
+      const maxWidth = options?.maxWidth ?? 2560;
+      const quality = options?.quality ?? 0.85;
+      const maxSizeBytes = options?.maxSizeBytes ?? DEFAULT_MAX_SIZE_BYTES;
+
+      console.log('[ImageService] Processing image before upload:', path, { maxWidth, quality, maxSizeBytes });
+      const { blob, dataUrl } = await compressImageUri(uri, maxWidth, quality, maxSizeBytes);
 
       const sizeMB = blob.size ? (blob.size / (1024 * 1024)).toFixed(2) : '0';
-      console.log(`[ImageService] Compressed image size: ${sizeMB}MB (${blob.size} bytes)`);
+      console.log(`[ImageService] Image size for upload: ${sizeMB}MB (${blob.size} bytes)`);
 
       // Ensure anonymous auth is initialized for permissions
       try {
@@ -219,6 +278,8 @@ export const imageService = {
     aspect?: [number, number];
     quality?: number;
     storagePath?: string;
+    maxWidth?: number;
+    maxSizeBytes?: number;
   }): Promise<string | null> {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -230,17 +291,28 @@ export const imageService = {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: options?.allowsEditing ?? true,
         aspect: options?.aspect ?? [1, 1],
-        quality: options?.quality ?? 0.8,
+        quality: options?.quality ?? 0.9,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
+        const selectedAsset = result.assets[0];
+
+        // Check if selected raw file is excessively large (e.g. > 25MB) before processing
+        if (selectedAsset.fileSize && selectedAsset.fileSize > 25 * 1024 * 1024) {
+          throw new Error('The selected image is larger than 25MB. Please select an image under 25MB.');
+        }
+
         const timestamp = Date.now();
         const fileName = `image_${timestamp}.jpg`;
         const storagePath = options?.storagePath || `gallery/${fileName}`;
 
-        console.log('[ImageService] Image selected, processing and uploading...');
-        const finalURL = await this.uploadImageToStorage(result.assets[0].uri, storagePath);
-        console.log('[ImageService] Image ready');
+        console.log('[ImageService] Image selected, processing high-quality image up to ~2.5MB...');
+        const finalURL = await this.uploadImageToStorage(selectedAsset.uri, storagePath, {
+          maxWidth: options?.maxWidth,
+          quality: options?.quality,
+          maxSizeBytes: options?.maxSizeBytes,
+        });
+        console.log('[ImageService] Image ready:', finalURL);
         return finalURL;
       }
 
@@ -256,6 +328,8 @@ export const imageService = {
     aspect?: [number, number];
     quality?: number;
     storagePath?: string;
+    maxWidth?: number;
+    maxSizeBytes?: number;
   }): Promise<string | null> {
     return this.pickAndUploadImage(options);
   },
@@ -281,3 +355,4 @@ export const imageService = {
     }
   },
 };
+

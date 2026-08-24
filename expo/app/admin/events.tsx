@@ -166,7 +166,7 @@ export default function AdminEvents() {
       console.log('[AdminEvents] Starting image upload...');
       const imageUrl = await imageService.pickAndUploadImage({
         storagePath: `events/event_${Date.now()}.jpg`,
-        quality: 0.8,
+        quality: 0.9,
         aspect: [16, 9],
       });
       
@@ -297,7 +297,7 @@ export default function AdminEvents() {
                     <>
                       <Upload color={theme.colors.primary} size={32} />
                       <Text style={styles.uploadButtonText}>Upload Event Image</Text>
-                      <Text style={styles.uploadButtonSubtext}>Tap to select image (max 10MB)</Text>
+                      <Text style={styles.uploadButtonSubtext}>Tap to select image (high quality, up to 2.5MB)</Text>
                     </>
                   )}
                 </TouchableOpacity>

@@ -99,7 +99,7 @@ export default function AdminGallery() {
       console.log('[Gallery] Starting image picker...');
       const base64Image = await imageService.pickImage({
         allowsEditing: true,
-        quality: 0.3,
+        quality: 0.9,
       });
 
       if (base64Image) {
