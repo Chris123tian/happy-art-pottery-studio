@@ -556,7 +556,7 @@ export default function AdminSettings() {
                     <Image
                       source={{ uri: service.image }}
                       style={StyleSheet.absoluteFill}
-                      contentFit="contain"
+                      contentFit="cover"
                     />
                   ) : (
                     <View style={styles.centered}>

@@ -8,6 +8,8 @@ import {
   TextInput,
   Alert,
   Modal,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,6 +29,7 @@ export default function AdminInstructors() {
   const { instructors } = useData();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState<Instructor | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     title: '',
@@ -51,7 +54,11 @@ export default function AdminInstructors() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['instructors'] });
       try { await Image.clearMemoryCache(); await Image.clearDiskCache(); } catch (_) {}
-      Alert.alert('Success', 'Instructor created successfully!');
+      if (Platform.OS === 'web') {
+        alert('Instructor created successfully!');
+      } else {
+        Alert.alert('Success', 'Instructor created successfully!');
+      }
       closeModal();
     },
     onError: (error, _, context) => {
@@ -59,7 +66,11 @@ export default function AdminInstructors() {
         queryClient.setQueryData(['instructors'], context.previousInstructors);
       }
       console.error('Error creating instructor:', error);
-      Alert.alert('Error', 'Failed to create instructor. Please try again.');
+      if (Platform.OS === 'web') {
+        alert('Failed to create instructor. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to create instructor. Please try again.');
+      }
     },
   });
 
@@ -79,7 +90,11 @@ export default function AdminInstructors() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['instructors'] });
       try { await Image.clearMemoryCache(); await Image.clearDiskCache(); } catch (_) {}
-      Alert.alert('Success', 'Instructor updated successfully!');
+      if (Platform.OS === 'web') {
+        alert('Instructor updated successfully!');
+      } else {
+        Alert.alert('Success', 'Instructor updated successfully!');
+      }
       closeModal();
     },
     onError: (error, _, context) => {
@@ -87,7 +102,11 @@ export default function AdminInstructors() {
         queryClient.setQueryData(['instructors'], context.previousInstructors);
       }
       console.error('Error updating instructor:', error);
-      Alert.alert('Error', 'Failed to update instructor. Please try again.');
+      if (Platform.OS === 'web') {
+        alert('Failed to update instructor. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to update instructor. Please try again.');
+      }
     },
   });
 
@@ -117,6 +136,7 @@ export default function AdminInstructors() {
 
   const pickImage = async () => {
     try {
+      setUploadingImage(true);
       const uploadedUrl = await imageService.pickImage({
         allowsEditing: true,
         aspect: [1, 1],
@@ -126,10 +146,21 @@ export default function AdminInstructors() {
 
       if (uploadedUrl) {
         setFormData((prev) => ({ ...prev, image: uploadedUrl }));
+        if (Platform.OS === 'web') {
+          alert('Photo selected successfully!');
+        } else {
+          Alert.alert('Success', 'Photo selected successfully!');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to upload image. Please try again.');
+      if (Platform.OS === 'web') {
+        alert(error?.message || 'Failed to upload image. Please try again.');
+      } else {
+        Alert.alert('Error', error?.message || 'Failed to upload image. Please try again.');
+      }
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -330,16 +361,29 @@ export default function AdminInstructors() {
                     <TouchableOpacity
                       style={styles.changeImageButton}
                       onPress={pickImage}
+                      disabled={uploadingImage}
                     >
-                      <Upload color={theme.colors.white} size={16} />
-                      <Text style={styles.changeImageText}>Change Photo</Text>
+                      {uploadingImage ? (
+                        <ActivityIndicator size="small" color={theme.colors.white} />
+                      ) : (
+                        <>
+                          <Upload color={theme.colors.white} size={16} />
+                          <Text style={styles.changeImageText}>Change Photo</Text>
+                        </>
+                      )}
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-                    <Upload color={theme.colors.primary} size={24} />
-                    <Text style={styles.uploadButtonText}>Upload Photo</Text>
-                    <Text style={styles.uploadHint}>Tap to select photo (up to 2.5MB)</Text>
+                  <TouchableOpacity style={styles.uploadButton} onPress={pickImage} disabled={uploadingImage}>
+                    {uploadingImage ? (
+                      <ActivityIndicator size="large" color={theme.colors.primary} />
+                    ) : (
+                      <>
+                        <Upload color={theme.colors.primary} size={24} />
+                        <Text style={styles.uploadButtonText}>Upload Photo</Text>
+                        <Text style={styles.uploadHint}>Tap to select photo (up to 2.5MB)</Text>
+                      </>
+                    )}
                   </TouchableOpacity>
                 )}
               </View>
@@ -380,12 +424,12 @@ export default function AdminInstructors() {
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.saveButton, (createMutation.isPending || updateMutation.isPending) && styles.saveButtonDisabled]} 
+                style={[styles.saveButton, (createMutation.isPending || updateMutation.isPending || uploadingImage) && styles.saveButtonDisabled]} 
                 onPress={handleSave}
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={createMutation.isPending || updateMutation.isPending || uploadingImage}
               >
                 <Text style={styles.saveButtonText}>
-                  {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : (editingInstructor ? 'Update' : 'Add')}
+                  {uploadingImage ? 'Uploading Image...' : (createMutation.isPending || updateMutation.isPending) ? 'Saving...' : (editingInstructor ? 'Update' : 'Add')}
                 </Text>
               </TouchableOpacity>
             </View>

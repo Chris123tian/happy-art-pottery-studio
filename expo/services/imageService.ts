@@ -103,13 +103,13 @@ async function compressImageUri(
               blob = new Blob([ab], { type: mimeString });
             }
 
-            // Create safe inline dataUrl fallback for Firestore (< 850KB to stay safely under Firestore 1MB doc limit)
+            // Create safe inline dataUrl fallback for Firestore (< 350KB to stay safely under Firestore 1MB doc limit)
             let safeDataUrl = dataUrl;
-            if (safeDataUrl.length > 850000) {
+            if (safeDataUrl.length > 350000) {
               try {
                 let fbWidth = width;
                 let fbHeight = height;
-                const maxFbDim = 1000;
+                const maxFbDim = 600;
                 if (fbWidth > maxFbDim || fbHeight > maxFbDim) {
                   if (fbWidth > fbHeight) {
                     fbHeight = Math.round((fbHeight * maxFbDim) / fbWidth);
@@ -125,7 +125,7 @@ async function compressImageUri(
                 const fbCtx = fbCanvas.getContext('2d');
                 if (fbCtx) {
                   fbCtx.drawImage(img, 0, 0, fbWidth, fbHeight);
-                  safeDataUrl = fbCanvas.toDataURL('image/jpeg', 0.7);
+                  safeDataUrl = fbCanvas.toDataURL('image/jpeg', 0.65);
                 }
               } catch (e) {
                 console.warn('[ImageService] Safe Data URI resize fallback error:', e);
@@ -266,9 +266,18 @@ export const imageService = {
         return dataUrl;
       }
 
+      if (uri.startsWith('blob:')) {
+        const fallbackDataUrl = await readAsDataUrl(uri);
+        return fallbackDataUrl || uri;
+      }
+
       return uri;
     } catch (error: any) {
       console.warn('[ImageService] Upload process fallback to raw uri:', error?.message);
+      if (uri.startsWith('blob:')) {
+        const fallbackDataUrl = await readAsDataUrl(uri);
+        return fallbackDataUrl || uri;
+      }
       return uri;
     }
   },
@@ -289,7 +298,7 @@ export const imageService = {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: options?.allowsEditing ?? true,
+        allowsEditing: Platform.OS === 'web' ? false : (options?.allowsEditing ?? true),
         aspect: options?.aspect ?? [1, 1],
         quality: options?.quality ?? 0.9,
       });

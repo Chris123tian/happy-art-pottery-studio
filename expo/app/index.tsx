@@ -712,7 +712,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={service.image}
                     style={[styles.serviceImage, isLargeScreen && styles.serviceImageLarge]}
-                    contentFit="contain"
+                    contentFit="cover"
                     aspectRatio={1.2}
                     priority="normal"
                     targetWidth={isLargeScreen ? 400 : 300}
@@ -946,7 +946,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={displaySettings.services!.find(s => s.id === 'shop')!.image}
                     style={styles.offeringImage}
-                    contentFit="contain"
+                    contentFit="cover"
                     aspectRatio={1.5}
                     targetWidth={400}
                   />
@@ -978,7 +978,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={displaySettings.services!.find(s => s.id === 'parties')!.image}
                     style={styles.offeringImage}
-                    contentFit="contain"
+                    contentFit="cover"
                     aspectRatio={1.5}
                     targetWidth={400}
                   />
@@ -1010,7 +1010,7 @@ export default function Home() {
                   <OptimizedImage
                     uri={displaySettings.services!.find(s => s.id === 'schools')!.image}
                     style={styles.offeringImage}
-                    contentFit="contain"
+                    contentFit="cover"
                     aspectRatio={1.5}
                     targetWidth={400}
                   />
