@@ -713,7 +713,7 @@ export default function Home() {
                     uri={service.image}
                     style={[styles.serviceImage, isLargeScreen && styles.serviceImageLarge]}
                     contentFit="cover"
-                    aspectRatio={1.2}
+                    aspectRatio={1.5}
                     priority="normal"
                     targetWidth={isLargeScreen ? 400 : 300}
                     recyclingKey={`service-${service.id}`}
@@ -1601,22 +1601,22 @@ const styles = StyleSheet.create({
     ...theme.shadows.md,
   },
   serviceCardGrid: {
-    width: '48%' as any,
-    marginBottom: theme.spacing.sm,
+    width: '100%' as any,
+    marginBottom: theme.spacing.md,
   },
   serviceCardGridMedium: {
     width: '48%' as any,
   },
   serviceCardGridLarge: {
-    width: '23.5%' as any,
+    width: '48%' as any,
   },
   serviceImage: {
     width: '100%',
-    aspectRatio: 1.2,
+    aspectRatio: 1.5,
     backgroundColor: 'transparent',
   },
   serviceImageLarge: {
-    aspectRatio: 1.2,
+    aspectRatio: 1.6,
   },
   serviceCardContent: {
     padding: theme.spacing.md,

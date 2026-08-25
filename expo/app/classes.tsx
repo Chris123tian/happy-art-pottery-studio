@@ -46,8 +46,8 @@ export default function Classes() {
         <OptimizedImage
           uri={classItem.image}
           style={styles.classImage}
-          contentFit="contain"
-          aspectRatio={1.33}
+          contentFit="cover"
+          aspectRatio={1.5}
           priority="normal"
           targetWidth={isLargeScreen ? 400 : 320}
           recyclingKey={`class-${classItem.id}`}
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   classImage: {
     width: '100%',
-    aspectRatio: 1.33,
+    aspectRatio: 1.5,
     backgroundColor: theme.colors.surface,
   },
   classContent: {
